@@ -1,0 +1,42 @@
+# Reinstalled fresh during build
+node_modules
+
+# Version control
+.git
+
+# CI config — not needed inside the image
+.github
+
+# Turbo cache
+.turbo
+
+# Built output (rebuilt from source during Docker build)
+apps/server/dist
+apps/web/dist
+apps/docs/build
+apps/docs/.docusaurus
+
+# Applications not included in this image
+apps/web
+apps/docs
+
+# ESLint config package (build-time only, not in server image)
+packages/eslint-config
+
+# Environment files (mounted at runtime, never baked in)
+.env
+.env.*
+!apps/server/.env.example
+
+# Logs and test artefacts
+*.log
+coverage
+
+# Large dev-only reference files
+design_notes
+llms.txt
+no-useeffect.md
+CLAUDE.md
+
+# Claude Code local settings
+.claude

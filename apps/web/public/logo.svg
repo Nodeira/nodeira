@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <!-- Connector lines from center node to satellites -->
+  <line x1="40" y1="40" x2="13" y2="21" stroke="#7B9AF5" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="40" x2="67" y2="24" stroke="#7B9AF5" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="40" x2="18" y2="63" stroke="#7B9AF5" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="40" x2="67" y2="58" stroke="#7B9AF5" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Satellite nodes -->
+  <circle cx="13" cy="21" r="5.5" fill="#7B9AF5"/>
+  <circle cx="67" cy="24" r="5.5" fill="#7B9AF5"/>
+  <circle cx="18" cy="63" r="5.5" fill="#7B9AF5"/>
+  <circle cx="67" cy="58" r="5.5" fill="#7B9AF5"/>
+
+  <!-- Central node -->
+  <circle cx="40" cy="40" r="19" fill="#4F72F5"/>
+
+  <!-- Note lines (text) inside central node -->
+  <rect x="31" y="33" width="18" height="2.5" rx="1.25" fill="white"/>
+  <rect x="31" y="39" width="18" height="2.5" rx="1.25" fill="white"/>
+  <rect x="31" y="45" width="12" height="2.5" rx="1.25" fill="white"/>
+</svg>

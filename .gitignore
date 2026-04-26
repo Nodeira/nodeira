@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.turbo/
+*.env
+.env.*
+!.env.example
+bun.lockb
+.tanstack
+
+# TanStack Router auto-generated
+apps/web/src/routeTree.gen.ts
+ebooker/
+
+# Design notes
+design_notes/
+
+# Claude Code local settings (personal, not project)
+.claude/settings.local.json

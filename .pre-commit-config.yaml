@@ -1,0 +1,73 @@
+repos:
+  # ─── General utility hooks ───────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict    # block accidental merge conflict markers
+      - id: check-json              # validate JSON syntax
+        exclude: tsconfig.*\.json$
+      - id: check-yaml              # validate YAML syntax
+      - id: detect-private-key      # catch accidentally committed private keys
+      - id: end-of-file-fixer       # ensure files end with a newline
+      - id: trailing-whitespace     # strip trailing whitespace
+
+  # ─── Secret scanning ─────────────────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.27.2
+    hooks:
+      - id: gitleaks
+
+  # ─── Local hooks ─────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      # Formatting (pre-commit) — runs Prettier only on staged TS/TSX/JSON/MD files
+      - id: prettier
+        name: Prettier
+        language: system
+        entry: bunx prettier --write
+        types_or: [ts, tsx, json, markdown]
+        exclude: ^(CHANGELOG\.md|bun\.lock|.*routeTree\.gen\.ts)$
+        stages: [pre-commit]
+
+      # Linting (pre-commit) — runs ESLint across all packages via Turborepo
+      - id: eslint
+        name: ESLint
+        language: system
+        entry: bun run lint
+        pass_filenames: false
+        types_or: [ts, tsx]
+        stages: [pre-commit]
+
+      # Type-check web (pre-commit)
+      - id: tsc-web
+        name: TypeScript (web)
+        language: system
+        entry: bash -c 'cd apps/web && bunx tsc --noEmit'
+        pass_filenames: false
+        types_or: [ts, tsx]
+        stages: [pre-commit]
+
+      # Type-check server (pre-commit)
+      - id: tsc-server
+        name: TypeScript (server)
+        language: system
+        entry: bash -c 'cd apps/server && bunx tsc --noEmit'
+        pass_filenames: false
+        types_or: [ts, tsx]
+        stages: [pre-commit]
+
+      # Commit message format (commit-msg) — enforces Conventional Commits
+      # Requires: bun add -D @commitlint/cli @commitlint/config-conventional
+      - id: commitlint
+        name: Commitlint
+        language: system
+        entry: bunx commitlint --edit
+        stages: [commit-msg]
+
+      # Tests (pre-push) — runs server unit tests before any push
+      - id: server-tests
+        name: Server unit tests
+        language: system
+        entry: bash -c 'cd apps/server && bun run test'
+        pass_filenames: false
+        stages: [pre-push]

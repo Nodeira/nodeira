@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NoteType {
+  note
+  quick
+}
+
+model Vault {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  notes     Note[]
+  folders   Folder[]
+
+  @@map("vaults")
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  vaultId   String?  @map("vault_id")
+  icon      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
+  notes     Note[]
+
+  @@map("folders")
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String   @default("Untitled")
+  type      NoteType @default(note)
+  vaultId   String?  @map("vault_id")
+  folderId  String?  @map("folder_id")
+  pinned    Boolean  @default(false)
+  icon      String?
+  position  Int      @default(0)
+  kind      String?
+  kindMeta  Json?    @map("kind_meta")
+  yjsState  String?  @map("yjs_state")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
+  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@map("notes")
+}

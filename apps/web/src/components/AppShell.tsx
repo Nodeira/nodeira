@@ -1,0 +1,390 @@
+import { type ReactNode, useEffect, useState } from "react";
+import { IconMoon, IconSun } from "@tabler/icons-react";
+import {
+  ActionIcon,
+  AppShell as MantineAppShell,
+  Burger,
+  Drawer,
+  Group,
+  Text,
+} from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import {
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useAtom } from "jotai";
+import { useMantineColorScheme } from "@mantine/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  asidePanelOpenAtom,
+  currentVaultAtom,
+  fullscreenPaneAtom,
+  viewsPaneOpenAtom,
+} from "../store/atoms.js";
+import {
+  createFolder,
+  createNote,
+  createVault,
+  deleteFolder,
+  deleteNote,
+  foldersKeys,
+  getFolders,
+  getNotes,
+  getVaults,
+  notesKeys,
+  reorderNotes,
+  updateFolderIcon,
+  updateNoteIcon,
+  updateNoteKind,
+  updateNotePin,
+  vaultsKeys,
+} from "../lib/api.js";
+import { TabBar } from "./TabBar.js";
+import { BrowsePane } from "./BrowsePane.js";
+import { noteKindRegistry } from "../lib/noteKindRegistry.js";
+import { Sidebar } from "./sidebar/Sidebar.js";
+import { NoteAsidePanel } from "./aside/NoteAsidePanel.js";
+import { CreateVaultModal } from "./modals/CreateVaultModal.js";
+import { CreateFolderModal } from "./modals/CreateFolderModal.js";
+import { DeleteConfirmModal, type DeleteTarget } from "./modals/DeleteConfirmModal.js";
+import type { NoteMetadata } from "@nodeira/shared-types";
+
+interface AppShellProps {
+  children: ReactNode;
+}
+
+export function AppShell({ children }: AppShellProps) {
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const [navOpen, { toggle: toggleNav }] = useDisclosure(true);
+  const [asideOpen] = useAtom(asidePanelOpenAtom);
+  const [fullscreenPane, setFullscreenPane] = useAtom(fullscreenPaneAtom);
+  const [viewsPaneOpen] = useAtom(viewsPaneOpenAtom);
+  const [currentVaultId, setCurrentVaultId] = useAtom(currentVaultAtom);
+  const [search, setSearch] = useState("");
+  const [newFolderOpen, { open: openNewFolder, close: closeNewFolder }] = useDisclosure(false);
+  const [newVaultOpen, { open: openNewVault, close: closeNewVault }] = useDisclosure(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const routerState = useRouterState();
+  const qc = useQueryClient();
+
+  const { data: vaults = [] } = useQuery({ queryKey: vaultsKeys.all, queryFn: getVaults });
+
+  useEffect(() => {
+    if (!currentVaultId && vaults.length > 0) {
+      setCurrentVaultId(vaults[0]!.id);
+    }
+  }, [vaults, currentVaultId]);
+
+  const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
+  const foldersQueryKey = currentVaultId ? foldersKeys.byVault(currentVaultId) : foldersKeys.all;
+
+  const { data: notes = [] } = useQuery({
+    queryKey: notesQueryKey,
+    queryFn: () => getNotes(currentVaultId ?? undefined),
+  });
+  const { data: folders = [] } = useQuery({
+    queryKey: foldersQueryKey,
+    queryFn: () => getFolders(currentVaultId ?? undefined),
+  });
+
+  const createNoteMutation = useMutation({
+    mutationFn: createNote,
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+  });
+  const createFolderMutation = useMutation({
+    mutationFn: ({ name, vaultId }: { name: string; vaultId?: string }) =>
+      createFolder(name, vaultId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: foldersQueryKey }),
+  });
+  const createVaultMutation = useMutation({
+    mutationFn: createVault,
+    onSuccess: () => qc.invalidateQueries({ queryKey: vaultsKeys.all }),
+  });
+  const deleteNoteMutation = useMutation({
+    mutationFn: deleteNote,
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+  });
+  const deleteFolderMutation = useMutation({
+    mutationFn: deleteFolder,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: foldersQueryKey });
+      qc.invalidateQueries({ queryKey: notesQueryKey });
+    },
+  });
+  const reorderMutation = useMutation({ mutationFn: reorderNotes });
+  const pinMutation = useMutation({
+    mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => updateNotePin(id, pinned),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+  });
+  const noteIconMutation = useMutation({
+    mutationFn: ({ id, icon }: { id: string; icon: string | null }) => updateNoteIcon(id, icon),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+  });
+  const folderIconMutation = useMutation({
+    mutationFn: ({ id, icon }: { id: string; icon: string | null }) => updateFolderIcon(id, icon),
+    onSuccess: () => qc.invalidateQueries({ queryKey: foldersQueryKey }),
+  });
+  const kindMutation = useMutation({
+    mutationFn: ({ id, kind }: { id: string; kind: string | null }) => {
+      const def = noteKindRegistry.get(kind);
+      return updateNoteKind(id, kind, def?.defaultMeta ?? null);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const noteRouteMatch = routerState.location.pathname.match(/^\/notes\/([^/]+)$/);
+  const activeNoteId = noteRouteMatch?.[1] ?? null;
+  const activeNote = notes.find((n) => n.id === activeNoteId) ?? null;
+  const currentVault = vaults.find((v) => v.id === currentVaultId) ?? null;
+  const activeDragNote = notes.find((n) => n.id === activeDragId) ?? null;
+
+  async function handleCreateNote(type: "note" | "quick", folderId?: string) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const note = await createNoteMutation.mutateAsync({
+      type,
+      ...(currentVaultId ? { vaultId: currentVaultId } : {}),
+      ...(folderId ? { folderId } : {}),
+      ...(type === "note" ? { title: `note - ${dateStr}` } : {}),
+    });
+    if (type === "quick") {
+      await navigate({ to: "/quick-notes" });
+    } else {
+      await navigate({ to: "/notes/$noteId", params: { noteId: note.id }, search: { new: true } });
+    }
+  }
+
+  async function handleCreateFolder(name: string) {
+    await createFolderMutation.mutateAsync({ name, ...(currentVaultId ? { vaultId: currentVaultId } : {}) });
+    closeNewFolder();
+  }
+
+  async function handleCreateVault(name: string) {
+    const vault = await createVaultMutation.mutateAsync(name);
+    setCurrentVaultId(vault.id);
+    closeNewVault();
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "note") {
+      await deleteNoteMutation.mutateAsync(deleteTarget.id);
+      if (activeNoteId === deleteTarget.id) await navigate({ to: "/" });
+    } else {
+      await deleteFolderMutation.mutateAsync(deleteTarget.id);
+    }
+    setDeleteTarget(null);
+  }
+
+  function handleDragStart({ active }: DragStartEvent) {
+    setActiveDragId(String(active.id));
+  }
+
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    setActiveDragId(null);
+    if (!over || active.id === over.id) return;
+
+    const activeNoteItem = notes.find((n) => n.id === String(active.id));
+    if (!activeNoteItem) return;
+
+    const overIdStr = String(over.id);
+    let updated: NoteMetadata[];
+
+    if (overIdStr.startsWith("folder-drop-")) {
+      const targetFolderId = overIdStr.replace("folder-drop-", "");
+      if (activeNoteItem.folderId === targetFolderId) return;
+
+      const folderNotes = notes.filter((n) => n.folderId === targetFolderId);
+      updated = notes.map((n) =>
+        n.id === activeNoteItem.id
+          ? { ...n, folderId: targetFolderId, position: folderNotes.length }
+          : n,
+      );
+    } else {
+      const overNote = notes.find((n) => n.id === overIdStr);
+      if (!overNote) return;
+
+      const targetFolderId = overNote.folderId ?? null;
+      const sourceFolderId = activeNoteItem.folderId ?? null;
+      const withoutActive = notes.filter((n) => n.id !== activeNoteItem.id);
+
+      const targetContainerNotes = withoutActive.filter(
+        (n) => (n.folderId ?? null) === targetFolderId,
+      );
+      const overIdx = targetContainerNotes.findIndex((n) => n.id === overNote.id);
+
+      let newContainerNotes: NoteMetadata[];
+      if (sourceFolderId === targetFolderId) {
+        const sourceContainerNotes = notes.filter(
+          (n) => (n.folderId ?? null) === sourceFolderId,
+        );
+        const oldIdx = sourceContainerNotes.findIndex((n) => n.id === activeNoteItem.id);
+        const overIdxInSource = sourceContainerNotes.findIndex((n) => n.id === overNote.id);
+        newContainerNotes = arrayMove(sourceContainerNotes, oldIdx, overIdxInSource).map(
+          (n, i) => ({ ...n, position: i }),
+        );
+      } else {
+        newContainerNotes = [
+          ...targetContainerNotes.slice(0, overIdx),
+          { ...activeNoteItem, folderId: overNote.folderId ?? null },
+          ...targetContainerNotes.slice(overIdx),
+        ].map((n, i) => ({ ...n, position: i }));
+      }
+
+      const sourceContainerReordered =
+        sourceFolderId !== targetFolderId
+          ? withoutActive
+              .filter((n) => (n.folderId ?? null) === sourceFolderId)
+              .map((n, i) => ({ ...n, position: i }))
+          : [];
+
+      const unaffected = withoutActive.filter(
+        (n) =>
+          (n.folderId ?? null) !== targetFolderId &&
+          (n.folderId ?? null) !== sourceFolderId,
+      );
+
+      updated = [...unaffected, ...newContainerNotes, ...sourceContainerReordered];
+    }
+
+    qc.setQueryData(notesKeys.all, updated);
+    reorderMutation.mutate(
+      updated.map((n) => ({ id: n.id, position: n.position, folderId: n.folderId ?? null })),
+      { onError: () => qc.invalidateQueries({ queryKey: notesKeys.all }) },
+    );
+  }
+
+  return (
+    <>
+      <MantineAppShell
+        header={{ height: 48 }}
+        navbar={{
+          width: 240,
+          breakpoint: "sm",
+          collapsed: { mobile: !navOpen, desktop: !navOpen },
+        }}
+        aside={{
+          width: 240,
+          breakpoint: "md",
+          collapsed: { desktop: !asideOpen, mobile: true },
+        }}
+        padding={0}
+      >
+        <MantineAppShell.Header>
+          <Group h="100%" px="sm" justify="space-between">
+            <Group gap="sm">
+              <Burger opened={navOpen} onClick={toggleNav} size="sm" />
+              <img src="/logo.svg" alt="Nodeira logo" width={24} height={24} />
+              <Text fw={700} size="lg">Nodeira</Text>
+            </Group>
+            <ActionIcon variant="subtle" onClick={toggleColorScheme} title="Toggle dark/light mode">
+              {colorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
+            </ActionIcon>
+          </Group>
+        </MantineAppShell.Header>
+
+        <MantineAppShell.Navbar p="xs">
+          <Sidebar
+            vaults={vaults}
+            notes={notes}
+            folders={folders}
+            search={search}
+            onSearchChange={setSearch}
+            sensors={sensors}
+            activeDragNote={activeDragNote}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onCreateNote={handleCreateNote}
+            onOpenNewFolder={openNewFolder}
+            onOpenNewVault={openNewVault}
+            onDeleteNote={(id, name) => setDeleteTarget({ type: "note", id, name })}
+            onDeleteFolder={(id, name) => setDeleteTarget({ type: "folder", id, name })}
+            onTogglePin={(id, pinned) => pinMutation.mutate({ id, pinned })}
+            onNoteIconChange={(id, icon) => noteIconMutation.mutate({ id, icon })}
+            onFolderIconChange={(id, icon) => folderIconMutation.mutate({ id, icon })}
+            onKindChange={(id, kind) => kindMutation.mutate({ id, kind })}
+          />
+        </MantineAppShell.Navbar>
+
+        <MantineAppShell.Aside>
+          <NoteAsidePanel
+            note={activeNote}
+            folders={folders}
+            onKindChange={(id, kind) => kindMutation.mutate({ id, kind })}
+            onFullscreen={() => setFullscreenPane(fullscreenPane === "right" ? null : "right")}
+            isFullscreen={fullscreenPane === "right"}
+          />
+        </MantineAppShell.Aside>
+
+        <MantineAppShell.Main
+          style={{ display: "flex", flexDirection: "row", height: "100vh", overflow: "hidden" }}
+        >
+          {viewsPaneOpen && <BrowsePane />}
+          <div style={fullscreenPane === "editor" ? {
+            position: "fixed",
+            inset: 0,
+            zIndex: 300,
+            background: "var(--mantine-color-body)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          } : { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <TabBar />
+            <div style={{ flex: 1, overflow: "auto", padding: "var(--mantine-spacing-md)" }}>
+              {children}
+            </div>
+          </div>
+        </MantineAppShell.Main>
+      </MantineAppShell>
+
+      {/* Right aside fullscreen overlay */}
+      <Drawer
+        opened={fullscreenPane === "right"}
+        onClose={() => setFullscreenPane(null)}
+        position="right"
+        size="100%"
+        withCloseButton={false}
+        styles={{ body: { padding: 0, height: "100%" }, content: { display: "flex", flexDirection: "column" } }}
+      >
+        <NoteAsidePanel
+          note={activeNote}
+          folders={folders}
+          onKindChange={(id, kind) => kindMutation.mutate({ id, kind })}
+          onFullscreen={() => setFullscreenPane(null)}
+          isFullscreen={true}
+        />
+      </Drawer>
+
+
+      <CreateVaultModal
+        opened={newVaultOpen}
+        onClose={closeNewVault}
+        onCreate={handleCreateVault}
+      />
+      <CreateFolderModal
+        opened={newFolderOpen}
+        onClose={closeNewFolder}
+        onCreate={handleCreateFolder}
+      />
+      <DeleteConfirmModal
+        target={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+    </>
+  );
+}
