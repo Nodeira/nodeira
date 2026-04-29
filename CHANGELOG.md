@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Nodeira/nodeira/compare/v1.1.0...v1.1.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* fixing route gitignore and more checks ([470117e](https://github.com/Nodeira/nodeira/commit/470117e86bf3b231b1761eb964b30c6d2de19807))
+
 # [1.1.0](https://github.com/Nodeira/nodeira/compare/v1.0.2...v1.1.0) (2026-04-29)
 
 
