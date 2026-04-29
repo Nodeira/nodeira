@@ -56,7 +56,7 @@ jobs:
         id: release
         run: |
           BEFORE_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1 || echo "")
-          bunx semantic-release
+          ./node_modules/.bin/semantic-release
           git fetch --tags --force origin
           AFTER_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1 || echo "")
           if [ "$AFTER_TAG" != "$BEFORE_TAG" ] && [ -n "$AFTER_TAG" ]; then
