@@ -17,7 +17,6 @@ apps/docs/build
 apps/docs/.docusaurus
 
 # Applications not included in this image
-apps/web
 apps/docs
 
 # ESLint config package (build-time only, not in server image)
