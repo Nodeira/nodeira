@@ -41,20 +41,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Release
         id: release
         run: |
           BEFORE_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1 || echo "")
-          npx semantic-release
+          bunx semantic-release
           git fetch --tags --force origin
           AFTER_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1 || echo "")
           if [ "$AFTER_TAG" != "$BEFORE_TAG" ] && [ -n "$AFTER_TAG" ]; then

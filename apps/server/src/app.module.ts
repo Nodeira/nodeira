@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { ServeStaticModule } from "@nestjs/serve-static";
+import { existsSync } from "fs";
+import { join } from "path";
 import { DatabaseModule } from "./database/database.module.js";
 import { FoldersModule } from "./folders/folders.module.js";
 import { NotesModule } from "./notes/notes.module.js";
@@ -7,9 +10,22 @@ import { SyncModule } from "./sync/sync.module.js";
 import { UploadModule } from "./upload/upload.module.js";
 import { VaultsModule } from "./vaults/vaults.module.js";
 
+const webDistPath = join(process.cwd(), "public");
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Only active when the web build is present (production Docker image).
+    // Serves the React SPA and falls back to index.html for unknown routes.
+    ...(existsSync(webDistPath)
+      ? [
+          ServeStaticModule.forRoot({
+            rootPath: webDistPath,
+            // Don't intercept API, WebSocket, Swagger, or upload paths
+            exclude: ["/v1/(.*)", "/sync(.*)", "/docs(.*)", "/uploads(.*)"],
+          }),
+        ]
+      : []),
     DatabaseModule,
     FoldersModule,
     NotesModule,

@@ -8,7 +8,6 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { AppModule } from "./app.module.js";
-import { PrismaService } from "./database/prisma.service.js";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -49,16 +48,6 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup("docs", app, document);
-
-  // Verify database connectivity before accepting traffic
-  const prisma = app.get(PrismaService);
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    console.log("Database connection: OK");
-  } catch (err) {
-    console.error("Database connection failed:", err);
-    process.exit(1);
-  }
 
   const port = parseInt(process.env["PORT"] ?? "3001", 10);
   await app.listen(port);

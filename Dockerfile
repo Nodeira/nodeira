@@ -5,21 +5,23 @@ WORKDIR /app
 # Copy workspace manifests before source for better layer caching
 COPY package.json bun.lock turbo.json tsconfig.base.json ./
 COPY apps/server/package.json ./apps/server/
+COPY apps/web/package.json ./apps/web/
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 
-# Install all workspace dependencies (dev included — nest build + prisma generate need them)
+# Install all workspace dependencies
 RUN bun install --frozen-lockfile
 
 # Copy source
 COPY apps/server ./apps/server
+COPY apps/web ./apps/web
 COPY packages/shared-types ./packages/shared-types
 
 # Generate Prisma client into node_modules/@prisma/client
 RUN cd apps/server && bunx prisma generate
 
-# Build server; turbo also builds @nodeira/shared-types as a declared dependency
-RUN bunx turbo run build --filter=@nodeira/server...
+# Build server and web; turbo resolves shared-types as a dependency of both
+RUN bunx turbo run build --filter=@nodeira/server... --filter=@nodeira/web...
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────
 FROM node:20-alpine
@@ -37,6 +39,9 @@ COPY --from=builder /app/apps/server/dist ./apps/server/dist
 
 # Prisma schema and migrations (needed for `prisma migrate deploy`)
 COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
+
+# Web app static files — NestJS serves these via ServeStaticModule from ./public
+COPY --from=builder /app/apps/web/dist ./apps/server/public
 
 WORKDIR /app/apps/server
 EXPOSE 3001

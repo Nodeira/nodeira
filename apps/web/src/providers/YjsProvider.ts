@@ -29,8 +29,12 @@ export function getOrCreateYjsContext(noteId: string): YjsContext {
   const idbProvider = new IndexeddbPersistence(`nodeira-note-${noteId}`, doc);
 
   // WebSocket: syncs with the NestJS/Hocuspocus server.
-  // In dev, Vite proxies /sync → ws://localhost:3001/sync, so we point at Vite.
-  const wsBaseUrl = import.meta.env["VITE_SYNC_WS_URL"] ?? "ws://localhost:5173";
+  // Defaults to the current host so the same build works in dev (Vite proxies /sync)
+  // and production (NestJS serves both API and static files on the same origin).
+  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+  const wsBaseUrl =
+    import.meta.env["VITE_SYNC_WS_URL"] ??
+    `${proto}://${window.location.host}/sync`;
   const wsProvider = new WebsocketProvider(wsBaseUrl, noteId, doc, {
     connect: true,
   });
