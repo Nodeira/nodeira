@@ -6,8 +6,6 @@ dist/
 !.env.example
 .tanstack
 
-# TanStack Router auto-generated
-apps/web/src/routeTree.gen.ts
 ebooker/
 
 # Design notes

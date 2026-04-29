@@ -26,7 +26,7 @@ repos:
         language: system
         entry: pnpm dlx prettier --write
         types_or: [ts, tsx, json, markdown]
-        exclude: ^(CHANGELOG\.md|pnpm-lock\.yaml|.*routeTree\.gen\.ts)$
+        exclude: ^(CHANGELOG\.md|pnpm-lock\.yaml)$
         stages: [pre-commit]
 
       # Linting (pre-commit) — runs ESLint across all packages via Turborepo
