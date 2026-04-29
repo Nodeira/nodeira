@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/Nodeira/nodeira/compare/v1.0.1...v1.0.2) (2026-04-29)
+
+
+### Bug Fixes
+
+* removing eslint from dockerfile ([97bd70e](https://github.com/Nodeira/nodeira/commit/97bd70e4f523c94ab7eea00ab8e3e1f9dff66be8))
+
 ## [1.0.1](https://github.com/Nodeira/nodeira/compare/v1.0.0...v1.0.1) (2026-04-29)
 
 
