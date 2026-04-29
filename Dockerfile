@@ -1,26 +1,29 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM oven/bun:1-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy workspace manifests before source for better layer caching
-COPY package.json bun.lock turbo.json tsconfig.base.json ./
+RUN npm install -g pnpm
+
+# Copy all workspace manifests first for layer caching.
+# pnpm requires every workspace package.json to be present before `pnpm install`
+# or it considers the lockfile dirty — even for packages excluded from the build.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json tsconfig.base.json ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
+COPY apps/docs/package.json ./apps/docs/
 COPY packages/shared-types/package.json ./packages/shared-types/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
 
-# Install all workspace dependencies
-RUN bun install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
-# Copy source
+# Copy source (apps/docs excluded via .dockerignore — manifest above is enough)
 COPY apps/server ./apps/server
 COPY apps/web ./apps/web
 COPY packages/shared-types ./packages/shared-types
+COPY packages/eslint-config ./packages/eslint-config
 
-# Generate Prisma client into node_modules/@prisma/client
-RUN cd apps/server && bunx prisma generate
-
-# Build server and web; turbo resolves shared-types as a dependency of both
-RUN bunx turbo run build --filter=@nodeira/server... --filter=@nodeira/web...
+RUN cd apps/server && pnpm exec prisma generate
+RUN pnpm exec turbo run build --filter=@nodeira/server... --filter=@nodeira/web...
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────
 FROM node:20-alpine

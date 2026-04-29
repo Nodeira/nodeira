@@ -8,7 +8,7 @@ Nodeira is an Obsidian-like, AI-enhanced note-taking application. Key differenti
 
 ## Tech Stack
 
-- **Monorepo:** Turborepo + Bun workspaces
+- **Monorepo:** Turborepo + pnpm workspaces
 - **Backend (`apps/server`):** NestJS 10, Prisma ORM, PostgreSQL, Hocuspocus (Yjs WebSocket server)
 - **Frontend (`apps/web`):** React 19, Vite 6, TanStack Router (file-based), TanStack Query v5, Mantine v9, Jotai, TipTap + Yjs
 - **Docs (`apps/docs`):** Docusaurus 3
@@ -19,14 +19,14 @@ Nodeira is an Obsidian-like, AI-enhanced note-taking application. Key differenti
 ## Commands
 
 ```bash
-bun install                          # install all workspace deps
-bun run dev                          # start all dev servers via Turborepo (web :5173, server :3001, docs :3002)
-bun run build                        # build all packages
-bun run typecheck                    # type-check all packages
-bun run test                         # run all tests
-bunx turbo run dev --filter=@nodeira/web     # run only web dev server
-bunx turbo run dev --filter=@nodeira/server  # run only server dev server
-bunx turbo run dev --filter=@nodeira/docs    # run only docs dev server
+pnpm install                          # install all workspace deps
+pnpm run dev                          # start all dev servers via Turborepo (web :5173, server :3001, docs :3002)
+pnpm run build                        # build all packages
+pnpm run typecheck                    # type-check all packages
+pnpm run test                         # run all tests
+pnpm exec turbo run dev --filter=@nodeira/web     # run only web dev server
+pnpm exec turbo run dev --filter=@nodeira/server  # run only server dev server
+pnpm exec turbo run dev --filter=@nodeira/docs    # run only docs dev server
 ```
 
 **First-time setup** (PostgreSQL required):
@@ -36,7 +36,7 @@ docker run -d --name nodeira-postgres \
   -e POSTGRES_DB=nodeira -e POSTGRES_PASSWORD=postgres \
   -p 5432:5432 postgres:17-alpine
 cp apps/server/.env.example apps/server/.env
-cd apps/server && bunx prisma db push    # push schema to DB (dev mode, no migration file)
+cd apps/server && pnpm exec prisma db push    # push schema to DB (dev mode, no migration file)
 ```
 
 ## Architecture

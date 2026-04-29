@@ -24,16 +24,16 @@ repos:
       - id: prettier
         name: Prettier
         language: system
-        entry: bunx prettier --write
+        entry: pnpm dlx prettier --write
         types_or: [ts, tsx, json, markdown]
-        exclude: ^(CHANGELOG\.md|bun\.lock|.*routeTree\.gen\.ts)$
+        exclude: ^(CHANGELOG\.md|pnpm-lock\.yaml|.*routeTree\.gen\.ts)$
         stages: [pre-commit]
 
       # Linting (pre-commit) — runs ESLint across all packages via Turborepo
       - id: eslint
         name: ESLint
         language: system
-        entry: bun run lint
+        entry: pnpm run lint
         pass_filenames: false
         types_or: [ts, tsx]
         stages: [pre-commit]
@@ -42,7 +42,7 @@ repos:
       - id: tsc-web
         name: TypeScript (web)
         language: system
-        entry: bash -c 'cd apps/web && bunx tsc --noEmit'
+        entry: bash -c 'cd apps/web && pnpm exec tsc --noEmit'
         pass_filenames: false
         types_or: [ts, tsx]
         stages: [pre-commit]
@@ -51,23 +51,23 @@ repos:
       - id: tsc-server
         name: TypeScript (server)
         language: system
-        entry: bash -c 'cd apps/server && bunx tsc --noEmit'
+        entry: bash -c 'cd apps/server && pnpm exec tsc --noEmit'
         pass_filenames: false
         types_or: [ts, tsx]
         stages: [pre-commit]
 
       # Commit message format (commit-msg) — enforces Conventional Commits
-      # Requires: bun add -D @commitlint/cli @commitlint/config-conventional
+      # Requires: pnpm add -D @commitlint/cli @commitlint/config-conventional
       - id: commitlint
         name: Commitlint
         language: system
-        entry: bunx commitlint --edit
+        entry: pnpm exec commitlint --edit
         stages: [commit-msg]
 
       # Tests (pre-push) — runs server unit tests before any push
       - id: server-tests
         name: Server unit tests
         language: system
-        entry: bash -c 'cd apps/server && bun run test'
+        entry: bash -c 'cd apps/server && pnpm run test'
         pass_filenames: false
         stages: [pre-push]

@@ -4,7 +4,6 @@ dist/
 *.env
 .env.*
 !.env.example
-bun.lockb
 .tanstack
 
 # TanStack Router auto-generated
@@ -16,3 +15,6 @@ design_notes/
 
 # Claude Code local settings (personal, not project)
 .claude/settings.local.json
+
+# Turborepo prune output
+out/

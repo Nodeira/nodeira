@@ -26,7 +26,7 @@ An Obsidian-like, AI-enhanced note-taking application. Notes sync offline-first 
 
 ## Tech Stack
 
-- **Monorepo:** Turborepo + Bun workspaces
+- **Monorepo:** Turborepo + pnpm workspaces
 - **Backend:** NestJS 10, Prisma ORM, PostgreSQL, Hocuspocus (Yjs WebSocket)
 - **Frontend:** React 19, Vite 6, TanStack Router, TanStack Query v5, Mantine v9, TipTap + Yjs
 - **Docs:** Docusaurus 3
@@ -44,14 +44,14 @@ docker run -d --name nodeira-postgres \
 # Clone and install
 git clone https://github.com/Nodeira/nodeira.git
 cd nodeira
-bun install
+pnpm install
 
 # Configure the server
 cp apps/server/.env.example apps/server/.env
-cd apps/server && bunx prisma db push && cd ../..
+cd apps/server && pnpm exec prisma db push && cd ../..
 
 # Start all dev servers (web :5173, server :3001, docs :3002)
-bun run dev
+pnpm run dev
 ```
 
 Then open `http://localhost:5173`.
