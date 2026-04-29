@@ -7,7 +7,6 @@ COPY package.json bun.lock turbo.json tsconfig.base.json ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared-types/package.json ./packages/shared-types/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 # Install all workspace dependencies
 RUN bun install --frozen-lockfile
