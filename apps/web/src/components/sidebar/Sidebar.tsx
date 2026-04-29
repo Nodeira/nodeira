@@ -31,10 +31,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import type { SensorDescriptor, SensorOptions } from "@dnd-kit/core";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAtom } from "jotai";
-import {
-  currentVaultAtom,
-  viewsPaneOpenAtom,
-} from "../../store/atoms.js";
+import { currentVaultAtom, viewsPaneOpenAtom } from "../../store/atoms.js";
 import { SortableNoteItem } from "./SortableNoteItem.js";
 import { FolderNavItem } from "./FolderNavItem.js";
 import type { Folder, NoteMetadata, Vault } from "@nodeira/shared-types";
@@ -120,8 +117,13 @@ export function Sidebar({
                 minWidth: 0,
                 fontFamily: "inherit",
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--mantine-color-default-hover)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "var(--mantine-color-default-hover)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = "none";
+              }}
             >
               <div
                 style={{
@@ -141,7 +143,11 @@ export function Sidebar({
                 {(currentVault?.name?.[0] ?? "V").toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                <Text size="xs" fw={600} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <Text
+                  size="xs"
+                  fw={600}
+                  style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                >
                   {currentVault?.name ?? "Loading…"}
                 </Text>
                 <Text size="xs" c="dimmed" style={{ fontSize: 10 }}>
@@ -251,7 +257,9 @@ export function Sidebar({
                   <Group gap={6} justify="space-between">
                     <Text size="sm">Quick Notes</Text>
                     {quickNoteCount > 0 && (
-                      <Text size="xs" c="dimmed">{quickNoteCount}</Text>
+                      <Text size="xs" c="dimmed">
+                        {quickNoteCount}
+                      </Text>
                     )}
                   </Group>
                 }

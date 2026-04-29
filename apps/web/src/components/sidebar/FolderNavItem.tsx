@@ -49,9 +49,16 @@ export function FolderNavItem({
       <NavLink
         label={folder.name}
         leftSection={
-          <IconPicker value={folder.icon ?? null} onChange={(icon) => onIconChange(folder.id, icon)}>
+          <IconPicker
+            value={folder.icon ?? null}
+            onChange={(icon) => onIconChange(folder.id, icon)}
+          >
             <span style={{ display: "flex", alignItems: "center" }}>
-              {folder.icon ? <DynamicIcon name={folder.icon} size={14} /> : <IconFolder size={14} />}
+              {folder.icon ? (
+                <DynamicIcon name={folder.icon} size={14} />
+              ) : (
+                <IconFolder size={14} />
+              )}
             </span>
           </IconPicker>
         }
@@ -85,10 +92,7 @@ export function FolderNavItem({
           </Group>
         }
       >
-        <SortableContext
-          items={filtered.map((n) => n.id)}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={filtered.map((n) => n.id)} strategy={verticalListSortingStrategy}>
           {filtered.map((note) => (
             <SortableNoteItem
               key={note.id}

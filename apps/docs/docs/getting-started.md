@@ -53,10 +53,10 @@ bun run dev
 
 Turborepo starts both servers in parallel:
 
-| Service | URL |
-|---|---|
-| Web app | http://localhost:5173 |
-| API server | http://localhost:3001 |
+| Service          | URL                   |
+| ---------------- | --------------------- |
+| Web app          | http://localhost:5173 |
+| API server       | http://localhost:3001 |
 | Docs (this site) | http://localhost:3002 |
 
 ## First steps in the UI

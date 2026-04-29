@@ -1,14 +1,5 @@
 import { IconMaximize, IconMinimize } from "@tabler/icons-react";
-import {
-  ActionIcon,
-  Box,
-  Collapse,
-  Divider,
-  Group,
-  Select,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { ActionIcon, Box, Collapse, Divider, Group, Select, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { noteKindRegistry, TASK_STATUSES } from "../../lib/noteKindRegistry.js";
 import type { Folder, NoteMetadata } from "@nodeira/shared-types";
@@ -33,18 +24,36 @@ export function NoteAsidePanel({
     : "—";
 
   const kindDef = noteKindRegistry.get(note?.kind ?? null);
-  const taskStatus = note?.kind === "task" ? (note.kindMeta?.status as string | undefined) : undefined;
+  const taskStatus =
+    note?.kind === "task" ? (note.kindMeta?.status as string | undefined) : undefined;
 
   return (
     <Stack gap={0} h="100%">
-      <Group justify="flex-end" px="xs" py={4} style={{ borderBottom: "1px solid var(--mantine-color-default-border)" }}>
-        <ActionIcon size="xs" variant="subtle" title={isFullscreen ? "Exit full screen" : "Full screen"} onClick={onFullscreen}>
+      <Group
+        justify="flex-end"
+        px="xs"
+        py={4}
+        style={{ borderBottom: "1px solid var(--mantine-color-default-border)" }}
+      >
+        <ActionIcon
+          size="xs"
+          variant="subtle"
+          title={isFullscreen ? "Exit full screen" : "Full screen"}
+          onClick={onFullscreen}
+        >
           {isFullscreen ? <IconMinimize size={13} /> : <IconMaximize size={13} />}
         </ActionIcon>
       </Group>
 
       <Box p="md" pb="xs">
-        <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }} mb="xs">
+        <Text
+          size="xs"
+          fw={600}
+          tt="uppercase"
+          c="dimmed"
+          style={{ letterSpacing: "0.08em" }}
+          mb="xs"
+        >
           Backlinks · 0
         </Text>
         {note ? (
@@ -55,7 +64,9 @@ export function NoteAsidePanel({
             </Text>
           </Text>
         ) : (
-          <Text size="xs" c="dimmed" fs="italic">Open a note to see backlinks</Text>
+          <Text size="xs" c="dimmed" fs="italic">
+            Open a note to see backlinks
+          </Text>
         )}
       </Box>
 
@@ -71,7 +82,9 @@ export function NoteAsidePanel({
           <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }}>
             Properties
           </Text>
-          <Text size="xs" c="dimmed">{propertiesOpen ? "▾" : "▸"}</Text>
+          <Text size="xs" c="dimmed">
+            {propertiesOpen ? "▾" : "▸"}
+          </Text>
         </Group>
         <Collapse expanded={propertiesOpen}>
           {note ? (
@@ -82,12 +95,18 @@ export function NoteAsidePanel({
                 ["updated", new Date(note.updatedAt).toLocaleDateString()],
               ].map(([k, v]) => (
                 <Group key={k} gap={8} wrap="nowrap" align="flex-start">
-                  <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>{k}</Text>
-                  <Text size="xs" style={{ flex: 1, wordBreak: "break-all" }}>{v}</Text>
+                  <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>
+                    {k}
+                  </Text>
+                  <Text size="xs" style={{ flex: 1, wordBreak: "break-all" }}>
+                    {v}
+                  </Text>
                 </Group>
               ))}
               <Group gap={8} wrap="nowrap" align="center">
-                <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>kind</Text>
+                <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>
+                  kind
+                </Text>
                 <Select
                   size="xs"
                   value={note.kind ?? "__plain__"}
@@ -102,12 +121,16 @@ export function NoteAsidePanel({
               </Group>
               {taskStatus !== undefined && (
                 <Group gap={8} wrap="nowrap" align="center">
-                  <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>status</Text>
+                  <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>
+                    status
+                  </Text>
                   <Select
                     size="xs"
                     value={taskStatus}
                     data={TASK_STATUSES.map((s) => ({ value: s.id, label: s.label }))}
-                    onChange={(v) => { if (v) onKindChange(note.id, "task"); }}
+                    onChange={(v) => {
+                      if (v) onKindChange(note.id, "task");
+                    }}
                     styles={{ input: { fontSize: 11 }, wrapper: { flex: 1 } }}
                     allowDeselect={false}
                   />
@@ -115,13 +138,17 @@ export function NoteAsidePanel({
               )}
               {kindDef && (
                 <Group gap={8} wrap="nowrap" align="flex-start">
-                  <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>type</Text>
+                  <Text size="xs" c="dimmed" ff="monospace" style={{ width: 56, flexShrink: 0 }}>
+                    type
+                  </Text>
                   <Text size="xs">{note.type}</Text>
                 </Group>
               )}
             </Stack>
           ) : (
-            <Text size="xs" c="dimmed" fs="italic">Open a note to see properties</Text>
+            <Text size="xs" c="dimmed" fs="italic">
+              Open a note to see properties
+            </Text>
           )}
         </Collapse>
       </Box>

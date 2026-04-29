@@ -30,6 +30,7 @@ bunx turbo run dev --filter=@nodeira/docs    # run only docs dev server
 ```
 
 **First-time setup** (PostgreSQL required):
+
 ```bash
 docker run -d --name nodeira-postgres \
   -e POSTGRES_DB=nodeira -e POSTGRES_PASSWORD=postgres \
@@ -81,6 +82,7 @@ The WS adapter is set to raw WebSocket (`WsAdapter` from `@nestjs/platform-ws`) 
 TipTap's `StarterKit` must always be configured with `{ history: false }` when using Yjs — Yjs owns undo/redo.
 
 Mantine v9 requires explicit CSS imports in `main.tsx`:
+
 ```typescript
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
@@ -89,6 +91,7 @@ import "@mantine/notifications/styles.css";
 ## React Conventions
 
 Avoid `useEffect` for derived state or event-driven logic (see `no-useeffect.md`):
+
 - **Don't use Effects** to transform data for rendering or to handle user events
 - **Do use Effects** to synchronize with external systems (non-React widgets, WebSockets, browser APIs)
 

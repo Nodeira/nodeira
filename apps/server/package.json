@@ -6,7 +6,7 @@
     "dev": "bun --watch src/main.ts",
     "build": "nest build",
     "start": "node dist/main.js",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -38,6 +38,7 @@
     "@nestjs/cli": "^10.4.0",
     "@nestjs/schematics": "^10.2.0",
     "@nodeira/eslint-config": "workspace:*",
+    "eslint": "^9.0.0",
     "@types/express": "^5.0.0",
     "@types/multer": "^2.1.0",
     "@types/node": "^22.0.0",

@@ -20,17 +20,7 @@ import TaskItem from "@tiptap/extension-task-item";
 import Image from "@tiptap/extension-image";
 import { Link, RichTextEditor } from "@mantine/tiptap";
 import { createLowlight, common } from "lowlight";
-import {
-  ActionIcon,
-  Box,
-  Button,
-  Group,
-  Menu,
-  Modal,
-  Stack,
-  Text,
-  TextInput,
-} from "@mantine/core";
+import { ActionIcon, Box, Button, Group, Menu, Modal, Stack, Text, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import { getOrCreateYjsContext } from "../providers/YjsProvider.js";
@@ -122,7 +112,6 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
               <Menu.Item color="red" onClick={openDelete}>
                 Delete note
               </Menu.Item>
-
             </Menu.Dropdown>
           </Menu>
         </Group>
@@ -131,7 +120,13 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
       {/* Rich text editor with toolbar */}
       <RichTextEditor
         editor={editor}
-        style={{ flex: 1, display: "flex", flexDirection: "column", border: "none", borderRadius: 0 }}
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          border: "none",
+          borderRadius: 0,
+        }}
       >
         <RichTextEditor.Toolbar sticky stickyOffset={0}>
           {/* Headings */}

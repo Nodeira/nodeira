@@ -35,8 +35,12 @@ export function CreateFolderModal({
           autoFocus
         />
         <Group justify="flex-end">
-          <Button variant="default" onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleCreate} disabled={!name.trim()}>Create</Button>
+          <Button variant="default" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreate} disabled={!name.trim()}>
+            Create
+          </Button>
         </Group>
       </Stack>
     </Modal>

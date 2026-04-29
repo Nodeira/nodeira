@@ -149,12 +149,15 @@ export function AppShell({ children }: AppShellProps) {
   const noteRouteMatch = routerState.location.pathname.match(/^\/notes\/([^/]+)$/);
   const activeNoteId = noteRouteMatch?.[1] ?? null;
   const activeNote = notes.find((n) => n.id === activeNoteId) ?? null;
-  const currentVault = vaults.find((v) => v.id === currentVaultId) ?? null;
   const activeDragNote = notes.find((n) => n.id === activeDragId) ?? null;
 
   async function handleCreateNote(type: "note" | "quick", folderId?: string) {
     const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const dateStr = now.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
     const note = await createNoteMutation.mutateAsync({
       type,
       ...(currentVaultId ? { vaultId: currentVaultId } : {}),
@@ -169,7 +172,10 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   async function handleCreateFolder(name: string) {
-    await createFolderMutation.mutateAsync({ name, ...(currentVaultId ? { vaultId: currentVaultId } : {}) });
+    await createFolderMutation.mutateAsync({
+      name,
+      ...(currentVaultId ? { vaultId: currentVaultId } : {}),
+    });
     closeNewFolder();
   }
 
@@ -229,9 +235,7 @@ export function AppShell({ children }: AppShellProps) {
 
       let newContainerNotes: NoteMetadata[];
       if (sourceFolderId === targetFolderId) {
-        const sourceContainerNotes = notes.filter(
-          (n) => (n.folderId ?? null) === sourceFolderId,
-        );
+        const sourceContainerNotes = notes.filter((n) => (n.folderId ?? null) === sourceFolderId);
         const oldIdx = sourceContainerNotes.findIndex((n) => n.id === activeNoteItem.id);
         const overIdxInSource = sourceContainerNotes.findIndex((n) => n.id === overNote.id);
         newContainerNotes = arrayMove(sourceContainerNotes, oldIdx, overIdxInSource).map(
@@ -253,9 +257,7 @@ export function AppShell({ children }: AppShellProps) {
           : [];
 
       const unaffected = withoutActive.filter(
-        (n) =>
-          (n.folderId ?? null) !== targetFolderId &&
-          (n.folderId ?? null) !== sourceFolderId,
+        (n) => (n.folderId ?? null) !== targetFolderId && (n.folderId ?? null) !== sourceFolderId,
       );
 
       updated = [...unaffected, ...newContainerNotes, ...sourceContainerReordered];
@@ -289,7 +291,9 @@ export function AppShell({ children }: AppShellProps) {
             <Group gap="sm">
               <Burger opened={navOpen} onClick={toggleNav} size="sm" />
               <img src="/logo.svg" alt="Nodeira logo" width={24} height={24} />
-              <Text fw={700} size="lg">Nodeira</Text>
+              <Text fw={700} size="lg">
+                Nodeira
+              </Text>
             </Group>
             <ActionIcon variant="subtle" onClick={toggleColorScheme} title="Toggle dark/light mode">
               {colorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
@@ -334,15 +338,21 @@ export function AppShell({ children }: AppShellProps) {
           style={{ display: "flex", flexDirection: "row", height: "100vh", overflow: "hidden" }}
         >
           {viewsPaneOpen && <BrowsePane />}
-          <div style={fullscreenPane === "editor" ? {
-            position: "fixed",
-            inset: 0,
-            zIndex: 300,
-            background: "var(--mantine-color-body)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          } : { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div
+            style={
+              fullscreenPane === "editor"
+                ? {
+                    position: "fixed",
+                    inset: 0,
+                    zIndex: 300,
+                    background: "var(--mantine-color-body)",
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                  }
+                : { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }
+            }
+          >
             <TabBar />
             <div style={{ flex: 1, overflow: "auto", padding: "var(--mantine-spacing-md)" }}>
               {children}
@@ -358,7 +368,10 @@ export function AppShell({ children }: AppShellProps) {
         position="right"
         size="100%"
         withCloseButton={false}
-        styles={{ body: { padding: 0, height: "100%" }, content: { display: "flex", flexDirection: "column" } }}
+        styles={{
+          body: { padding: 0, height: "100%" },
+          content: { display: "flex", flexDirection: "column" },
+        }}
       >
         <NoteAsidePanel
           note={activeNote}
@@ -368,7 +381,6 @@ export function AppShell({ children }: AppShellProps) {
           isFullscreen={true}
         />
       </Drawer>
-
 
       <CreateVaultModal
         opened={newVaultOpen}

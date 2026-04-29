@@ -31,15 +31,15 @@ Vite's dev proxy keeps the browser origin consistent so cookies and WebSocket up
 
 ## Tech stack summary
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19, Vite 6, TanStack Router, TanStack Query v5 |
-| Editor | TipTap (ProseMirror-based) |
-| UI | Mantine v9 |
-| Client state | Jotai atoms |
-| Sync | Yjs CRDTs, y-websocket, y-indexeddb |
-| Backend | NestJS 10, WsAdapter (raw WebSocket) |
-| Real-time | Hocuspocus (Yjs WebSocket server) |
-| ORM | Prisma |
-| Database | PostgreSQL |
-| Monorepo | Turborepo, Bun workspaces |
+| Layer        | Technology                                           |
+| ------------ | ---------------------------------------------------- |
+| Frontend     | React 19, Vite 6, TanStack Router, TanStack Query v5 |
+| Editor       | TipTap (ProseMirror-based)                           |
+| UI           | Mantine v9                                           |
+| Client state | Jotai atoms                                          |
+| Sync         | Yjs CRDTs, y-websocket, y-indexeddb                  |
+| Backend      | NestJS 10, WsAdapter (raw WebSocket)                 |
+| Real-time    | Hocuspocus (Yjs WebSocket server)                    |
+| ORM          | Prisma                                               |
+| Database     | PostgreSQL                                           |
+| Monorepo     | Turborepo, Bun workspaces                            |

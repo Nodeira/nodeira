@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint src",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@nodeira/eslint-config": "workspace:*",
+    "eslint": "^9.0.0",
     "@tanstack/router-plugin": "^1.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

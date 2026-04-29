@@ -1,19 +1,10 @@
 import { useAtom } from "jotai";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Accordion,
-  ActionIcon,
-  Badge,
-  Group,
-  Menu,
-  ScrollArea,
-  Select,
-  Text,
-} from "@mantine/core";
+import { Accordion, Badge, Group, Menu, ScrollArea, Select, Text } from "@mantine/core";
 import { browsePaneViewAtom, currentVaultAtom } from "../store/atoms.js";
 import { getNotes, notesKeys, updateNoteKind } from "../lib/api.js";
-import { TASK_STATUSES, noteKindRegistry } from "../lib/noteKindRegistry.js";
+import { TASK_STATUSES } from "../lib/noteKindRegistry.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 
 // ── Shared note card ──────────────────────────────────────────────────────────
@@ -41,8 +32,7 @@ function BrowseNoteCard({
             "var(--mantine-color-default-hover)";
       }}
       onMouseLeave={(e) => {
-        if (!isActive)
-          (e.currentTarget as HTMLDivElement).style.background = "transparent";
+        if (!isActive) (e.currentTarget as HTMLDivElement).style.background = "transparent";
       }}
       style={{
         padding: "10px 14px",
@@ -61,9 +51,7 @@ function BrowseNoteCard({
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
-          color: isActive
-            ? "var(--mantine-primary-color-filled)"
-            : "var(--mantine-color-text)",
+          color: isActive ? "var(--mantine-primary-color-filled)" : "var(--mantine-color-text)",
         }}
       >
         {note.title || "Untitled"}
@@ -77,15 +65,24 @@ function BrowseNoteCard({
             size="xs"
             value={status}
             data={TASK_STATUSES.map((s) => ({ value: s.id, label: s.label }))}
-            onChange={(v) => { if (v) { onStatusChange(v); } }}
+            onChange={(v) => {
+              if (v) {
+                onStatusChange(v);
+              }
+            }}
             onClick={(e) => e.stopPropagation()}
-            styles={{ input: { fontSize: 10, padding: "0 6px", height: 20, minHeight: 20 }, wrapper: { width: 90 } }}
+            styles={{
+              input: { fontSize: 10, padding: "0 6px", height: 20, minHeight: 20 },
+              wrapper: { width: 90 },
+            }}
             comboboxProps={{ withinPortal: true }}
             allowDeselect={false}
           />
         )}
         {status && !onStatusChange && statusLabel && (
-          <Badge size="xs" variant="light">{statusLabel}</Badge>
+          <Badge size="xs" variant="light">
+            {statusLabel}
+          </Badge>
         )}
       </Group>
     </div>
@@ -108,7 +105,11 @@ function RecentNotesView({
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   if (sorted.length === 0) {
-    return <Text size="xs" c="dimmed" fs="italic" p="md">No notes yet.</Text>;
+    return (
+      <Text size="xs" c="dimmed" fs="italic" p="md">
+        No notes yet.
+      </Text>
+    );
   }
 
   return (
@@ -141,7 +142,11 @@ function PinnedView({
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   if (pinned.length === 0) {
-    return <Text size="xs" c="dimmed" fs="italic" p="md">No pinned notes.</Text>;
+    return (
+      <Text size="xs" c="dimmed" fs="italic" p="md">
+        No pinned notes.
+      </Text>
+    );
   }
 
   return (
@@ -176,9 +181,7 @@ function KanbanView({
   const buckets = TASK_STATUSES.map(({ id, label }) => ({
     id,
     label,
-    notes: taskNotes.filter(
-      (n) => (n.kindMeta?.status as string | undefined) === id,
-    ),
+    notes: taskNotes.filter((n) => (n.kindMeta?.status as string | undefined) === id),
   }));
 
   if (taskNotes.length === 0) {
@@ -193,7 +196,11 @@ function KanbanView({
     <Accordion
       multiple
       defaultValue={TASK_STATUSES.map((s) => s.id)}
-      styles={{ item: { border: "none" }, control: { padding: "8px 14px" }, content: { padding: 0 } }}
+      styles={{
+        item: { border: "none" },
+        control: { padding: "8px 14px" },
+        content: { padding: 0 },
+      }}
     >
       {buckets.map(({ id, label, notes: bucketNotes }) => (
         <Accordion.Item key={id} value={id}>
@@ -202,12 +209,16 @@ function KanbanView({
               <Text size="xs" fw={600} tt="uppercase" style={{ letterSpacing: "0.06em" }}>
                 {label}
               </Text>
-              <Text size="xs" c="dimmed" ff="monospace">{bucketNotes.length}</Text>
+              <Text size="xs" c="dimmed" ff="monospace">
+                {bucketNotes.length}
+              </Text>
             </Group>
           </Accordion.Control>
           <Accordion.Panel>
             {bucketNotes.length === 0 ? (
-              <Text size="xs" c="dimmed" fs="italic" px="md" pb="xs">Empty</Text>
+              <Text size="xs" c="dimmed" fs="italic" px="md" pb="xs">
+                Empty
+              </Text>
             ) : (
               bucketNotes.map((note) => (
                 <BrowseNoteCard
@@ -252,8 +263,15 @@ export function BrowsePane() {
 
   const qc = useQueryClient();
   const kindMutation = useMutation({
-    mutationFn: ({ id, kind, kindMeta }: { id: string; kind: string | null; kindMeta: Record<string, unknown> | null }) =>
-      updateNoteKind(id, kind, kindMeta),
+    mutationFn: ({
+      id,
+      kind,
+      kindMeta,
+    }: {
+      id: string;
+      kind: string | null;
+      kindMeta: Record<string, unknown> | null;
+    }) => updateNoteKind(id, kind, kindMeta),
     onSuccess: () => qc.invalidateQueries({ queryKey: notesQKey }),
   });
 
@@ -318,7 +336,9 @@ export function BrowsePane() {
               <Text size="sm" fw={600} style={{ flex: 1, textAlign: "left" }}>
                 {currentView.label}
               </Text>
-              <Text size="xs" c="dimmed">▾</Text>
+              <Text size="xs" c="dimmed">
+                ▾
+              </Text>
             </button>
           </Menu.Target>
           <Menu.Dropdown>
@@ -333,7 +353,9 @@ export function BrowsePane() {
             ))}
           </Menu.Dropdown>
         </Menu>
-        <Text size="xs" c="dimmed" ff="monospace">{noteCount}</Text>
+        <Text size="xs" c="dimmed" ff="monospace">
+          {noteCount}
+        </Text>
       </div>
 
       {/* View content */}

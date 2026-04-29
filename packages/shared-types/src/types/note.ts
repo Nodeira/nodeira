@@ -23,4 +23,18 @@ export interface NoteLink {
   label?: string;
 }
 
-export type NoteMetadata = Pick<Note, "id" | "title" | "type" | "kind" | "kindMeta" | "vaultId" | "folderId" | "pinned" | "icon" | "createdAt" | "updatedAt" | "position">;
+export type NoteMetadata = Pick<
+  Note,
+  | "id"
+  | "title"
+  | "type"
+  | "kind"
+  | "kindMeta"
+  | "vaultId"
+  | "folderId"
+  | "pinned"
+  | "icon"
+  | "createdAt"
+  | "updatedAt"
+  | "position"
+>;

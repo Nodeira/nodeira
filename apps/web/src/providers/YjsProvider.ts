@@ -33,8 +33,7 @@ export function getOrCreateYjsContext(noteId: string): YjsContext {
   // and production (NestJS serves both API and static files on the same origin).
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   const wsBaseUrl =
-    import.meta.env["VITE_SYNC_WS_URL"] ??
-    `${proto}://${window.location.host}/sync`;
+    import.meta.env["VITE_SYNC_WS_URL"] ?? `${proto}://${window.location.host}/sync`;
   const wsProvider = new WebsocketProvider(wsBaseUrl, noteId, doc, {
     connect: true,
   });

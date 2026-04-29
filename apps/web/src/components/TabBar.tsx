@@ -85,7 +85,12 @@ export function TabBar() {
             >
               <IconFile
                 size={13}
-                style={{ color: isActive ? "var(--mantine-primary-color-filled)" : "var(--mantine-color-dimmed)", flexShrink: 0 }}
+                style={{
+                  color: isActive
+                    ? "var(--mantine-primary-color-filled)"
+                    : "var(--mantine-color-dimmed)",
+                  flexShrink: 0,
+                }}
               />
               <Text
                 size="xs"
@@ -115,7 +120,8 @@ export function TabBar() {
                   flexShrink: 0,
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.background = "var(--mantine-color-default-border)";
+                  (e.currentTarget as HTMLDivElement).style.background =
+                    "var(--mantine-color-default-border)";
                   (e.currentTarget as HTMLDivElement).style.color = "var(--mantine-color-text)";
                 }}
                 onMouseLeave={(e) => {

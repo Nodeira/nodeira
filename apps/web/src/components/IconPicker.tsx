@@ -55,7 +55,13 @@ export function IconPicker({ value, onChange, children }: IconPickerProps) {
       trapFocus
     >
       <Popover.Target>
-        <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpened((o) => !o); }}>
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setOpened((o) => !o);
+          }}
+        >
           {children}
         </div>
       </Popover.Target>
@@ -73,7 +79,9 @@ export function IconPicker({ value, onChange, children }: IconPickerProps) {
           {value && (
             <Group mt={6} gap={6}>
               <DynamicIcon name={value} size={14} color="var(--mantine-primary-color-filled)" />
-              <Text size="xs" ff="monospace" c="dimmed" style={{ flex: 1 }}>{value}</Text>
+              <Text size="xs" ff="monospace" c="dimmed" style={{ flex: 1 }}>
+                {value}
+              </Text>
               <ActionIcon size="xs" variant="subtle" color="red" onClick={clear} title="Clear icon">
                 <IconX size={12} />
               </ActionIcon>
@@ -86,7 +94,14 @@ export function IconPicker({ value, onChange, children }: IconPickerProps) {
           <Box p="xs">
             {filtered.map((cat) => (
               <Box key={cat.label} mb="xs">
-                <Text size="xs" fw={600} tt="uppercase" c="dimmed" mb={4} style={{ letterSpacing: "0.07em", fontSize: 10 }}>
+                <Text
+                  size="xs"
+                  fw={600}
+                  tt="uppercase"
+                  c="dimmed"
+                  mb={4}
+                  style={{ letterSpacing: "0.07em", fontSize: 10 }}
+                >
                   {cat.label}
                 </Text>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2 }}>
@@ -101,12 +116,17 @@ export function IconPicker({ value, onChange, children }: IconPickerProps) {
                           width: 32,
                           height: 32,
                           borderRadius: 4,
-                          background: value === name ? "var(--mantine-primary-color-light)" : "transparent",
-                          color: value === name ? "var(--mantine-primary-color-filled)" : "var(--mantine-color-text)",
+                          background:
+                            value === name ? "var(--mantine-primary-color-light)" : "transparent",
+                          color:
+                            value === name
+                              ? "var(--mantine-primary-color-filled)"
+                              : "var(--mantine-color-text)",
                         }}
                         onMouseEnter={(e) => {
                           if (value !== name)
-                            (e.currentTarget as HTMLButtonElement).style.background = "var(--mantine-color-default-hover)";
+                            (e.currentTarget as HTMLButtonElement).style.background =
+                              "var(--mantine-color-default-hover)";
                         }}
                         onMouseLeave={(e) => {
                           if (value !== name)

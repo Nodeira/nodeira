@@ -20,5 +20,7 @@ function NoteEditorPage() {
   const { noteId } = Route.useParams();
   const { new: isNew } = Route.useSearch();
   const note = Route.useLoaderData();
-  return <NoteEditor key={noteId} noteId={noteId} isNew={isNew ?? false} initialTitle={note.title} />;
+  return (
+    <NoteEditor key={noteId} noteId={noteId} isNew={isNew ?? false} initialTitle={note.title} />
+  );
 }

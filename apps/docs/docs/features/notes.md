@@ -19,13 +19,13 @@ See [Real-time Sync](../architecture/sync) for the full technical picture.
 
 ## Operations
 
-| Action | Description |
-|---|---|
-| Create | Give it a title; optionally place it inside a vault or folder |
-| Edit | Click a note in the sidebar to open it in the editor |
-| Rename | Double-click the note title in the sidebar |
-| Reorder | Drag notes in the sidebar to change their position |
-| Delete | Right-click the note in the sidebar and choose Delete |
+| Action  | Description                                                   |
+| ------- | ------------------------------------------------------------- |
+| Create  | Give it a title; optionally place it inside a vault or folder |
+| Edit    | Click a note in the sidebar to open it in the editor          |
+| Rename  | Double-click the note title in the sidebar                    |
+| Reorder | Drag notes in the sidebar to change their position            |
+| Delete  | Right-click the note in the sidebar and choose Delete         |
 
 ## Quick Notes
 

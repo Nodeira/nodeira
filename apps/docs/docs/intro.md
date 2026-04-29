@@ -17,17 +17,17 @@ Nodeira is an offline-first, AI-enhanced note-taking application inspired by Obs
 
 ## What's included today
 
-| Feature | Status |
-|---|---|
-| Vaults | ✅ |
-| Folders | ✅ |
-| Notes (create / edit / delete / reorder) | ✅ |
-| Rich-text editor (TipTap) | ✅ |
-| Real-time sync (Yjs + WebSocket) | ✅ |
-| Offline editing (y-indexeddb) | ✅ |
-| Image upload | ✅ |
-| Bidirectional links | Planned |
-| Graph view | Planned |
-| Canvas | Planned |
-| Plugin architecture | Planned |
-| AI skill tool integration | Planned |
+| Feature                                  | Status  |
+| ---------------------------------------- | ------- |
+| Vaults                                   | ✅      |
+| Folders                                  | ✅      |
+| Notes (create / edit / delete / reorder) | ✅      |
+| Rich-text editor (TipTap)                | ✅      |
+| Real-time sync (Yjs + WebSocket)         | ✅      |
+| Offline editing (y-indexeddb)            | ✅      |
+| Image upload                             | ✅      |
+| Bidirectional links                      | Planned |
+| Graph view                               | Planned |
+| Canvas                                   | Planned |
+| Plugin architecture                      | Planned |
+| AI skill tool integration                | Planned |

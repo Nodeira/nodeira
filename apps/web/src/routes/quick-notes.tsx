@@ -136,8 +136,7 @@ function QuickNoteCard({
                 left: 0,
                 right: 0,
                 height: "4rem",
-                background:
-                  "linear-gradient(to bottom, transparent, var(--mantine-color-body))",
+                background: "linear-gradient(to bottom, transparent, var(--mantine-color-body))",
                 pointerEvents: "none",
                 display: "flex",
                 alignItems: "flex-end",

@@ -9,12 +9,12 @@ sidebar_position: 2
 
 ## Operations
 
-| Action | Description |
-|---|---|
-| Create | Give it a name inside any vault |
-| Rename | Change the folder name at any time |
-| Set icon | Pick an emoji to display next to the folder name |
-| Delete | Removes the folder; notes inside are moved to the vault root |
+| Action   | Description                                                  |
+| -------- | ------------------------------------------------------------ |
+| Create   | Give it a name inside any vault                              |
+| Rename   | Change the folder name at any time                           |
+| Set icon | Pick an emoji to display next to the folder name             |
+| Delete   | Removes the folder; notes inside are moved to the vault root |
 
 ## Icon support
 

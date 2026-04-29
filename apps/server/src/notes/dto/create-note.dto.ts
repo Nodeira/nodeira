@@ -1,4 +1,13 @@
-import { IsBoolean, IsEnum, IsInt, IsObject, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+} from "class-validator";
 
 export class CreateNoteDto {
   @IsString()

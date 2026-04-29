@@ -40,11 +40,11 @@ Start all dev servers:
 bun run dev
 ```
 
-| Service | URL |
-|---|---|
-| Web app | http://localhost:5173 |
+| Service    | URL                   |
+| ---------- | --------------------- |
+| Web app    | http://localhost:5173 |
 | API server | http://localhost:3001 |
-| Docs | http://localhost:3002 |
+| Docs       | http://localhost:3002 |
 
 ## Common commands
 
@@ -65,12 +65,12 @@ bunx turbo run dev --filter=@nodeira/docs
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/). Commits are linted by commitlint on every PR.
 
-| Prefix | Release effect |
-|---|---|
-| `feat:` | Minor version bump |
-| `fix:` | Patch version bump |
-| `BREAKING CHANGE` | Major version bump |
-| `chore:`, `docs:`, `style:`, `refactor:`, `test:` | No release |
+| Prefix                                            | Release effect     |
+| ------------------------------------------------- | ------------------ |
+| `feat:`                                           | Minor version bump |
+| `fix:`                                            | Patch version bump |
+| `BREAKING CHANGE`                                 | Major version bump |
+| `chore:`, `docs:`, `style:`, `refactor:`, `test:` | No release         |
 
 Releases are automated: merging to `main` triggers semantic-release, which updates the version, generates a CHANGELOG, and publishes a GitHub release + Docker image.
 

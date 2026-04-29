@@ -16,10 +16,10 @@ An Obsidian-like, AI-enhanced note-taking application. Notes sync offline-first 
 
 - Rich-text editing powered by TipTap + Yjs (offline-first, conflict-free sync)
 - Real-time collaboration via WebSocket (Hocuspocus / y-websocket)
-- Bidirectional note links and graph view *(planned)*
-- Canvas for research and brainstorming *(planned)*
-- AI skill tool integration — CLI agents can read and write notes directly *(planned)*
-- Plugin architecture with AI-optimized storage formats *(planned)*
+- Bidirectional note links and graph view _(planned)_
+- Canvas for research and brainstorming _(planned)_
+- AI skill tool integration — CLI agents can read and write notes directly _(planned)_
+- Plugin architecture with AI-optimized storage formats _(planned)_
 - Multi-vault support with folder organization
 - Note kinds: plain notes, tasks with Kanban view
 - Pinned notes, recent view, per-note metadata and properties

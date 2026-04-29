@@ -21,12 +21,16 @@ export function DeleteConfirmModal({
       <Stack>
         <Text size="sm">
           Are you sure you want to delete &ldquo;{target?.name}&rdquo;?
-          {target?.type === "folder" && <> Notes inside will be moved to the root.</>}{" "}
-          This cannot be undone.
+          {target?.type === "folder" && <> Notes inside will be moved to the root.</>} This cannot
+          be undone.
         </Text>
         <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>Cancel</Button>
-          <Button color="red" onClick={onConfirm}>Delete</Button>
+          <Button variant="default" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={onConfirm}>
+            Delete
+          </Button>
         </Group>
       </Stack>
     </Modal>

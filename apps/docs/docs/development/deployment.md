@@ -55,17 +55,17 @@ docker compose exec server bunx prisma db push
 
 ### Server (`apps/server/.env`)
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `PORT` | No | `3001` | HTTP/WS port |
-| `CORS_ORIGIN` | Yes | — | Allowed CORS origin for the frontend (e.g. `https://app.example.com`) |
+| Variable       | Required | Default | Description                                                           |
+| -------------- | -------- | ------- | --------------------------------------------------------------------- |
+| `DATABASE_URL` | Yes      | —       | PostgreSQL connection string                                          |
+| `PORT`         | No       | `3001`  | HTTP/WS port                                                          |
+| `CORS_ORIGIN`  | Yes      | —       | Allowed CORS origin for the frontend (e.g. `https://app.example.com`) |
 
 ### Web (`apps/web/.env`)
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `VITE_SYNC_WS_URL` | No | `ws://localhost:5173` | WebSocket base URL for Yjs sync (only override if not using Vite proxy) |
+| Variable           | Required | Default               | Description                                                             |
+| ------------------ | -------- | --------------------- | ----------------------------------------------------------------------- |
+| `VITE_SYNC_WS_URL` | No       | `ws://localhost:5173` | WebSocket base URL for Yjs sync (only override if not using Vite proxy) |
 
 ## Reverse proxy
 
