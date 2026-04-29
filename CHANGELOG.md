@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/Nodeira/nodeira/compare/v1.0.2...v1.1.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* not forcing pnpm version ([c50f571](https://github.com/Nodeira/nodeira/commit/c50f5719bc5f07677f201f142f0f477fd5821065))
+
+
+### Features
+
+* switch from bun to pnpm ([068ae6a](https://github.com/Nodeira/nodeira/commit/068ae6af07533319927375a290a03631d470bf01))
+
 ## [1.0.2](https://github.com/Nodeira/nodeira/compare/v1.0.1...v1.0.2) (2026-04-29)
 
 
