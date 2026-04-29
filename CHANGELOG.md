@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Nodeira/nodeira/compare/v1.0.0...v1.0.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* remove web from dockerignore ([2e84d36](https://github.com/Nodeira/nodeira/commit/2e84d36d2077f3c4834abe47e1d0cb50ca6db30e))
+
 # 1.0.0 (2026-04-29)
 
 
