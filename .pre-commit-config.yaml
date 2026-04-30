@@ -39,29 +39,11 @@ repos:
         types_or: [ts, tsx]
         stages: [pre-commit]
 
-      # Type-check web (pre-commit)
-      - id: tsc-web
-        name: TypeScript (web)
+      # Type-check (pre-commit) — fan-out via Turborepo to every workspace
+      - id: typecheck
+        name: TypeScript
         language: system
-        entry: bash -c 'cd apps/web && pnpm exec tsc --noEmit'
-        pass_filenames: false
-        types_or: [ts, tsx]
-        stages: [pre-commit]
-
-      # Type-check server (pre-commit)
-      - id: tsc-server
-        name: TypeScript (server)
-        language: system
-        entry: bash -c 'cd apps/api && pnpm exec tsc --noEmit'
-        pass_filenames: false
-        types_or: [ts, tsx]
-        stages: [pre-commit]
-
-      # Type-check docs (pre-commit)
-      - id: tsc-docs
-        name: TypeScript (docs)
-        language: system
-        entry: bash -c 'cd apps/docs && pnpm exec tsc --noEmit'
+        entry: pnpm run typecheck
         pass_filenames: false
         types_or: [ts, tsx]
         stages: [pre-commit]

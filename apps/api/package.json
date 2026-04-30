@@ -8,7 +8,8 @@
     "start": "node dist/main.js",
     "lint": "eslint src",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@hocuspocus/server": "^2.13.0",
@@ -18,7 +19,7 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/platform-express": "^10.4.0",
     "@nestjs/platform-ws": "^10.4.0",
-    "@nestjs/serve-static": "^5.0.5",
+    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/swagger": "^8.0.0",
     "@nestjs/websockets": "^10.4.0",
     "@nodeira/shared-types": "workspace:*",
