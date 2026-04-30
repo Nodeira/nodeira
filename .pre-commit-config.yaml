@@ -9,6 +9,7 @@ repos:
       - id: check-yaml              # validate YAML syntax
       - id: detect-private-key      # catch accidentally committed private keys
       - id: end-of-file-fixer       # ensure files end with a newline
+        exclude: \.tsbuildinfo$
       - id: trailing-whitespace     # strip trailing whitespace
 
   # ─── Secret scanning ─────────────────────────────────────────────────────
@@ -52,6 +53,15 @@ repos:
         name: TypeScript (server)
         language: system
         entry: bash -c 'cd apps/api && pnpm exec tsc --noEmit'
+        pass_filenames: false
+        types_or: [ts, tsx]
+        stages: [pre-commit]
+
+      # Type-check docs (pre-commit)
+      - id: tsc-docs
+        name: TypeScript (docs)
+        language: system
+        entry: bash -c 'cd apps/docs && pnpm exec tsc --noEmit'
         pass_filenames: false
         types_or: [ts, tsx]
         stages: [pre-commit]
