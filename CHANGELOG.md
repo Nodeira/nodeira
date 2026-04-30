@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/Nodeira/nodeira/compare/v1.1.3...v1.1.4) (2026-04-30)
+
+
+### Bug Fixes
+
+* generating initial db migration ([e1582ec](https://github.com/Nodeira/nodeira/commit/e1582ece8174d2a0a0fe853515b0cc93dcc835f8))
+
 ## [1.1.3](https://github.com/Nodeira/nodeira/compare/v1.1.2...v1.1.3) (2026-04-30)
 
 
