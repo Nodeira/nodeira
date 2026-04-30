@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/Nodeira/nodeira/compare/v1.1.2...v1.1.3) (2026-04-30)
+
+
+### Bug Fixes
+
+* fix docs build ([592727b](https://github.com/Nodeira/nodeira/commit/592727baf78353c340a02086ecfe19a5013fa88e))
+
 ## [1.1.2](https://github.com/Nodeira/nodeira/compare/v1.1.1...v1.1.2) (2026-04-30)
 
 
