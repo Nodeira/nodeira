@@ -9,7 +9,7 @@ Nodeira is an Obsidian-like, AI-enhanced note-taking application. Key differenti
 ## Tech Stack
 
 - **Monorepo:** Turborepo + pnpm workspaces
-- **Backend (`apps/server`):** NestJS 10, Prisma ORM, PostgreSQL, Hocuspocus (Yjs WebSocket server)
+- **Backend (`apps/api`):** NestJS 10, Prisma ORM, PostgreSQL, Hocuspocus (Yjs WebSocket server)
 - **Frontend (`apps/web`):** React 19, Vite 6, TanStack Router (file-based), TanStack Query v5, Mantine v9, Jotai, TipTap + Yjs
 - **Docs (`apps/docs`):** Docusaurus 3
 - **Desktop (planned):** ElectronBun
@@ -25,7 +25,7 @@ pnpm run build                        # build all packages
 pnpm run typecheck                    # type-check all packages
 pnpm run test                         # run all tests
 pnpm exec turbo run dev --filter=@nodeira/web     # run only web dev server
-pnpm exec turbo run dev --filter=@nodeira/server  # run only server dev server
+pnpm exec turbo run dev --filter=@nodeira/api  # run only server dev server
 pnpm exec turbo run dev --filter=@nodeira/docs    # run only docs dev server
 ```
 
@@ -35,8 +35,8 @@ pnpm exec turbo run dev --filter=@nodeira/docs    # run only docs dev server
 docker run -d --name nodeira-postgres \
   -e POSTGRES_DB=nodeira -e POSTGRES_PASSWORD=postgres \
   -p 5432:5432 postgres:17-alpine
-cp apps/server/.env.example apps/server/.env
-cd apps/server && pnpm exec prisma db push    # push schema to DB (dev mode, no migration file)
+cp apps/api/.env.example apps/api/.env
+cd apps/api && pnpm exec prisma db push    # push schema to DB (dev mode, no migration file)
 ```
 
 ## Architecture
@@ -70,7 +70,7 @@ Offline-first works because y-indexeddb restores the full document from IndexedD
 
 The WS adapter is set to raw WebSocket (`WsAdapter` from `@nestjs/platform-ws`) — NOT Socket.IO. Hocuspocus uses the y-websocket protocol which requires raw WS framing.
 
-`reflect-metadata` must be the **first import** in `apps/server/src/main.ts`. Server uses `module: "CommonJS"` with `verbatimModuleSyntax: false` because NestJS decorators require CommonJS + emitDecoratorMetadata.
+`reflect-metadata` must be the **first import** in `apps/api/src/main.ts`. Server uses `module: "CommonJS"` with `verbatimModuleSyntax: false` because NestJS decorators require CommonJS + emitDecoratorMetadata.
 
 ### Web app structure
 

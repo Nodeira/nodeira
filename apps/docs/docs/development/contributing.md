@@ -30,8 +30,8 @@ docker run -d --name nodeira-postgres \
 Configure the server and push the schema:
 
 ```bash
-cp apps/server/.env.example apps/server/.env
-cd apps/server && bunx prisma db push && cd ../..
+cp apps/api/.env.example apps/api/.env
+cd apps/api && bunx prisma db push && cd ../..
 ```
 
 Start all dev servers:
@@ -57,7 +57,7 @@ bun run format       # format with Prettier
 
 # Run a single app
 bunx turbo run dev --filter=@nodeira/web
-bunx turbo run dev --filter=@nodeira/server
+bunx turbo run dev --filter=@nodeira/api
 bunx turbo run dev --filter=@nodeira/docs
 ```
 
@@ -88,7 +88,7 @@ Releases are automated: merging to `main` triggers semantic-release, which updat
 nodeira/
 ├── apps/
 │   ├── web/      # React 19 + Vite frontend
-│   ├── server/   # NestJS 10 + Prisma backend
+│   ├── api/      # NestJS 10 + Prisma backend
 │   └── docs/     # Docusaurus documentation
 └── packages/
     ├── shared-types/   # Shared TypeScript interfaces

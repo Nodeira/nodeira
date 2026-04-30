@@ -51,7 +51,7 @@ repos:
       - id: tsc-server
         name: TypeScript (server)
         language: system
-        entry: bash -c 'cd apps/server && pnpm exec tsc --noEmit'
+        entry: bash -c 'cd apps/api && pnpm exec tsc --noEmit'
         pass_filenames: false
         types_or: [ts, tsx]
         stages: [pre-commit]
@@ -68,6 +68,6 @@ repos:
       - id: server-tests
         name: Server unit tests
         language: system
-        entry: bash -c 'cd apps/server && pnpm run test'
+        entry: bash -c 'cd apps/api && pnpm run test'
         pass_filenames: false
         stages: [pre-push]

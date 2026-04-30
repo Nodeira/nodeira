@@ -9,7 +9,8 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore"
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
+    "db:wipe": "bash scripts/wipe-db.sh"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

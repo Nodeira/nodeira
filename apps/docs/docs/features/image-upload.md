@@ -13,7 +13,7 @@ Nodeira supports uploading images into notes. Uploaded files are stored on the s
 | ---------------- | --------------------------------- |
 | Max file size    | 10 MB                             |
 | Accepted types   | Images only (`image/*` MIME type) |
-| Storage location | `apps/server/uploads/`            |
+| Storage location | `apps/api/uploads/`               |
 
 ## Inserting an image
 

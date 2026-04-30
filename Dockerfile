@@ -8,7 +8,7 @@ RUN npm install -g pnpm
 # pnpm requires every workspace package.json to be present before `pnpm install`
 # or it considers the lockfile dirty — even for packages excluded from the build.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json tsconfig.base.json ./
-COPY apps/server/package.json ./apps/server/
+COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY apps/docs/package.json ./apps/docs/
 COPY packages/shared-types/package.json ./packages/shared-types/
@@ -17,13 +17,13 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 RUN pnpm install --frozen-lockfile
 
 # Copy source (apps/docs excluded via .dockerignore — manifest above is enough)
-COPY apps/server ./apps/server
+COPY apps/api ./apps/api
 COPY apps/web ./apps/web
 COPY packages/shared-types ./packages/shared-types
 COPY packages/eslint-config ./packages/eslint-config
 
-RUN cd apps/server && pnpm exec prisma generate
-RUN pnpm exec turbo run build --filter=@nodeira/server... --filter=@nodeira/web...
+RUN cd apps/api && pnpm exec prisma generate
+RUN pnpm exec turbo run build --filter=@nodeira/api... --filter=@nodeira/web...
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────
 FROM node:20-alpine
@@ -37,15 +37,16 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared-types ./packages/shared-types
 
 # Compiled NestJS server
-COPY --from=builder /app/apps/server/dist ./apps/server/dist
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-# Prisma schema and migrations (needed for `prisma migrate deploy`)
-COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
+# Prisma schema, migrations, and config (needed for `prisma migrate deploy`)
+COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 
 # Web app static files — NestJS serves these via ServeStaticModule from ./public
-COPY --from=builder /app/apps/web/dist ./apps/server/public
+COPY --from=builder /app/apps/web/dist ./apps/api/public
 
-WORKDIR /app/apps/server
+WORKDIR /app/apps/api
 EXPOSE 3001
 
 CMD ["node", "dist/main.js"]

@@ -31,7 +31,7 @@ docker run -d --name nodeira-postgres \
 ## 3. Configure the server
 
 ```bash
-cp apps/server/.env.example apps/server/.env
+cp apps/api/.env.example apps/api/.env
 ```
 
 The default `.env` points to `postgresql://postgres:postgres@localhost:5432/nodeira`. Edit if your credentials differ.
@@ -39,7 +39,7 @@ The default `.env` points to `postgresql://postgres:postgres@localhost:5432/node
 ## 4. Push the database schema
 
 ```bash
-cd apps/server && bunx prisma db push
+cd apps/api && bunx prisma db push
 cd ../..
 ```
 

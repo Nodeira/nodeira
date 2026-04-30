@@ -47,8 +47,8 @@ cd nodeira
 pnpm install
 
 # Configure the server
-cp apps/server/.env.example apps/server/.env
-cd apps/server && pnpm exec prisma db push && cd ../..
+cp apps/api/.env.example apps/api/.env
+cd apps/api && pnpm exec prisma db push && cd ../..
 
 # Start all dev servers (web :5173, server :3001, docs :3002)
 pnpm run dev

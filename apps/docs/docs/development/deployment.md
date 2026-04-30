@@ -37,7 +37,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - uploads:/app/apps/server/uploads
+      - uploads:/app/apps/api/uploads
 
 volumes:
   db_data:
@@ -53,7 +53,7 @@ docker compose exec server bunx prisma db push
 
 ## Environment variables
 
-### Server (`apps/server/.env`)
+### Server (`apps/api/.env`)
 
 | Variable       | Required | Default | Description                                                           |
 | -------------- | -------- | ------- | --------------------------------------------------------------------- |
