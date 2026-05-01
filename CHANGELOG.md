@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/Nodeira/nodeira/compare/v1.1.5...v1.1.6) (2026-05-01)
+
+
+### Bug Fixes
+
+* docker image build fix ([b9a5fa9](https://github.com/Nodeira/nodeira/commit/b9a5fa9261a50e9367217358aa5fad7678f7fe63))
+
 ## [1.1.5](https://github.com/Nodeira/nodeira/compare/v1.1.4...v1.1.5) (2026-05-01)
 
 
