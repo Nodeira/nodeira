@@ -1,3 +1,11 @@
+## [1.1.7](https://github.com/Nodeira/nodeira/compare/v1.1.6...v1.1.7) (2026-05-01)
+
+
+### Bug Fixes
+
+* adding stub for helmet, updating docker compose example, fixing frontend connection ([e501e47](https://github.com/Nodeira/nodeira/commit/e501e47632bfe947f4a4fa463c9c3a63a49d843e))
+* lowercasing the repo name because for some reason I did uppercase ([3d97283](https://github.com/Nodeira/nodeira/commit/3d972835e1c0295bb5797ab46390e19a6ae75a93))
+
 ## [1.1.6](https://github.com/Nodeira/nodeira/compare/v1.1.5...v1.1.6) (2026-05-01)
 
 
