@@ -1,3 +1,11 @@
+## [1.1.5](https://github.com/Nodeira/nodeira/compare/v1.1.4...v1.1.5) (2026-05-01)
+
+
+### Bug Fixes
+
+* cleanup and update deps ([fd8c272](https://github.com/Nodeira/nodeira/commit/fd8c2722a4b251e0541732129786b2c36edd0606))
+* pin turbo version, clean up ci tasks ([6d9290e](https://github.com/Nodeira/nodeira/commit/6d9290e11e0bea26e47e030e1d348b4b54729b87))
+
 ## [1.1.4](https://github.com/Nodeira/nodeira/compare/v1.1.3...v1.1.4) (2026-04-30)
 
 
