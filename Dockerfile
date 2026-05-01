@@ -14,6 +14,11 @@ COPY apps/docs/package.json ./apps/docs/
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 
+# Prisma schema and config must be present before `pnpm install` because the
+# apps/api postinstall script runs `prisma generate`, which requires the schema.
+COPY apps/api/prisma ./apps/api/prisma
+COPY apps/api/prisma.config.ts ./apps/api/prisma.config.ts
+
 RUN pnpm install --frozen-lockfile
 
 # Copy source (apps/docs excluded via .dockerignore — manifest above is enough)
