@@ -5,6 +5,7 @@ import {
   IconLayoutColumns,
   IconPlus,
   IconSettings,
+  IconTrash,
 } from "@tabler/icons-react";
 import {
   ActionIcon,
@@ -51,6 +52,7 @@ interface SidebarProps {
   onOpenNewVault: () => void;
   onDeleteNote: (id: string, name: string) => void;
   onDeleteFolder: (id: string, name: string) => void;
+  onDeleteVault: (id: string, name: string) => void;
   onTogglePin: (id: string, pinned: boolean) => void;
   onNoteIconChange: (id: string, icon: string | null) => void;
   onFolderIconChange: (id: string, icon: string | null) => void;
@@ -72,6 +74,7 @@ export function Sidebar({
   onOpenNewVault,
   onDeleteNote,
   onDeleteFolder,
+  onDeleteVault,
   onTogglePin,
   onNoteIconChange,
   onFolderIconChange,
@@ -164,6 +167,23 @@ export function Sidebar({
                 key={v.id}
                 onClick={() => setCurrentVaultId(v.id)}
                 style={{ fontWeight: v.id === currentVaultId ? 600 : undefined }}
+                rightSection={
+                  <ActionIcon
+                    component="div"
+                    role="button"
+                    tabIndex={0}
+                    size="xs"
+                    variant="subtle"
+                    color="red"
+                    title="Delete vault"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteVault(v.id, v.name);
+                    }}
+                  >
+                    <IconTrash size={12} />
+                  </ActionIcon>
+                }
               >
                 {v.name}
               </Menu.Item>

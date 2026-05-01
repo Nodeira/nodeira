@@ -35,7 +35,7 @@ CREATE TABLE "notes" (
     "position" INTEGER NOT NULL DEFAULT 0,
     "kind" TEXT,
     "kind_meta" JSONB,
-    "yjs_state" TEXT,
+    "yjs_state" BYTEA,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

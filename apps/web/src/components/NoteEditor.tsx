@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   IconDots,
   IconTable,
@@ -10,20 +10,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
-import Table from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
+import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
 import Image from "@tiptap/extension-image";
 import { Link, RichTextEditor } from "@mantine/tiptap";
 import { createLowlight, common } from "lowlight";
 import { ActionIcon, Box, Button, Group, Menu, Modal, Stack, Text, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigate } from "@tanstack/react-router";
-import { getOrCreateYjsContext } from "../providers/YjsProvider.js";
+import { destroyYjsContext, getOrCreateYjsContext } from "../providers/YjsProvider.js";
 import { deleteNote, notesKeys, updateNoteTitle } from "../lib/api.js";
 import "./editor.css";
 
@@ -43,10 +39,17 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  // Tear down the Yjs doc + WebSocket + IndexedDB providers when this editor
+  // unmounts. The route uses key={noteId}, so switching notes destroys this
+  // instance and its cached entry in YjsProvider's docCache.
+  useEffect(() => {
+    return () => destroyYjsContext(noteId);
+  }, [noteId]);
+
   const editor = useEditor({
     shouldRerenderOnTransaction: true,
     extensions: [
-      StarterKit.configure({ history: false, codeBlock: false }),
+      StarterKit.configure({ undoRedo: false, codeBlock: false, link: false }),
       Collaboration.configure({ document: doc }),
       Link,
       Table.configure({ resizable: true }),

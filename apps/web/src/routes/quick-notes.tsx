@@ -11,8 +11,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
 import Image from "@tiptap/extension-image";
 import {
   ActionIcon,
@@ -66,7 +65,7 @@ function QuickNoteCard({
     extensions: [
       // Quick notes: paragraph, bold/italic, lists, images only
       StarterKit.configure({
-        history: false,
+        undoRedo: false,
         codeBlock: false,
         heading: false,
         blockquote: false,

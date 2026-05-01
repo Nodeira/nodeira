@@ -2,7 +2,7 @@ import "reflect-metadata"; // MUST be the first import — NestJS DI depends on 
 
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
-import { WsAdapter } from "@nestjs/platform-ws";
+import { SyncWsAdapter } from "./sync/sync-ws-adapter.js";
 import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, mkdirSync } from "fs";
@@ -25,8 +25,10 @@ async function bootstrap() {
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
   app.useStaticAssets(uploadsDir, { prefix: "/uploads" });
 
-  // Use raw WebSocket adapter — y-websocket/Hocuspocus protocol is incompatible with Socket.IO
-  app.useWebSocketAdapter(new WsAdapter(app));
+  // Use raw WebSocket adapter — y-websocket/Hocuspocus protocol is incompatible with Socket.IO.
+  // SyncWsAdapter overrides exact-path matching so the /sync gateway accepts
+  // /sync/<noteId> connections (y-websocket appends the room name to the URL).
+  app.useWebSocketAdapter(new SyncWsAdapter(app));
 
   app.useGlobalPipes(
     new ValidationPipe({
