@@ -22,7 +22,7 @@ const webDistPath = join(process.cwd(), "public");
           ServeStaticModule.forRoot({
             rootPath: webDistPath,
             // Don't intercept API, WebSocket, Swagger, or upload paths
-            exclude: ["/v1/(.*)", "/sync(.*)", "/docs(.*)", "/uploads(.*)"],
+            exclude: ["/api/(.*)", "/sync(.*)", "/docs(.*)", "/uploads(.*)"],
           }),
         ]
       : []),
