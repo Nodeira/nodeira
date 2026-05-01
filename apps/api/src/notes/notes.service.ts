@@ -98,7 +98,7 @@ export class NotesService {
     }
   }
 
-  async upsertYjsState(id: string, yjsState: string) {
+  async upsertYjsState(id: string, yjsState: Uint8Array<ArrayBuffer>) {
     await this.prisma.note.upsert({
       where: { id },
       update: { yjsState },

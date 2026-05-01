@@ -34,6 +34,7 @@ import {
   createVault,
   deleteFolder,
   deleteNote,
+  deleteVault,
   foldersKeys,
   getFolders,
   getNotes,
@@ -107,6 +108,10 @@ export function AppShell({ children }: AppShellProps) {
   });
   const createVaultMutation = useMutation({
     mutationFn: createVault,
+    onSuccess: () => qc.invalidateQueries({ queryKey: vaultsKeys.all }),
+  });
+  const deleteVaultMutation = useMutation({
+    mutationFn: deleteVault,
     onSuccess: () => qc.invalidateQueries({ queryKey: vaultsKeys.all }),
   });
   const deleteNoteMutation = useMutation({
@@ -190,8 +195,14 @@ export function AppShell({ children }: AppShellProps) {
     if (deleteTarget.type === "note") {
       await deleteNoteMutation.mutateAsync(deleteTarget.id);
       if (activeNoteId === deleteTarget.id) await navigate({ to: "/" });
-    } else {
+    } else if (deleteTarget.type === "folder") {
       await deleteFolderMutation.mutateAsync(deleteTarget.id);
+    } else {
+      await deleteVaultMutation.mutateAsync(deleteTarget.id);
+      if (currentVaultId === deleteTarget.id) {
+        const next = vaults.find((v) => v.id !== deleteTarget.id);
+        setCurrentVaultId(next?.id ?? null);
+      }
     }
     setDeleteTarget(null);
   }
@@ -317,6 +328,7 @@ export function AppShell({ children }: AppShellProps) {
             onOpenNewVault={openNewVault}
             onDeleteNote={(id, name) => setDeleteTarget({ type: "note", id, name })}
             onDeleteFolder={(id, name) => setDeleteTarget({ type: "folder", id, name })}
+            onDeleteVault={(id, name) => setDeleteTarget({ type: "vault", id, name })}
             onTogglePin={(id, pinned) => pinMutation.mutate({ id, pinned })}
             onNoteIconChange={(id, icon) => noteIconMutation.mutate({ id, icon })}
             onFolderIconChange={(id, icon) => folderIconMutation.mutate({ id, icon })}

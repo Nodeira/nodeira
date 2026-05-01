@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
 import { VaultsService } from "./vaults.service.js";
-import type { CreateVaultDto } from "./dto/create-vault.dto.js";
+import { CreateVaultDto } from "./dto/create-vault.dto.js";
 
 @Controller("vaults")
 export class VaultsController {

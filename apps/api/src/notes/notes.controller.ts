@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
-import type { CreateNoteDto } from "./dto/create-note.dto.js";
-import type { UpdateNoteDto } from "./dto/update-note.dto.js";
+import { CreateNoteDto } from "./dto/create-note.dto.js";
+import { UpdateNoteDto } from "./dto/update-note.dto.js";
 import { ReorderNotesDto } from "./dto/reorder-notes.dto.js";
 import { NotesService } from "./notes.service.js";
 

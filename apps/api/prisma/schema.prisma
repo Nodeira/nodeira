@@ -46,7 +46,7 @@ model Note {
   position  Int      @default(0)
   kind      String?
   kindMeta  Json?    @map("kind_meta")
-  yjsState  String?  @map("yjs_state")
+  yjsState  Bytes?   @map("yjs_state")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
