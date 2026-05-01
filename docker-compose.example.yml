@@ -3,8 +3,7 @@
 # Quick start:
 #   1. Copy this file:  cp docker-compose.example.yml docker-compose.yml
 #   2. Change the passwords marked with CHANGE_ME
-#   3. Set APP_URL to the address where Nodeira will be accessed
-#   4. Run:  docker compose up -d
+#   3. Run:  docker compose up -d
 #
 # The app will be available at http://localhost:3001
 # API docs are at http://localhost:3001/docs
@@ -19,8 +18,9 @@ services:
       - "3001:3001"
     environment:
       DATABASE_URL: postgresql://postgres:CHANGE_ME@postgres:5432/nodeira
-      CORS_ORIGIN: http://localhost:3001   # set to your domain if accessed remotely
       # PORT: 3001                         # change if you remap the port above
+    volumes:
+      - ./uploads:/app/apps/api/uploads    # change ./uploads to any host path you prefer
     depends_on:
       postgres:
         condition: service_healthy

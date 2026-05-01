@@ -7,12 +7,15 @@ import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
+import helmet from "helmet";
 import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // URI versioning: routes resolve to /v1/<path> by default.
+  app.setGlobalPrefix("api");
+
+  // URI versioning: routes resolve to /api/v1/<path> by default.
   // Individual controllers/handlers can opt into a different version with @Version('2'),
   // or out of versioning entirely with @Version(VERSION_NEUTRAL).
   app.enableVersioning({
@@ -38,10 +41,11 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors({
-    origin: process.env["CORS_ORIGIN"] ?? "http://localhost:5173",
-    credentials: true,
-  });
+  // Self-hosted app: frontend and API are same-origin in production.
+  // Open CORS allows tools and local integrations to hit the API without config.
+  app.enableCors();
+  // CSP disabled — Swagger UI uses inline scripts; add a proper policy later if needed.
+  app.use(helmet({ contentSecurityPolicy: false }));
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle("Nodeira API")
