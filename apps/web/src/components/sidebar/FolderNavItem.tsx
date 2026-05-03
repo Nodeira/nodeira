@@ -18,6 +18,7 @@ export function FolderNavItem({
   onNoteIconChange,
   onIconChange,
   onNoteKindChange,
+  onMoveNote,
 }: {
   folder: Folder;
   notes: NoteMetadata[];
@@ -29,6 +30,7 @@ export function FolderNavItem({
   onNoteIconChange: (id: string, icon: string | null) => void;
   onIconChange: (id: string, icon: string | null) => void;
   onNoteKindChange: (id: string, kind: string | null) => void;
+  onMoveNote: (note: NoteMetadata) => void;
 }) {
   const filtered = notes
     .filter((n) => !search || n.title.toLowerCase().includes(search.toLowerCase()))
@@ -101,6 +103,7 @@ export function FolderNavItem({
               onTogglePin={onTogglePin}
               onIconChange={onNoteIconChange}
               onKindChange={onNoteKindChange}
+              onMove={onMoveNote}
             />
           ))}
         </SortableContext>

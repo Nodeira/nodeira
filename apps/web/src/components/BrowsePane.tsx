@@ -1,7 +1,19 @@
+import { useState } from "react";
 import { useAtom } from "jotai";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Accordion, Badge, Group, Menu, ScrollArea, Select, Text } from "@mantine/core";
+import {
+  Accordion,
+  ActionIcon,
+  Badge,
+  Group,
+  Menu,
+  ScrollArea,
+  Select,
+  Text,
+  Tooltip,
+} from "@mantine/core";
+import { IconChevronDown, IconFilter } from "@tabler/icons-react";
 import { browsePaneViewAtom, currentVaultAtom } from "../store/atoms.js";
 import { getNotes, notesKeys, updateNoteKind } from "../lib/api.js";
 import { TASK_STATUSES } from "../lib/noteKindRegistry.js";
@@ -95,13 +107,15 @@ function RecentNotesView({
   notes,
   activeNoteId,
   onNavigate,
+  vaultId,
 }: {
   notes: NoteMetadata[];
   activeNoteId: string | null;
   onNavigate: (id: string) => void;
+  vaultId: string | null;
 }) {
   const sorted = [...notes]
-    .filter((n) => n.type === "note")
+    .filter((n) => n.type === "note" && (vaultId === null || n.vaultId === vaultId))
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   if (sorted.length === 0) {
@@ -250,11 +264,11 @@ const VIEWS = [
 export function BrowsePane() {
   const [currentVaultId] = useAtom(currentVaultAtom);
   const [view, setView] = useAtom(browsePaneViewAtom);
+  const [recentScope, setRecentScope] = useState<"all" | "vault">("all");
 
-  const notesQKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
   const { data: notes = [] } = useQuery({
-    queryKey: notesQKey,
-    queryFn: () => getNotes(currentVaultId ?? undefined),
+    queryKey: notesKeys.all,
+    queryFn: () => getNotes(),
   });
 
   const navigate = useNavigate();
@@ -272,7 +286,7 @@ export function BrowsePane() {
       kind: string | null;
       kindMeta: Record<string, unknown> | null;
     }) => updateNoteKind(id, kind, kindMeta),
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   });
 
   function handleNavigate(id: string) {
@@ -287,7 +301,11 @@ export function BrowsePane() {
 
   const currentView = VIEWS.find((v) => v.id === view) ?? VIEWS[0]!;
   const noteCount = (() => {
-    if (view === "recent") return notes.filter((n) => n.type === "note").length;
+    const vaultFilter = recentScope === "vault" ? currentVaultId : null;
+    if (view === "recent")
+      return notes.filter(
+        (n) => n.type === "note" && (vaultFilter === null || n.vaultId === vaultFilter),
+      ).length;
     if (view === "pinned") return notes.filter((n) => n.pinned).length;
     if (view === "kanban") return notes.filter((n) => n.kind === "task").length;
     return notes.length;
@@ -336,9 +354,10 @@ export function BrowsePane() {
               <Text size="sm" fw={600} style={{ flex: 1, textAlign: "left" }}>
                 {currentView.label}
               </Text>
-              <Text size="xs" c="dimmed">
-                ▾
-              </Text>
+              <IconChevronDown
+                size={16}
+                style={{ color: "var(--mantine-color-dimmed)", flexShrink: 0 }}
+              />
             </button>
           </Menu.Target>
           <Menu.Dropdown>
@@ -353,6 +372,22 @@ export function BrowsePane() {
             ))}
           </Menu.Dropdown>
         </Menu>
+        {view === "recent" && (
+          <Tooltip
+            label={recentScope === "all" ? "Showing all vaults" : "Showing current vault"}
+            position="bottom"
+            withArrow
+          >
+            <ActionIcon
+              size="sm"
+              variant={recentScope === "vault" ? "filled" : "subtle"}
+              color={recentScope === "vault" ? "blue" : "gray"}
+              onClick={() => setRecentScope(recentScope === "all" ? "vault" : "all")}
+            >
+              <IconFilter size={14} />
+            </ActionIcon>
+          </Tooltip>
+        )}
         <Text size="xs" c="dimmed" ff="monospace">
           {noteCount}
         </Text>
@@ -361,7 +396,12 @@ export function BrowsePane() {
       {/* View content */}
       <ScrollArea flex={1}>
         {view === "recent" && (
-          <RecentNotesView notes={notes} activeNoteId={activeNoteId} onNavigate={handleNavigate} />
+          <RecentNotesView
+            notes={notes}
+            activeNoteId={activeNoteId}
+            onNavigate={handleNavigate}
+            vaultId={recentScope === "vault" ? currentVaultId : null}
+          />
         )}
         {view === "pinned" && (
           <PinnedView notes={notes} activeNoteId={activeNoteId} onNavigate={handleNavigate} />

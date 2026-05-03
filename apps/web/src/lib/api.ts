@@ -142,6 +142,16 @@ export async function updateFolderIcon(id: string, icon: string | null): Promise
   });
 }
 
+export async function moveNote(
+  id: string,
+  body: { folderId?: string | null; vaultId?: string | null },
+): Promise<void> {
+  await request(`/notes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
 export async function deleteNote(id: string): Promise<void> {
   await request(`/notes/${id}`, { method: "DELETE" });
 }
@@ -201,6 +211,25 @@ export async function deleteVault(id: string): Promise<void> {
 
 export async function deleteFolder(id: string): Promise<void> {
   await request(`/folders/${id}`, { method: "DELETE" });
+}
+
+// ── App State ─────────────────────────────────────────────────────────────────
+
+export interface AppState {
+  openTabs: string[];
+  activeNoteId: string | null;
+}
+
+export const appStateKeys = {
+  all: ["appState"] as const,
+};
+
+export async function getAppState(): Promise<AppState> {
+  return request<AppState>("/app-state");
+}
+
+export async function patchAppState(data: Partial<AppState>): Promise<void> {
+  await request("/app-state", { method: "PATCH", body: JSON.stringify(data) });
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────

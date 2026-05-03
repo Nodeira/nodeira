@@ -54,3 +54,11 @@ model Note {
 
   @@map("notes")
 }
+
+model AppState {
+  id           String  @id @default("default")
+  openTabs     String[]
+  activeNoteId String? @map("active_note_id")
+
+  @@map("app_state")
+}

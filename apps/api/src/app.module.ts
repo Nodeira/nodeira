@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { existsSync } from "fs";
 import { join } from "path";
+import { AppStateModule } from "./app-state/app-state.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { FoldersModule } from "./folders/folders.module.js";
 import { NotesModule } from "./notes/notes.module.js";
@@ -26,6 +27,7 @@ const webDistPath = join(process.cwd(), "public");
           }),
         ]
       : []),
+    AppStateModule,
     DatabaseModule,
     FoldersModule,
     NotesModule,

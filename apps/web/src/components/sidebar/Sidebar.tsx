@@ -57,6 +57,7 @@ interface SidebarProps {
   onNoteIconChange: (id: string, icon: string | null) => void;
   onFolderIconChange: (id: string, icon: string | null) => void;
   onKindChange: (id: string, kind: string | null) => void;
+  onMoveNote: (note: NoteMetadata) => void;
 }
 
 export function Sidebar({
@@ -79,6 +80,7 @@ export function Sidebar({
   onNoteIconChange,
   onFolderIconChange,
   onKindChange,
+  onMoveNote,
 }: SidebarProps) {
   const [currentVaultId, setCurrentVaultId] = useAtom(currentVaultAtom);
   const [viewsPaneOpen, setViewsPaneOpen] = useAtom(viewsPaneOpenAtom);
@@ -262,6 +264,7 @@ export function Sidebar({
                       onTogglePin={onTogglePin}
                       onIconChange={onNoteIconChange}
                       onKindChange={onKindChange}
+                      onMove={onMoveNote}
                     />
                   ))}
                 </SortableContext>
@@ -320,6 +323,7 @@ export function Sidebar({
                   onNoteIconChange={onNoteIconChange}
                   onIconChange={onFolderIconChange}
                   onNoteKindChange={onKindChange}
+                  onMoveNote={onMoveNote}
                 />
               );
             })}
@@ -337,6 +341,7 @@ export function Sidebar({
                   onTogglePin={onTogglePin}
                   onIconChange={onNoteIconChange}
                   onKindChange={onKindChange}
+                  onMove={onMoveNote}
                 />
               ))}
             </SortableContext>

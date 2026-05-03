@@ -4,6 +4,7 @@ import {
   IconPhoto,
   IconPin,
   IconPinFilled,
+  IconPlus,
   IconSearch,
   IconTrash,
 } from "@tabler/icons-react";
@@ -16,6 +17,7 @@ import Image from "@tiptap/extension-image";
 import {
   ActionIcon,
   Box,
+  Button,
   Card,
   Divider,
   Group,
@@ -27,7 +29,14 @@ import {
 } from "@mantine/core";
 import { useClickOutside } from "@mantine/hooks";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteNote, getNotes, notesKeys, updateNotePin, uploadImage } from "../lib/api.js";
+import {
+  createNote,
+  deleteNote,
+  getNotes,
+  notesKeys,
+  updateNotePin,
+  uploadImage,
+} from "../lib/api.js";
 import { getOrCreateYjsContext } from "../providers/YjsProvider.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 import "../components/editor.css";
@@ -109,7 +118,7 @@ function QuickNoteCard({
       padding="sm"
       radius="sm"
       withBorder
-      style={{ cursor: expanded ? "default" : "text", position: "relative" }}
+      style={{ cursor: "text", position: "relative" }}
       onClick={handleCardClick}
     >
       <Stack gap={4} style={{ height: "100%" }}>
@@ -248,6 +257,11 @@ function QuickNotesPage() {
   const pinned = filtered.filter((n) => n.pinned);
   const unpinned = filtered.filter((n) => !n.pinned);
 
+  const createNoteMutation = useMutation({
+    mutationFn: () => createNote({ type: "quick" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+  });
+
   const deleteNoteMutation = useMutation({
     mutationFn: deleteNote,
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
@@ -277,9 +291,19 @@ function QuickNotesPage() {
     <Stack gap="md">
       <Group justify="space-between" align="center">
         <Title order={3}>Quick Notes</Title>
-        <Text size="sm" c="dimmed">
-          {quickNotes.length} {quickNotes.length === 1 ? "note" : "notes"}
-        </Text>
+        <Group gap="sm">
+          <Text size="sm" c="dimmed">
+            {quickNotes.length} {quickNotes.length === 1 ? "note" : "notes"}
+          </Text>
+          <Button
+            size="xs"
+            leftSection={<IconPlus size={14} />}
+            loading={createNoteMutation.isPending}
+            onClick={() => createNoteMutation.mutate()}
+          >
+            New
+          </Button>
+        </Group>
       </Group>
 
       <TextInput
@@ -292,7 +316,7 @@ function QuickNotesPage() {
 
       {quickNotes.length === 0 ? (
         <Text c="dimmed" size="sm" fs="italic">
-          No quick notes yet. Use the &ldquo;+ New&rdquo; menu to create one.
+          No quick notes yet. Hit &ldquo;New&rdquo; to create one.
         </Text>
       ) : filtered.length === 0 ? (
         <Text c="dimmed" size="sm" fs="italic">
