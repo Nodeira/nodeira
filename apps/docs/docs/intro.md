@@ -8,6 +8,8 @@ sidebar_position: 1
 
 Nodeira is an offline-first, AI-enhanced note-taking application inspired by Obsidian. Notes are stored as rich-text documents synced in real time across browser tabs and devices using Yjs CRDTs.
 
+![Note editor showing rich-text content with headings and bullet points](/screenshots/note-editor.png)
+
 ## Key ideas
 
 - **Offline-first** — edits are persisted locally via IndexedDB and merged automatically when you reconnect. No manual conflict resolution.

@@ -11,6 +11,8 @@ Notes are the primary content unit in Nodeira. Each note has a title, optional r
 
 Notes are edited with [TipTap](https://tiptap.dev), a ProseMirror-based rich-text editor. The editor's document is backed by a `Y.Doc` (Yjs CRDT), which means:
 
+![Note editor with rich-text content](/screenshots/note-editor.png)
+
 - Changes are persisted locally to IndexedDB immediately.
 - Changes sync to the server via WebSocket when online.
 - Multiple tabs editing the same note see updates in real time.
@@ -29,4 +31,6 @@ See [Real-time Sync](../architecture/sync) for the full technical picture.
 
 ## Quick Notes
 
-The **Quick Notes** view surfaces a scratch-pad note that doesn't belong to any vault or folder — handy for jotting things down before organising them.
+The **Quick Notes** view surfaces a grid of scratch-pad notes that don't belong to any vault or folder — handy for jotting things down before organising them.
+
+![Quick Notes grid view showing multiple note cards](/screenshots/quick-notes.png)

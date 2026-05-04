@@ -14,7 +14,8 @@
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
-    "db:wipe": "bash scripts/wipe-db.sh"
+    "db:wipe": "bash scripts/wipe-db.sh",
+    "test:e2e": "turbo run e2e --filter=@nodeira/e2e"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

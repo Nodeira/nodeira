@@ -12,6 +12,12 @@
 
 An Obsidian-like, AI-enhanced note-taking application. Notes sync offline-first via Yjs CRDTs and are accessible to AI agents through CLI skill tool calls — making Nodeira a persistent "mind" for storing context across software development workflows.
 
+## Screenshots
+
+| Note Editor                                                    | Quick Notes                                                    |
+| -------------------------------------------------------------- | -------------------------------------------------------------- |
+| ![Note editor](./apps/docs/static/screenshots/note-editor.png) | ![Quick notes](./apps/docs/static/screenshots/quick-notes.png) |
+
 ## Features
 
 - Rich-text editing powered by TipTap + Yjs (offline-first, conflict-free sync)
