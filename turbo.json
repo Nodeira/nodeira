@@ -19,6 +19,17 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
+    },
+    "e2e": {
+      "cache": false,
+      "inputs": [
+        "tests/**",
+        "helpers/**",
+        "fixtures/**",
+        "playwright.config.ts",
+        "global-setup.ts",
+        "global-teardown.ts"
+      ]
     }
   }
 }

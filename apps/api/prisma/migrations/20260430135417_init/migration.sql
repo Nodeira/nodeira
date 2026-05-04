@@ -42,6 +42,30 @@ CREATE TABLE "notes" (
     CONSTRAINT "notes_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "app_state" (
+    "id" TEXT NOT NULL DEFAULT 'default',
+    "openTabs" TEXT[],
+    "active_note_id" TEXT,
+
+    CONSTRAINT "app_state_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "plugins" (
+    "id" TEXT NOT NULL,
+    "plugin_id" TEXT NOT NULL,
+    "source" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "installed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "plugins_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "plugins_plugin_id_key" ON "plugins"("plugin_id");
+
 -- AddForeignKey
 ALTER TABLE "folders" ADD CONSTRAINT "folders_vault_id_fkey" FOREIGN KEY ("vault_id") REFERENCES "vaults"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
