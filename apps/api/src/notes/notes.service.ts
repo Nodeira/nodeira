@@ -69,6 +69,8 @@ export class NotesService {
           ...(dto.icon !== undefined && { icon: dto.icon }),
           ...(dto.kind !== undefined && { kind: dto.kind }),
           ...(dto.kindMeta !== undefined && { kindMeta: dto.kindMeta as Prisma.InputJsonValue }),
+          ...(dto.folderId !== undefined && { folderId: dto.folderId ?? null }),
+          ...(dto.vaultId !== undefined && { vaultId: dto.vaultId ?? null }),
         },
       });
     } catch {

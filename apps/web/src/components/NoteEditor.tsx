@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAtomValue } from "jotai";
 import {
   IconDots,
   IconTable,
@@ -6,7 +7,7 @@ import {
   IconTableOff,
   IconTableRow,
 } from "@tabler/icons-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -20,7 +21,8 @@ import { ActionIcon, Box, Button, Group, Menu, Modal, Stack, Text, TextInput } f
 import { useDisclosure } from "@mantine/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import { destroyYjsContext, getOrCreateYjsContext } from "../providers/YjsProvider.js";
-import { deleteNote, notesKeys, updateNoteTitle } from "../lib/api.js";
+import { deleteNote, getNote, notesKeys, updateNoteTitle } from "../lib/api.js";
+import { pluginRegistry, pluginRegistryVersionAtom } from "../lib/pluginRegistry.js";
 import "./editor.css";
 
 const lowlight = createLowlight(common);
@@ -38,6 +40,14 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
   const [deleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  const { data: note = null } = useQuery({
+    queryKey: notesKeys.detail(noteId),
+    queryFn: () => getNote(noteId),
+  });
+
+  useAtomValue(pluginRegistryVersionAtom);
+  const editorHeaders = pluginRegistry.getEditorHeaders();
 
   // Tear down the Yjs doc + WebSocket + IndexedDB providers when this editor
   // unmounts. The route uses key={noteId}, so switching notes destroys this
@@ -119,6 +129,12 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
           </Menu>
         </Group>
       </Group>
+
+      {/* Plugin editor headers (e.g. journal mood/listening) */}
+      {editorHeaders.map((h) => {
+        const Comp = h.component;
+        return <Comp key={h.id} note={note} />;
+      })}
 
       {/* Rich text editor with toolbar */}
       <RichTextEditor

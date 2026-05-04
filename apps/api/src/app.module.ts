@@ -3,12 +3,14 @@ import { ConfigModule } from "@nestjs/config";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { existsSync } from "fs";
 import { join } from "path";
+import { AppStateModule } from "./app-state/app-state.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { FoldersModule } from "./folders/folders.module.js";
 import { NotesModule } from "./notes/notes.module.js";
 import { SyncModule } from "./sync/sync.module.js";
 import { UploadModule } from "./upload/upload.module.js";
 import { VaultsModule } from "./vaults/vaults.module.js";
+import { PluginsModule } from "./plugins/plugins.module.js";
 
 const webDistPath = join(process.cwd(), "public");
 
@@ -26,12 +28,14 @@ const webDistPath = join(process.cwd(), "public");
           }),
         ]
       : []),
+    AppStateModule,
     DatabaseModule,
     FoldersModule,
     NotesModule,
     SyncModule,
     UploadModule,
     VaultsModule,
+    PluginsModule,
   ],
 })
 export class AppModule {}

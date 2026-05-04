@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { IconMoon, IconSun } from "@tabler/icons-react";
 import {
   ActionIcon,
@@ -38,8 +38,11 @@ import {
   foldersKeys,
   getFolders,
   getNotes,
+  getPlugins,
   getVaults,
+  moveNote,
   notesKeys,
+  pluginsKeys,
   reorderNotes,
   updateFolderIcon,
   updateNoteIcon,
@@ -47,6 +50,7 @@ import {
   updateNotePin,
   vaultsKeys,
 } from "../lib/api.js";
+import { loadAllPlugins } from "../lib/pluginLoader.js";
 import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
 import { noteKindRegistry } from "../lib/noteKindRegistry.js";
@@ -55,6 +59,7 @@ import { NoteAsidePanel } from "./aside/NoteAsidePanel.js";
 import { CreateVaultModal } from "./modals/CreateVaultModal.js";
 import { CreateFolderModal } from "./modals/CreateFolderModal.js";
 import { DeleteConfirmModal, type DeleteTarget } from "./modals/DeleteConfirmModal.js";
+import { MoveNoteModal } from "./modals/MoveNoteModal.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 
 interface AppShellProps {
@@ -72,18 +77,37 @@ export function AppShell({ children }: AppShellProps) {
   const [newFolderOpen, { open: openNewFolder, close: closeNewFolder }] = useDisclosure(false);
   const [newVaultOpen, { open: openNewVault, close: closeNewVault }] = useDisclosure(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [moveTarget, setMoveTarget] = useState<NoteMetadata | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const navigate = useNavigate();
   const routerState = useRouterState();
   const qc = useQueryClient();
 
   const { data: vaults = [] } = useQuery({ queryKey: vaultsKeys.all, queryFn: getVaults });
+  const { data: installedPlugins = [] } = useQuery({
+    queryKey: pluginsKeys.all,
+    queryFn: getPlugins,
+  });
 
   useEffect(() => {
     if (!currentVaultId && vaults.length > 0) {
       setCurrentVaultId(vaults[0]!.id);
     }
   }, [vaults, currentVaultId]);
+
+  const pluginsLoaded = useRef(false);
+  useEffect(() => {
+    if (pluginsLoaded.current || installedPlugins.length === 0) return;
+    pluginsLoaded.current = true;
+    const sources = installedPlugins.filter((p) => p.enabled).map((p) => p.source);
+    (async () => {
+      try {
+        await loadAllPlugins(sources);
+      } catch (err) {
+        console.error("[Nodeira] Plugin bootstrap failed:", err);
+      }
+    })();
+  }, [installedPlugins]);
 
   const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
   const foldersQueryKey = currentVaultId ? foldersKeys.byVault(currentVaultId) : foldersKeys.all;
@@ -99,7 +123,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const createNoteMutation = useMutation({
     mutationFn: createNote,
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   });
   const createFolderMutation = useMutation({
     mutationFn: ({ name, vaultId }: { name: string; vaultId?: string }) =>
@@ -138,12 +162,27 @@ export function AppShell({ children }: AppShellProps) {
     mutationFn: ({ id, icon }: { id: string; icon: string | null }) => updateFolderIcon(id, icon),
     onSuccess: () => qc.invalidateQueries({ queryKey: foldersQueryKey }),
   });
+  const moveNoteMutation = useMutation({
+    mutationFn: ({
+      id,
+      vaultId,
+      folderId,
+    }: {
+      id: string;
+      vaultId: string | null;
+      folderId: string | null;
+    }) => moveNote(id, { vaultId, folderId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: notesKeys.all });
+      qc.invalidateQueries({ queryKey: notesQueryKey });
+    },
+  });
   const kindMutation = useMutation({
     mutationFn: ({ id, kind }: { id: string; kind: string | null }) => {
       const def = noteKindRegistry.get(kind);
       return updateNoteKind(id, kind, def?.defaultMeta ?? null);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   });
 
   const sensors = useSensors(
@@ -333,6 +372,7 @@ export function AppShell({ children }: AppShellProps) {
             onNoteIconChange={(id, icon) => noteIconMutation.mutate({ id, icon })}
             onFolderIconChange={(id, icon) => folderIconMutation.mutate({ id, icon })}
             onKindChange={(id, kind) => kindMutation.mutate({ id, kind })}
+            onMoveNote={(note) => setMoveTarget(note)}
           />
         </MantineAppShell.Navbar>
 
@@ -408,6 +448,13 @@ export function AppShell({ children }: AppShellProps) {
         target={deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
+      />
+      <MoveNoteModal
+        note={moveTarget}
+        onClose={() => setMoveTarget(null)}
+        onMove={(noteId, vaultId, folderId) =>
+          moveNoteMutation.mutate({ id: noteId, vaultId, folderId })
+        }
       />
     </>
   );

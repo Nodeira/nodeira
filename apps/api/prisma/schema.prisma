@@ -54,3 +54,22 @@ model Note {
 
   @@map("notes")
 }
+
+model AppState {
+  id           String  @id @default("default")
+  openTabs     String[]
+  activeNoteId String? @map("active_note_id")
+
+  @@map("app_state")
+}
+
+model Plugin {
+  id          String   @id @default(uuid())
+  pluginId    String   @unique @map("plugin_id")
+  source      String
+  enabled     Boolean  @default(true)
+  installedAt DateTime @default(now()) @map("installed_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("plugins")
+}

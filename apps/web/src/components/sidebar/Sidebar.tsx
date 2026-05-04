@@ -31,8 +31,10 @@ import {
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { SensorDescriptor, SensorOptions } from "@dnd-kit/core";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { currentVaultAtom, viewsPaneOpenAtom } from "../../store/atoms.js";
+import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
+import { DynamicIcon } from "../DynamicIcon.js";
 import { SortableNoteItem } from "./SortableNoteItem.js";
 import { FolderNavItem } from "./FolderNavItem.js";
 import type { Folder, NoteMetadata, Vault } from "@nodeira/shared-types";
@@ -57,6 +59,7 @@ interface SidebarProps {
   onNoteIconChange: (id: string, icon: string | null) => void;
   onFolderIconChange: (id: string, icon: string | null) => void;
   onKindChange: (id: string, kind: string | null) => void;
+  onMoveNote: (note: NoteMetadata) => void;
 }
 
 export function Sidebar({
@@ -79,10 +82,13 @@ export function Sidebar({
   onNoteIconChange,
   onFolderIconChange,
   onKindChange,
+  onMoveNote,
 }: SidebarProps) {
   const [currentVaultId, setCurrentVaultId] = useAtom(currentVaultAtom);
   const [viewsPaneOpen, setViewsPaneOpen] = useAtom(viewsPaneOpenAtom);
   const routerState = useRouterState();
+  useAtomValue(pluginRegistryVersionAtom);
+  const pluginPages = pluginRegistry.getPages();
 
   const currentVault = vaults.find((v) => v.id === currentVaultId) ?? null;
   const regularNotes = notes.filter((n) => n.type === "note");
@@ -262,6 +268,7 @@ export function Sidebar({
                       onTogglePin={onTogglePin}
                       onIconChange={onNoteIconChange}
                       onKindChange={onKindChange}
+                      onMove={onMoveNote}
                     />
                   ))}
                 </SortableContext>
@@ -287,6 +294,26 @@ export function Sidebar({
                 active={isOnQuickNotes}
               />
             </Link>
+
+            {/* Plugin pages */}
+            {pluginPages.map((page) => {
+              const isOnPage = routerState.location.pathname === `/plugins/${page.pluginId}`;
+              return (
+                <Link
+                  key={page.pluginId}
+                  to="/plugins/$pluginId"
+                  params={{ pluginId: page.pluginId }}
+                  style={{ textDecoration: "none" }}
+                >
+                  <NavLink
+                    component="div"
+                    label={page.label}
+                    leftSection={<DynamicIcon name={page.icon} size={14} />}
+                    active={isOnPage}
+                  />
+                </Link>
+              );
+            })}
 
             <Divider my={4} />
 
@@ -320,6 +347,7 @@ export function Sidebar({
                   onNoteIconChange={onNoteIconChange}
                   onIconChange={onFolderIconChange}
                   onNoteKindChange={onKindChange}
+                  onMoveNote={onMoveNote}
                 />
               );
             })}
@@ -337,6 +365,7 @@ export function Sidebar({
                   onTogglePin={onTogglePin}
                   onIconChange={onNoteIconChange}
                   onKindChange={onKindChange}
+                  onMove={onMoveNote}
                 />
               ))}
             </SortableContext>
