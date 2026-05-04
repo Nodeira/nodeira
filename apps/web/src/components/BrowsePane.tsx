@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -17,6 +17,7 @@ import { IconChevronDown, IconFilter } from "@tabler/icons-react";
 import { browsePaneViewAtom, currentVaultAtom } from "../store/atoms.js";
 import { getNotes, notesKeys, updateNoteKind } from "../lib/api.js";
 import { TASK_STATUSES } from "../lib/noteKindRegistry.js";
+import { pluginRegistry, pluginRegistryVersionAtom } from "../lib/pluginRegistry.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 
 // ── Shared note card ──────────────────────────────────────────────────────────
@@ -253,11 +254,13 @@ function KanbanView({
 
 // ── View definitions ──────────────────────────────────────────────────────────
 
-const VIEWS = [
+const BUILT_IN_VIEWS = [
   { id: "recent", label: "Recent Notes" },
   { id: "pinned", label: "Pinned" },
   { id: "kanban", label: "Kanban" },
 ];
+
+const BUILT_IN_IDS = new Set(["recent", "pinned", "kanban"]);
 
 // ── Browse Pane ───────────────────────────────────────────────────────────────
 
@@ -265,6 +268,7 @@ export function BrowsePane() {
   const [currentVaultId] = useAtom(currentVaultAtom);
   const [view, setView] = useAtom(browsePaneViewAtom);
   const [recentScope, setRecentScope] = useState<"all" | "vault">("all");
+  useAtomValue(pluginRegistryVersionAtom);
 
   const { data: notes = [] } = useQuery({
     queryKey: notesKeys.all,
@@ -299,7 +303,9 @@ export function BrowsePane() {
     kindMutation.mutate({ id, kind: "task", kindMeta: { ...(note.kindMeta ?? {}), status } });
   }
 
-  const currentView = VIEWS.find((v) => v.id === view) ?? VIEWS[0]!;
+  const pluginViews = pluginRegistry.getBrowseViews();
+  const allViews = [...BUILT_IN_VIEWS, ...pluginViews.map((v) => ({ id: v.id, label: v.label }))];
+  const currentView = allViews.find((v) => v.id === view) ?? allViews[0]!;
   const noteCount = (() => {
     const vaultFilter = recentScope === "vault" ? currentVaultId : null;
     if (view === "recent")
@@ -361,7 +367,7 @@ export function BrowsePane() {
             </button>
           </Menu.Target>
           <Menu.Dropdown>
-            {VIEWS.map((v) => (
+            {allViews.map((v) => (
               <Menu.Item
                 key={v.id}
                 onClick={() => setView(v.id)}
@@ -414,6 +420,13 @@ export function BrowsePane() {
             onStatusChange={handleStatusChange}
           />
         )}
+        {!BUILT_IN_IDS.has(view) &&
+          (() => {
+            const def = pluginViews.find((v) => v.id === view);
+            if (!def) return null;
+            const Comp = def.component;
+            return <Comp notes={notes} activeNoteId={activeNoteId} onNavigate={handleNavigate} />;
+          })()}
       </ScrollArea>
     </div>
   );

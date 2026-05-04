@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as QuickNotesRouteImport } from './routes/quick-notes'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PluginsPluginIdRouteImport } from './routes/plugins/$pluginId'
 import { Route as NotesNoteIdRouteImport } from './routes/notes/$noteId'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PluginsPluginIdRoute = PluginsPluginIdRouteImport.update({
+  id: '/plugins/$pluginId',
+  path: '/plugins/$pluginId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
   id: '/notes/$noteId',
   path: '/notes/$noteId',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/quick-notes': typeof QuickNotesRoute
   '/settings': typeof SettingsRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/quick-notes': typeof QuickNotesRoute
   '/settings': typeof SettingsRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,30 @@ export interface FileRoutesById {
   '/quick-notes': typeof QuickNotesRoute
   '/settings': typeof SettingsRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/quick-notes' | '/settings' | '/notes/$noteId'
+  fullPaths:
+    | '/'
+    | '/quick-notes'
+    | '/settings'
+    | '/notes/$noteId'
+    | '/plugins/$pluginId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/quick-notes' | '/settings' | '/notes/$noteId'
-  id: '__root__' | '/' | '/quick-notes' | '/settings' | '/notes/$noteId'
+  to:
+    | '/'
+    | '/quick-notes'
+    | '/settings'
+    | '/notes/$noteId'
+    | '/plugins/$pluginId'
+  id:
+    | '__root__'
+    | '/'
+    | '/quick-notes'
+    | '/settings'
+    | '/notes/$noteId'
+    | '/plugins/$pluginId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +92,7 @@ export interface RootRouteChildren {
   QuickNotesRoute: typeof QuickNotesRoute
   SettingsRoute: typeof SettingsRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
+  PluginsPluginIdRoute: typeof PluginsPluginIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,6 +118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plugins/$pluginId': {
+      id: '/plugins/$pluginId'
+      path: '/plugins/$pluginId'
+      fullPath: '/plugins/$pluginId'
+      preLoaderRoute: typeof PluginsPluginIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes/$noteId': {
       id: '/notes/$noteId'
       path: '/notes/$noteId'
@@ -107,6 +140,7 @@ const rootRouteChildren: RootRouteChildren = {
   QuickNotesRoute: QuickNotesRoute,
   SettingsRoute: SettingsRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
+  PluginsPluginIdRoute: PluginsPluginIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

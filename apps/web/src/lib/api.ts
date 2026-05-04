@@ -1,4 +1,4 @@
-import type { Folder, NoteMetadata, NoteType, Vault } from "@nodeira/shared-types";
+import type { Folder, NoteMetadata, NoteType, PluginRecord, Vault } from "@nodeira/shared-types";
 
 // ── Raw API shapes (dates come back as strings) ───────────────────────────────
 
@@ -91,6 +91,8 @@ export async function createNote(body: {
   vaultId?: string;
   folderId?: string;
   title?: string;
+  kind?: string;
+  kindMeta?: Record<string, unknown>;
 }): Promise<NoteMetadata> {
   const raw = await request<RawNoteMetadata>("/notes", {
     method: "POST",
@@ -238,4 +240,44 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   const form = new FormData();
   form.append("file", file);
   return request<{ url: string }>("/upload", { method: "POST", body: form });
+}
+
+// ── Plugins ───────────────────────────────────────────────────────────────────
+
+type RawPluginRecord = Omit<PluginRecord, "installedAt" | "updatedAt"> & {
+  installedAt: string;
+  updatedAt: string;
+};
+
+function parsePlugin(raw: RawPluginRecord): PluginRecord {
+  return { ...raw, installedAt: new Date(raw.installedAt), updatedAt: new Date(raw.updatedAt) };
+}
+
+export const pluginsKeys = {
+  all: ["plugins"] as const,
+};
+
+export async function getPlugins(): Promise<PluginRecord[]> {
+  const raw = await request<RawPluginRecord[]>("/plugins");
+  return raw.map(parsePlugin);
+}
+
+export async function installPlugin(source: string): Promise<PluginRecord> {
+  const raw = await request<RawPluginRecord>("/plugins", {
+    method: "POST",
+    body: JSON.stringify({ source }),
+  });
+  return parsePlugin(raw);
+}
+
+export async function setPluginEnabled(pluginId: string, enabled: boolean): Promise<PluginRecord> {
+  const raw = await request<RawPluginRecord>(`/plugins/${pluginId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+  return parsePlugin(raw);
+}
+
+export async function uninstallPlugin(pluginId: string): Promise<void> {
+  await request(`/plugins/${pluginId}`, { method: "DELETE" });
 }

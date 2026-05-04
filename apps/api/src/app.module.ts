@@ -10,6 +10,7 @@ import { NotesModule } from "./notes/notes.module.js";
 import { SyncModule } from "./sync/sync.module.js";
 import { UploadModule } from "./upload/upload.module.js";
 import { VaultsModule } from "./vaults/vaults.module.js";
+import { PluginsModule } from "./plugins/plugins.module.js";
 
 const webDistPath = join(process.cwd(), "public");
 
@@ -34,6 +35,7 @@ const webDistPath = join(process.cwd(), "public");
     SyncModule,
     UploadModule,
     VaultsModule,
+    PluginsModule,
   ],
 })
 export class AppModule {}

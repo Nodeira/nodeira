@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { IconMoon, IconSun } from "@tabler/icons-react";
 import {
   ActionIcon,
@@ -38,9 +38,11 @@ import {
   foldersKeys,
   getFolders,
   getNotes,
+  getPlugins,
   getVaults,
   moveNote,
   notesKeys,
+  pluginsKeys,
   reorderNotes,
   updateFolderIcon,
   updateNoteIcon,
@@ -48,6 +50,7 @@ import {
   updateNotePin,
   vaultsKeys,
 } from "../lib/api.js";
+import { loadAllPlugins } from "../lib/pluginLoader.js";
 import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
 import { noteKindRegistry } from "../lib/noteKindRegistry.js";
@@ -81,12 +84,30 @@ export function AppShell({ children }: AppShellProps) {
   const qc = useQueryClient();
 
   const { data: vaults = [] } = useQuery({ queryKey: vaultsKeys.all, queryFn: getVaults });
+  const { data: installedPlugins = [] } = useQuery({
+    queryKey: pluginsKeys.all,
+    queryFn: getPlugins,
+  });
 
   useEffect(() => {
     if (!currentVaultId && vaults.length > 0) {
       setCurrentVaultId(vaults[0]!.id);
     }
   }, [vaults, currentVaultId]);
+
+  const pluginsLoaded = useRef(false);
+  useEffect(() => {
+    if (pluginsLoaded.current || installedPlugins.length === 0) return;
+    pluginsLoaded.current = true;
+    const sources = installedPlugins.filter((p) => p.enabled).map((p) => p.source);
+    (async () => {
+      try {
+        await loadAllPlugins(sources);
+      } catch (err) {
+        console.error("[Nodeira] Plugin bootstrap failed:", err);
+      }
+    })();
+  }, [installedPlugins]);
 
   const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
   const foldersQueryKey = currentVaultId ? foldersKeys.byVault(currentVaultId) : foldersKeys.all;

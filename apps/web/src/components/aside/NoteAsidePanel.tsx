@@ -1,7 +1,9 @@
 import { IconMaximize, IconMinimize } from "@tabler/icons-react";
 import { ActionIcon, Box, Collapse, Divider, Group, Select, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { useAtomValue } from "jotai";
 import { noteKindRegistry, TASK_STATUSES } from "../../lib/noteKindRegistry.js";
+import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 import type { Folder, NoteMetadata } from "@nodeira/shared-types";
 
 export function NoteAsidePanel({
@@ -18,6 +20,8 @@ export function NoteAsidePanel({
   isFullscreen: boolean;
 }) {
   const [propertiesOpen, setPropertiesOpen] = useDisclosure(true);
+  useAtomValue(pluginRegistryVersionAtom);
+  const asideSections = pluginRegistry.getAsideSections();
 
   const folderName = note?.folderId
     ? (folders.find((f) => f.id === note.folderId)?.name ?? "—")
@@ -152,6 +156,17 @@ export function NoteAsidePanel({
           )}
         </Collapse>
       </Box>
+
+      {/* Plugin aside sections */}
+      {asideSections.map((section) => {
+        const Comp = section.component;
+        return (
+          <div key={section.id}>
+            <Divider />
+            <Comp note={note} />
+          </div>
+        );
+      })}
     </Stack>
   );
 }
