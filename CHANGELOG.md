@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/Nodeira/nodeira/compare/v1.2.0...v1.2.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* fixing the migration adding screenshots and tests ([c570541](https://github.com/Nodeira/nodeira/commit/c57054132673ceec7d3ff4c02e008c2244f3e5c8))
+
 # [1.2.0](https://github.com/Nodeira/nodeira/compare/v1.1.7...v1.2.0) (2026-05-04)
 
 
