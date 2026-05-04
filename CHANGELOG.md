@@ -1,3 +1,11 @@
+# [1.2.0](https://github.com/Nodeira/nodeira/compare/v1.1.7...v1.2.0) (2026-05-04)
+
+
+### Features
+
+* adding in right click menus, some other tweaks ([cbdd88b](https://github.com/Nodeira/nodeira/commit/cbdd88b7e8e659c92201e849dab79a8c48d5c757))
+* adding initial plugin loader and arch ([1555781](https://github.com/Nodeira/nodeira/commit/1555781d945efeaf4ebe2608455e08fc468ef937))
+
 ## [1.1.7](https://github.com/Nodeira/nodeira/compare/v1.1.6...v1.1.7) (2026-05-01)
 
 
