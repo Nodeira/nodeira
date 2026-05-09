@@ -5,53 +5,85 @@ sidebar_position: 2
 
 # Getting Started
 
-## Prerequisites
+## Option A — Self-host with Docker Compose
 
-- [Bun](https://bun.sh) ≥ 1.3
-- [Docker](https://www.docker.com) (for PostgreSQL) or a local PostgreSQL 14+ instance
+The fastest path if you just want to run Nodeira.
 
-## 1. Clone and install
+**Prerequisites:** [Docker](https://www.docker.com) with the Compose plugin.
 
 ```bash
 git clone https://github.com/Nodeira/nodeira.git
 cd nodeira
-bun install
+cp docker-compose.example.yml docker-compose.yml
 ```
 
-## 2. Start PostgreSQL
+Open `docker-compose.yml` and replace both `CHANGE_ME` values:
+
+- `POSTGRES_PASSWORD` / `DATABASE_URL` — a strong database password (same value in both places)
+- `JWT_SECRET` — a random secret: `openssl rand -hex 32`
+
+Then start the stack:
 
 ```bash
-docker run -d --name nodeira-postgres \
-  -e POSTGRES_DB=nodeira \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
-  postgres:17-alpine
+docker compose up -d
+docker compose exec nodeira bunx prisma migrate deploy
 ```
 
-## 3. Configure the server
+Open **http://localhost:3001**. You will be redirected to the setup page to create your admin account.
+
+---
+
+## Option B — Local development
+
+**Prerequisites:**
+
+- [pnpm](https://pnpm.io) ≥ 9
+- [Docker](https://www.docker.com) (for PostgreSQL) or a local PostgreSQL 14+ instance
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/Nodeira/nodeira.git
+cd nodeira
+pnpm install
+```
+
+### 2. Start PostgreSQL
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+### 3. Configure the server
 
 ```bash
 cp apps/api/.env.example apps/api/.env
 ```
 
-The default `.env` points to `postgresql://postgres:postgres@localhost:5432/nodeira`. Edit if your credentials differ.
-
-## 4. Push the database schema
+Open `apps/api/.env` and set `JWT_SECRET` to a random value:
 
 ```bash
-cd apps/api && bunx prisma db push
+openssl rand -hex 32
+```
+
+The default `DATABASE_URL` points to `postgresql://postgres:postgres@localhost:5432/nodeira` which matches the dev Compose file. Edit it if your credentials differ.
+
+### 4. Push the database schema
+
+```bash
+cd apps/api && pnpm exec prisma db push
 cd ../..
 ```
 
-This applies the Prisma schema to the database without generating a migration file (suitable for development).
+This applies the Prisma schema directly (suitable for development — no migration file generated).
 
-## 5. Start the dev servers
+### 5. Start the dev servers
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
-Turborepo starts both servers in parallel:
+Turborepo starts all servers in parallel:
 
 | Service          | URL                   |
 | ---------------- | --------------------- |
@@ -59,12 +91,19 @@ Turborepo starts both servers in parallel:
 | API server       | http://localhost:3001 |
 | Docs (this site) | http://localhost:3002 |
 
+---
+
+## First-time setup
+
+On first visit the app redirects to **/setup**. Fill in your email, a password (min 8 characters), and an optional display name, then click **Create account**. This creates the admin account and locks the setup page — it cannot be re-run once an account exists.
+
+You are logged in automatically and taken to the main app.
+
 ## First steps in the UI
 
-1. Open http://localhost:5173.
-2. Create a **vault** — a top-level workspace for your notes.
-3. Optionally add **folders** to organise notes inside the vault.
-4. Create a **note** and start writing. Your edits are saved automatically.
+1. Create a **vault** — a top-level workspace for your notes.
+2. Optionally add **folders** to organise notes inside the vault.
+3. Create a **note** and start writing. Edits are saved automatically via Yjs sync.
 
 ## Next steps
 

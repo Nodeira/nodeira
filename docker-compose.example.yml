@@ -18,6 +18,7 @@ services:
       - "3001:3001"
     environment:
       DATABASE_URL: postgresql://postgres:CHANGE_ME@postgres:5432/nodeira
+      JWT_SECRET: CHANGE_ME                # generate: openssl rand -hex 32
       # PORT: 3001                         # change if you remap the port above
     volumes:
       - ./uploads:/app/apps/api/uploads    # change ./uploads to any host path you prefer

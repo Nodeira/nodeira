@@ -12,10 +12,10 @@ export const Route = createRootRoute({
       try {
         const status = await getSetupStatus();
         _setupRequired = status.setupRequired;
+        _setupChecked = true;
       } catch {
-        _setupRequired = false;
+        // API unavailable — don't cache, will retry on next navigation
       }
-      _setupChecked = true;
     }
 
     const path = location.pathname;

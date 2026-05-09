@@ -39,13 +39,30 @@ An Obsidian-like, AI-enhanced note-taking application. Notes sync offline-first 
 
 ## Quick Start
 
-**Prerequisites:** PostgreSQL running locally (or via Docker).
+### Self-host with Docker Compose
 
 ```bash
-# Start a local Postgres instance
-docker run -d --name nodeira-postgres \
-  -e POSTGRES_DB=nodeira -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 postgres:17-alpine
+git clone https://github.com/Nodeira/nodeira.git
+cd nodeira
+cp docker-compose.example.yml docker-compose.yml
+```
+
+Edit `docker-compose.yml` — replace both `CHANGE_ME` values with a strong database password and a random JWT secret (`openssl rand -hex 32`). Then:
+
+```bash
+docker compose up -d
+docker compose exec nodeira bunx prisma migrate deploy
+```
+
+Open `http://localhost:3001`. On first visit you will be directed to the setup page to create your admin account.
+
+### Development setup
+
+**Prerequisites:** Node.js 22+, pnpm, PostgreSQL (or Docker).
+
+```bash
+# Start PostgreSQL
+docker compose -f docker-compose.dev.yml up -d
 
 # Clone and install
 git clone https://github.com/Nodeira/nodeira.git
@@ -54,13 +71,14 @@ pnpm install
 
 # Configure the server
 cp apps/api/.env.example apps/api/.env
+# Edit apps/api/.env — set JWT_SECRET (openssl rand -hex 32)
 cd apps/api && pnpm exec prisma db push && cd ../..
 
 # Start all dev servers (web :5173, server :3001, docs :3002)
 pnpm run dev
 ```
 
-Then open `http://localhost:5173`.
+Open `http://localhost:5173`. On first visit you will be directed to the setup page to create your admin account.
 
 For full configuration and deployment docs, see the **[documentation](https://Nodeira.github.io/nodeira/)**.
 

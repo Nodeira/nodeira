@@ -11,7 +11,12 @@ export class SetupService {
   ) {}
 
   async isSetupRequired(): Promise<boolean> {
-    return (await this.usersService.count()) === 0;
+    try {
+      return (await this.usersService.count()) === 0;
+    } catch {
+      // DB not yet migrated — treat as setup required
+      return true;
+    }
   }
 
   async createAdmin(dto: CreateAdminDto) {
