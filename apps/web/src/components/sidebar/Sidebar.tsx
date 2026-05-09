@@ -3,6 +3,7 @@ import {
   IconChevronDown,
   IconFile,
   IconLayoutColumns,
+  IconLogout,
   IconPlus,
   IconSettings,
   IconTrash,
@@ -30,9 +31,10 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { SensorDescriptor, SensorOptions } from "@dnd-kit/core";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useAtom, useAtomValue } from "jotai";
-import { currentVaultAtom, viewsPaneOpenAtom } from "../../store/atoms.js";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { authUserAtom, currentVaultAtom, viewsPaneOpenAtom } from "../../store/atoms.js";
+import { authStorage } from "../../lib/authStorage.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 import { DynamicIcon } from "../DynamicIcon.js";
 import { SortableNoteItem } from "./SortableNoteItem.js";
@@ -89,6 +91,15 @@ export function Sidebar({
   const routerState = useRouterState();
   useAtomValue(pluginRegistryVersionAtom);
   const pluginPages = pluginRegistry.getPages();
+  const authUser = useAtomValue(authUserAtom);
+  const setAuthUser = useSetAtom(authUserAtom);
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    authStorage.clear();
+    setAuthUser(null);
+    void navigate({ to: "/login" });
+  }
 
   const currentVault = vaults.find((v) => v.id === currentVaultId) ?? null;
   const regularNotes = notes.filter((n) => n.type === "note");
@@ -399,11 +410,16 @@ export function Sidebar({
         <Stack gap={0}>
           <NavLink
             component="div"
-            label="NA"
+            label={authUser?.name ?? authUser?.email ?? "User"}
             leftSection={
               <Avatar size="sm" color="blue" radius="xl">
-                NA
+                {(authUser?.name ?? authUser?.email ?? "U")[0]?.toUpperCase()}
               </Avatar>
+            }
+            rightSection={
+              <ActionIcon size="xs" variant="subtle" title="Sign out" onClick={handleLogout}>
+                <IconLogout size={12} />
+              </ActionIcon>
             }
             style={{ cursor: "default" }}
           />

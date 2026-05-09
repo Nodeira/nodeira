@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { VaultsService } from "./vaults.service.js";
 import { CreateVaultDto } from "./dto/create-vault.dto.js";
 
+@UseGuards(JwtAuthGuard)
 @Controller("vaults")
 export class VaultsController {
   constructor(private readonly vaultsService: VaultsService) {}

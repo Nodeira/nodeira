@@ -31,6 +31,7 @@ services:
       - "3001:3001"
     environment:
       DATABASE_URL: postgresql://postgres:changeme@db:5432/nodeira
+      JWT_SECRET: changeme # generate: openssl rand -hex 32
       PORT: 3001
       CORS_ORIGIN: https://your-domain.com
     depends_on:
@@ -58,6 +59,7 @@ docker compose exec server bunx prisma db push
 | Variable       | Required | Default | Description                                                           |
 | -------------- | -------- | ------- | --------------------------------------------------------------------- |
 | `DATABASE_URL` | Yes      | —       | PostgreSQL connection string                                          |
+| `JWT_SECRET`   | Yes      | —       | Secret used to sign JWTs — generate with `openssl rand -hex 32`       |
 | `PORT`         | No       | `3001`  | HTTP/WS port                                                          |
 | `CORS_ORIGIN`  | Yes      | —       | Allowed CORS origin for the frontend (e.g. `https://app.example.com`) |
 

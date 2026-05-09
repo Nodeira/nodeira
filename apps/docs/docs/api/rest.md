@@ -5,7 +5,97 @@ sidebar_position: 1
 
 # REST API
 
-The NestJS server exposes a JSON REST API at `http://localhost:3001/api` (proxied from Vite dev server at `/api`).
+The NestJS server exposes a JSON REST API at `http://localhost:3001/api` (proxied from the Vite dev server at `/api`).
+
+All endpoints except `/api/setup/*` and `/api/auth/login` require a JWT bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+---
+
+## Authentication
+
+### `GET /api/setup/status`
+
+Returns whether first-time setup is still required.
+
+**Response**
+
+```json
+{ "setupRequired": true }
+```
+
+Once an admin account exists this returns `{ "setupRequired": false }` and `POST /api/setup` is locked.
+
+---
+
+### `POST /api/setup`
+
+Creates the initial admin account. **Only works when no users exist.** Subsequent calls return `403 Forbidden`.
+
+**Body**
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "strongpassword",
+  "name": "Alice"
+}
+```
+
+`name` is optional. `password` must be at least 8 characters.
+
+**Response**
+
+```json
+{
+  "access_token": "<jwt>",
+  "user": { "id": "...", "email": "admin@example.com", "name": "Alice", "role": "ADMIN" }
+}
+```
+
+---
+
+### `POST /api/auth/login`
+
+Authenticates an existing user and returns a JWT.
+
+**Body**
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "strongpassword",
+  "rememberMe": false
+}
+```
+
+`rememberMe` is optional. When `true` the token expires in 30 days; otherwise it expires in 60 minutes.
+
+**Response**
+
+```json
+{
+  "access_token": "<jwt>",
+  "user": { "id": "...", "email": "admin@example.com", "name": "Alice", "role": "ADMIN" }
+}
+```
+
+Store `access_token` and attach it to subsequent requests as `Authorization: Bearer <token>`.
+
+---
+
+### `GET /api/auth/profile`
+
+Returns the currently authenticated user.
+
+**Response**
+
+```json
+{ "id": "...", "email": "admin@example.com", "name": "Alice", "role": "ADMIN" }
+```
 
 ---
 

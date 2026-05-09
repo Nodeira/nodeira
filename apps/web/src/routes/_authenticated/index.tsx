@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Text } from "@mantine/core";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: NotesIndex,
 });
 

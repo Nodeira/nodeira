@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { authStorage, type StoredUser } from "../lib/authStorage.js";
 
 // ID of the currently open note (null = none)
 export const activeNoteIdAtom = atom<string | null>(null);
@@ -23,3 +24,6 @@ export const browsePaneViewAtom = atom<string>("recent");
 
 // Which pane is currently full-screened (null = none)
 export const fullscreenPaneAtom = atom<"left" | "browse" | "right" | "editor" | null>(null);
+
+// Currently authenticated user (seeded from localStorage on load)
+export const authUserAtom = atom<StoredUser | null>(authStorage.getUser());

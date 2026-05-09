@@ -36,12 +36,12 @@ import {
   notesKeys,
   updateNotePin,
   uploadImage,
-} from "../lib/api.js";
-import { getOrCreateYjsContext } from "../providers/YjsProvider.js";
+} from "../../lib/api.js";
+import { getOrCreateYjsContext } from "../../providers/YjsProvider.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
-import "../components/editor.css";
+import "../../components/editor.css";
 
-export const Route = createFileRoute("/quick-notes")({
+export const Route = createFileRoute("/_authenticated/quick-notes")({
   component: QuickNotesPage,
 });
 

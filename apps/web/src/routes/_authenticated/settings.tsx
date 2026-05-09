@@ -19,10 +19,10 @@ import {
   pluginsKeys,
   setPluginEnabled,
   uninstallPlugin,
-} from "../lib/api.js";
-import { loadPlugin } from "../lib/pluginLoader.js";
+} from "../../lib/api.js";
+import { loadPlugin } from "../../lib/pluginLoader.js";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
