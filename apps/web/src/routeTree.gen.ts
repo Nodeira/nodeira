@@ -9,138 +9,208 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as QuickNotesRouteImport } from './routes/quick-notes'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as PluginsPluginIdRouteImport } from './routes/plugins/$pluginId'
-import { Route as NotesNoteIdRouteImport } from './routes/notes/$noteId'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedQuickNotesRouteImport } from './routes/_authenticated/quick-notes'
+import { Route as AuthenticatedPluginsPluginIdRouteImport } from './routes/_authenticated/plugins/$pluginId'
+import { Route as AuthenticatedNotesNoteIdRouteImport } from './routes/_authenticated/notes/$noteId'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuickNotesRoute = QuickNotesRouteImport.update({
-  id: '/quick-notes',
-  path: '/quick-notes',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const PluginsPluginIdRoute = PluginsPluginIdRouteImport.update({
-  id: '/plugins/$pluginId',
-  path: '/plugins/$pluginId',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
-  id: '/notes/$noteId',
-  path: '/notes/$noteId',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedQuickNotesRoute = AuthenticatedQuickNotesRouteImport.update({
+  id: '/quick-notes',
+  path: '/quick-notes',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPluginsPluginIdRoute =
+  AuthenticatedPluginsPluginIdRouteImport.update({
+    id: '/plugins/$pluginId',
+    path: '/plugins/$pluginId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedNotesNoteIdRoute =
+  AuthenticatedNotesNoteIdRouteImport.update({
+    id: '/notes/$noteId',
+    path: '/notes/$noteId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/quick-notes': typeof QuickNotesRoute
-  '/settings': typeof SettingsRoute
-  '/notes/$noteId': typeof NotesNoteIdRoute
-  '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
+  '/quick-notes': typeof AuthenticatedQuickNotesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
+  '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/quick-notes': typeof QuickNotesRoute
-  '/settings': typeof SettingsRoute
-  '/notes/$noteId': typeof NotesNoteIdRoute
-  '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
+  '/quick-notes': typeof AuthenticatedQuickNotesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
+  '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/quick-notes': typeof QuickNotesRoute
-  '/settings': typeof SettingsRoute
-  '/notes/$noteId': typeof NotesNoteIdRoute
-  '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
+  '/_authenticated/quick-notes': typeof AuthenticatedQuickNotesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
+  '/_authenticated/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
+    | '/setup'
     | '/quick-notes'
     | '/settings'
     | '/notes/$noteId'
     | '/plugins/$pluginId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/login'
+    | '/setup'
     | '/quick-notes'
     | '/settings'
+    | '/'
     | '/notes/$noteId'
     | '/plugins/$pluginId'
   id:
     | '__root__'
-    | '/'
-    | '/quick-notes'
-    | '/settings'
-    | '/notes/$noteId'
-    | '/plugins/$pluginId'
+    | '/_authenticated'
+    | '/login'
+    | '/setup'
+    | '/_authenticated/quick-notes'
+    | '/_authenticated/settings'
+    | '/_authenticated/'
+    | '/_authenticated/notes/$noteId'
+    | '/_authenticated/plugins/$pluginId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  QuickNotesRoute: typeof QuickNotesRoute
-  SettingsRoute: typeof SettingsRoute
-  NotesNoteIdRoute: typeof NotesNoteIdRoute
-  PluginsPluginIdRoute: typeof PluginsPluginIdRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  SetupRoute: typeof SetupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quick-notes': {
-      id: '/quick-notes'
-      path: '/quick-notes'
-      fullPath: '/quick-notes'
-      preLoaderRoute: typeof QuickNotesRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/plugins/$pluginId': {
-      id: '/plugins/$pluginId'
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/quick-notes': {
+      id: '/_authenticated/quick-notes'
+      path: '/quick-notes'
+      fullPath: '/quick-notes'
+      preLoaderRoute: typeof AuthenticatedQuickNotesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/plugins/$pluginId': {
+      id: '/_authenticated/plugins/$pluginId'
       path: '/plugins/$pluginId'
       fullPath: '/plugins/$pluginId'
-      preLoaderRoute: typeof PluginsPluginIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPluginsPluginIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/notes/$noteId': {
-      id: '/notes/$noteId'
+    '/_authenticated/notes/$noteId': {
+      id: '/_authenticated/notes/$noteId'
       path: '/notes/$noteId'
       fullPath: '/notes/$noteId'
-      preLoaderRoute: typeof NotesNoteIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedNotesNoteIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedQuickNotesRoute: typeof AuthenticatedQuickNotesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedNotesNoteIdRoute: typeof AuthenticatedNotesNoteIdRoute
+  AuthenticatedPluginsPluginIdRoute: typeof AuthenticatedPluginsPluginIdRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedQuickNotesRoute: AuthenticatedQuickNotesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedNotesNoteIdRoute: AuthenticatedNotesNoteIdRoute,
+  AuthenticatedPluginsPluginIdRoute: AuthenticatedPluginsPluginIdRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  QuickNotesRoute: QuickNotesRoute,
-  SettingsRoute: SettingsRoute,
-  NotesNoteIdRoute: NotesNoteIdRoute,
-  PluginsPluginIdRoute: PluginsPluginIdRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  LoginRoute: LoginRoute,
+  SetupRoute: SetupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { PluginsService } from "./plugins.service.js";
 import { InstallPluginDto } from "./dto/install-plugin.dto.js";
 import { SetEnabledDto } from "./dto/set-enabled.dto.js";
 
+@UseGuards(JwtAuthGuard)
 @Controller("plugins")
 export class PluginsController {
   constructor(private readonly pluginsService: PluginsService) {}

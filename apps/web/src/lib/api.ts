@@ -1,4 +1,5 @@
 import type { Folder, NoteMetadata, NoteType, PluginRecord, Vault } from "@nodeira/shared-types";
+import { authStorage } from "./authStorage.js";
 
 // ── Raw API shapes (dates come back as strings) ───────────────────────────────
 
@@ -21,15 +22,24 @@ type RawVault = Omit<Vault, "createdAt" | "updatedAt"> & {
 // Auth headers will be injected here when authentication is added.
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = authStorage.getToken();
   const headers: Record<string, string> = {
     ...(init.body && !(init.body instanceof FormData)
       ? { "Content-Type": "application/json" }
       : {}),
-    // Authorization: `Bearer ${getToken()}`,   ← add when auth is ready
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(init.headers as Record<string, string> | undefined),
   };
 
   const res = await fetch(`/api/v1${path}`, { ...init, headers });
+
+  if (res.status === 401) {
+    authStorage.clear();
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
+    throw new Error("Unauthorized");
+  }
 
   if (!res.ok) {
     throw new Error(`API ${init.method ?? "GET"} ${path} failed: ${res.status}`);
@@ -39,6 +49,57 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (res.status === 204) return undefined as T;
 
   return res.json() as Promise<T>;
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  user: AuthUser;
+}
+
+export async function login(
+  email: string,
+  password: string,
+  rememberMe: boolean,
+): Promise<AuthResponse> {
+  const res = await fetch("/api/v1/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, rememberMe }),
+  });
+  if (!res.ok) throw new Error("Invalid email or password");
+  return res.json() as Promise<AuthResponse>;
+}
+
+export async function getSetupStatus(): Promise<{ setupRequired: boolean }> {
+  const res = await fetch("/api/v1/setup/status");
+  if (!res.ok) throw new Error("Failed to fetch setup status");
+  return res.json() as Promise<{ setupRequired: boolean }>;
+}
+
+export async function createAdmin(data: {
+  email: string;
+  password: string;
+  name?: string;
+}): Promise<AuthResponse> {
+  const res = await fetch("/api/v1/setup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(body.message ?? "Setup failed");
+  }
+  return res.json() as Promise<AuthResponse>;
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────────

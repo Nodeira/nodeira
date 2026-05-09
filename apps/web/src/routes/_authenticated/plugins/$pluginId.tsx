@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAtomValue } from "jotai";
 import { Text } from "@mantine/core";
-import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
+import { pluginRegistry, pluginRegistryVersionAtom } from "../../../lib/pluginRegistry.js";
 
-export const Route = createFileRoute("/plugins/$pluginId")({
+export const Route = createFileRoute("/_authenticated/plugins/$pluginId")({
   component: PluginPage,
 });
 

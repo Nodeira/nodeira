@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { NoteEditor } from "../../components/NoteEditor.js";
-import { queryClient } from "../../lib/queryClient.js";
-import { getNote, notesKeys } from "../../lib/api.js";
+import { NoteEditor } from "../../../components/NoteEditor.js";
+import { queryClient } from "../../../lib/queryClient.js";
+import { getNote, notesKeys } from "../../../lib/api.js";
 
-export const Route = createFileRoute("/notes/$noteId")({
+export const Route = createFileRoute("/_authenticated/notes/$noteId")({
   validateSearch: (search: Record<string, unknown>): { new?: boolean } => {
     const isNew = search.new === "true" || search.new === true;
     return isNew ? { new: true } : {};

@@ -4,9 +4,11 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import { existsSync } from "fs";
 import { join } from "path";
 import { AppStateModule } from "./app-state/app-state.module.js";
+import { AuthModule } from "./auth/auth.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { FoldersModule } from "./folders/folders.module.js";
 import { NotesModule } from "./notes/notes.module.js";
+import { SetupModule } from "./setup/setup.module.js";
 import { SyncModule } from "./sync/sync.module.js";
 import { UploadModule } from "./upload/upload.module.js";
 import { VaultsModule } from "./vaults/vaults.module.js";
@@ -28,6 +30,8 @@ const webDistPath = join(process.cwd(), "public");
           }),
         ]
       : []),
+    AuthModule,
+    SetupModule,
     AppStateModule,
     DatabaseModule,
     FoldersModule,
