@@ -1,3 +1,17 @@
+# [1.3.0](https://github.com/Nodeira/nodeira/compare/v1.2.1...v1.3.0) (2026-05-09)
+
+
+### Bug Fixes
+
+* migration fix ([55754e5](https://github.com/Nodeira/nodeira/commit/55754e5974c688906f4bdd7354190970ec834ac5))
+* setup flow fix ([8cc176a](https://github.com/Nodeira/nodeira/commit/8cc176afeb86cdbffc0804618e30a2a1b5d79549))
+* updating docs, fixing setup init ([54a9531](https://github.com/Nodeira/nodeira/commit/54a953120b6ac81f1f13b0614ff37eb4fb707aee))
+
+
+### Features
+
+* adding in jwt authentication ([9708d8d](https://github.com/Nodeira/nodeira/commit/9708d8de7da0e433db248bc1db51b66b4087cd19))
+
 ## [1.2.1](https://github.com/Nodeira/nodeira/compare/v1.2.0...v1.2.1) (2026-05-04)
 
 
