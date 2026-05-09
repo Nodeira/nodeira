@@ -6,6 +6,11 @@ import { authStorage } from "../lib/authStorage.js";
 let _setupChecked = false;
 let _setupRequired = false;
 
+export function markSetupComplete() {
+  _setupRequired = false;
+  _setupChecked = true;
+}
+
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     if (!_setupChecked) {

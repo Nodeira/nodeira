@@ -16,6 +16,7 @@ import { useSetAtom } from "jotai";
 import { createAdmin } from "../lib/api.js";
 import { authStorage } from "../lib/authStorage.js";
 import { authUserAtom } from "../store/atoms.js";
+import { markSetupComplete } from "./__root.js";
 
 export const Route = createFileRoute("/setup")({
   component: SetupPage,
@@ -61,6 +62,7 @@ function SetupPage() {
       authStorage.setToken(result.access_token);
       authStorage.setUser(result.user);
       setAuthUser(result.user);
+      markSetupComplete();
       await router.navigate({ to: "/" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Setup failed");

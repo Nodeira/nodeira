@@ -1,7 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  Anchor,
   Box,
   Button,
   Center,
@@ -92,13 +91,6 @@ function LoginPage() {
             </Button>
           </form>
         </Paper>
-
-        <Text ta="center" mt="md" size="sm" c="dimmed">
-          First time?{" "}
-          <Anchor href="/setup" size="sm">
-            Run setup
-          </Anchor>
-        </Text>
       </Box>
     </Center>
   );
