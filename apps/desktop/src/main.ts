@@ -71,6 +71,14 @@ function createWindow(): void {
     void mainWindow.loadFile(path.join(distPath, "index.html"));
   }
 
+  // F12 toggles DevTools in both dev and prod builds. Using before-input-event
+  // rather than globalShortcut so it works regardless of OS focus state.
+  mainWindow.webContents.on("before-input-event", (_event, input) => {
+    if (input.type === "keyDown" && input.key === "F12") {
+      mainWindow?.webContents.toggleDevTools();
+    }
+  });
+
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -148,10 +156,6 @@ function createTray(): void {
 // ── Global shortcuts ──────────────────────────────────────────────────────────
 
 function registerGlobalShortcuts(): void {
-  globalShortcut.register("F12", () => {
-    mainWindow?.webContents.toggleDevTools();
-  });
-
   globalShortcut.register("Ctrl+Shift+Space", () => {
     if (!mainWindow) {
       createWindow();
