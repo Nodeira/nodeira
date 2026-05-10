@@ -200,6 +200,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Rebuild native maker deps (macOS)
+        if: runner.os == 'macOS'
+        run: npm rebuild macos-alias
+
       - name: Build web app
         run: pnpm --filter @nodeira/web run build
 
