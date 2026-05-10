@@ -5,7 +5,7 @@
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
-    "build": "electron-forge build",
+    "build": "electron-forge package",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "postinstall": "electron-rebuild -f -w better-sqlite3"
