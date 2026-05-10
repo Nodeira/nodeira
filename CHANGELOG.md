@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/Nodeira/nodeira/compare/v1.4.1...v1.4.2) (2026-05-10)
+
+
+### Bug Fixes
+
+* changing to not shamefully hoise ([f73a30c](https://github.com/Nodeira/nodeira/commit/f73a30cc9e6ab893ff8522c2f25883489caeb6c3))
+
 ## [1.4.1](https://github.com/Nodeira/nodeira/compare/v1.4.0...v1.4.1) (2026-05-10)
 
 
