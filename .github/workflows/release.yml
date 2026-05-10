@@ -143,6 +143,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push
+        timeout-minutes: 30
         uses: docker/build-push-action@v6
         with:
           context: .
