@@ -17,13 +17,20 @@ function findModule(modName: string): string | null {
   }
 }
 
-const NATIVE_DEPS = ["better-sqlite3"];
+// better-sqlite3 requires 'bindings' and 'file-uri-to-path' at runtime to
+// locate its compiled .node file. All three live as siblings in the hoisted
+// workspace node_modules and must be copied together.
+const NATIVE_DEPS = ["better-sqlite3", "bindings", "file-uri-to-path"];
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     name: "Nodeira",
     executableName: "nodeira",
+    // Unpack .node files from the asar — Electron cannot dlopen them from
+    // inside the archive. Explicit here because the packageAfterCopy hook
+    // copies native deps after AutoUnpackNativesPlugin has already scanned.
+    asarUnpack: ["**/*.node"],
     // Include the built web app so the renderer can load it from file://
     extraResource: ["../../apps/web/dist"],
   },
