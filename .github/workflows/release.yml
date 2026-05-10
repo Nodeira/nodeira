@@ -37,6 +37,7 @@ jobs:
       pull-requests: write
     outputs:
       version: ${{ steps.release.outputs.version }}
+      desktop_changed: ${{ steps.release.outputs.desktop_changed }}
 
     steps:
       - name: Checkout
@@ -66,6 +67,14 @@ jobs:
           AFTER_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1 || echo "")
           if [ "$AFTER_TAG" != "$BEFORE_TAG" ] && [ -n "$AFTER_TAG" ]; then
             echo "version=${AFTER_TAG#v}" >> $GITHUB_OUTPUT
+            if [ -z "$BEFORE_TAG" ]; then
+              echo "desktop_changed=true" >> $GITHUB_OUTPUT
+            else
+              CHANGED=$(git diff --name-only "$BEFORE_TAG" "$AFTER_TAG" -- apps/web apps/desktop)
+              if [ -n "$CHANGED" ]; then
+                echo "desktop_changed=true" >> $GITHUB_OUTPUT
+              fi
+            fi
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -143,3 +152,61 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  desktop:
+    needs: [release]
+    if: |
+      needs.release.result == 'success' &&
+      needs.release.outputs.version != '' &&
+      needs.release.outputs.desktop_changed == 'true'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    env:
+      ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Cache Electron binary
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      - name: Cache node-gyp headers (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\node-gyp\Cache
+          key: node-gyp-windows-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: node-gyp-windows-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter @nodeira/web run build
+
+      - name: Make Electron artifacts
+        run: pnpm --filter @nodeira/desktop run make
+
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.release.outputs.version }}
+          files: apps/desktop/out/make/**/*

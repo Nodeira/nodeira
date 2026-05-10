@@ -1,11 +1,12 @@
 import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
+import "../lib/electronAPI.js";
 
 export interface YjsContext {
   doc: Y.Doc;
   wsProvider: HocuspocusProvider;
-  idbProvider: IndexeddbPersistence;
+  idbProvider: IndexeddbPersistence | null;
 }
 
 /**
@@ -25,6 +26,12 @@ const docCache = new Map<string, YjsContext>();
 const pendingDestroys = new Map<string, ReturnType<typeof setTimeout>>();
 const DESTROY_GRACE_MS = 250;
 
+function getWsUrl(): string {
+  if (window.electronAPI?.wsBaseUrl) return `${window.electronAPI.wsBaseUrl}/sync`;
+  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+  return import.meta.env["VITE_SYNC_WS_URL"] ?? `${proto}://${window.location.host}/sync`;
+}
+
 export function getOrCreateYjsContext(noteId: string): YjsContext {
   const pending = pendingDestroys.get(noteId);
   if (pending) {
@@ -37,20 +44,36 @@ export function getOrCreateYjsContext(noteId: string): YjsContext {
 
   const doc = new Y.Doc();
 
-  // IndexedDB: persists the full Yjs document locally.
-  // Restores content before the WebSocket even connects, making offline work seamless.
-  const idbProvider = new IndexeddbPersistence(`nodeira-note-${noteId}`, doc);
+  let idbProvider: IndexeddbPersistence | null = null;
 
-  // WebSocket: syncs with the NestJS/Hocuspocus server using the Hocuspocus
-  // wire protocol. The note id is sent in-protocol as `name`, not in the URL,
-  // so the gateway path stays a static `/sync`.
-  const proto = window.location.protocol === "https:" ? "wss" : "ws";
-  const wsBaseUrl =
-    import.meta.env["VITE_SYNC_WS_URL"] ?? `${proto}://${window.location.host}/sync`;
+  if (window.electronAPI?.sqlite) {
+    // Desktop: load persisted Yjs state from SQLite via IPC, then subscribe to updates
+    const api = window.electronAPI.sqlite;
+    void api.loadYjsState(noteId).then((state) => {
+      if (state) Y.applyUpdate(doc, state);
+    });
+
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    doc.on("update", () => {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveTimer = null;
+        const state = Y.encodeStateAsUpdate(doc);
+        void api.saveYjsState(noteId, state);
+      }, 1000);
+    });
+  } else {
+    // Web: use IndexedDB for offline persistence
+    idbProvider = new IndexeddbPersistence(`nodeira-note-${noteId}`, doc);
+  }
+
   const wsProvider = new HocuspocusProvider({
-    url: wsBaseUrl,
+    url: getWsUrl(),
     name: noteId,
     document: doc,
+    onStatus: ({ status }) => {
+      window.dispatchEvent(new CustomEvent("yjs:ws-status", { detail: status }));
+    },
   });
 
   const ctx: YjsContext = { doc, wsProvider, idbProvider };
@@ -66,7 +89,7 @@ export function destroyYjsContext(noteId: string) {
     const ctx = docCache.get(noteId);
     if (!ctx) return;
     ctx.wsProvider.destroy();
-    ctx.idbProvider.destroy();
+    ctx.idbProvider?.destroy();
     ctx.doc.destroy();
     docCache.delete(noteId);
   }, DESTROY_GRACE_MS);

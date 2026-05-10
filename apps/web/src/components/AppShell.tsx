@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { IconMoon, IconSun } from "@tabler/icons-react";
+import { IconMoon, IconSun, IconWifiOff } from "@tabler/icons-react";
 import {
   ActionIcon,
   AppShell as MantineAppShell,
+  Badge,
   Burger,
   Drawer,
   Group,
@@ -19,8 +20,10 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMantineColorScheme } from "@mantine/core";
+import { networkStatusAtom } from "../store/networkStatusAtom.js";
+import "../lib/electronAPI.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   asidePanelOpenAtom,
@@ -73,6 +76,8 @@ export function AppShell({ children }: AppShellProps) {
   const [fullscreenPane, setFullscreenPane] = useAtom(fullscreenPaneAtom);
   const [viewsPaneOpen] = useAtom(viewsPaneOpenAtom);
   const [currentVaultId, setCurrentVaultId] = useAtom(currentVaultAtom);
+  const networkStatus = useAtomValue(networkStatusAtom);
+  const setNetworkStatus = useSetAtom(networkStatusAtom);
   const [search, setSearch] = useState("");
   const [newFolderOpen, { open: openNewFolder, close: closeNewFolder }] = useDisclosure(false);
   const [newVaultOpen, { open: openNewVault, close: closeNewVault }] = useDisclosure(false);
@@ -109,6 +114,82 @@ export function AppShell({ children }: AppShellProps) {
     })();
   }, [installedPlugins]);
 
+  // Seed TanStack Query cache from SQLite on startup (Electron only) so the notes
+  // list renders immediately without waiting for a server round-trip.
+  useEffect(() => {
+    const api = window.electronAPI?.sqlite;
+    if (!api) return;
+    void api.getNoteMetadata().then((cached) => {
+      qc.setQueryData(notesKeys.all, cached);
+      const byVault = new Map<string, typeof cached>();
+      for (const note of cached) {
+        if (note.vaultId) {
+          const list = byVault.get(note.vaultId) ?? [];
+          list.push(note);
+          byVault.set(note.vaultId, list);
+        }
+      }
+      for (const [vaultId, vaultNotes] of byVault) {
+        qc.setQueryData(notesKeys.byVault(vaultId), vaultNotes);
+      }
+    });
+  }, [qc]);
+
+  // Sync browser online/offline events → networkStatusAtom
+  useEffect(() => {
+    const handleOnline = () => setNetworkStatus("online");
+    const handleOffline = () => setNetworkStatus("offline");
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [setNetworkStatus]);
+
+  // Supplement navigator.onLine with Yjs WebSocket connection status.
+  // A successful WS connection is a reliable "definitely online" signal.
+  // A WS disconnect only updates status when navigator.onLine also agrees.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const status = (e as CustomEvent<string>).detail;
+      if (status === "connected") {
+        setNetworkStatus("online");
+      } else if (status === "disconnected" && !navigator.onLine) {
+        setNetworkStatus("offline");
+      }
+    };
+    window.addEventListener("yjs:ws-status", handler);
+    return () => window.removeEventListener("yjs:ws-status", handler);
+  }, [setNetworkStatus]);
+
+  // When coming back online, refresh the notes list from the server
+  const prevNetworkStatus = useRef(networkStatus);
+  useEffect(() => {
+    if (prevNetworkStatus.current === "offline" && networkStatus === "online") {
+      void qc.invalidateQueries({ queryKey: notesKeys.all });
+    }
+    prevNetworkStatus.current = networkStatus;
+  }, [networkStatus, qc]);
+
+  // Desktop IPC: new-note, open-search, toggle-sidebar events from native menu / global shortcuts
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api) return;
+
+    const unsubNewNote = api.onNewNote(() => {
+      void handleCreateNote("note");
+    });
+    const unsubToggleSidebar = api.onToggleSidebar(() => {
+      toggleNav();
+    });
+
+    return () => {
+      unsubNewNote();
+      unsubToggleSidebar();
+    };
+  }, []);
+
   const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
   const foldersQueryKey = currentVaultId ? foldersKeys.byVault(currentVaultId) : foldersKeys.all;
 
@@ -116,6 +197,14 @@ export function AppShell({ children }: AppShellProps) {
     queryKey: notesQueryKey,
     queryFn: () => getNotes(currentVaultId ?? undefined),
   });
+
+  // Keep SQLite warm: upsert fresh server data back into the local cache.
+  useEffect(() => {
+    const api = window.electronAPI?.sqlite;
+    if (!api || notes.length === 0) return;
+    void api.upsertNoteMetadata(notes);
+  }, [notes]);
+
   const { data: folders = [] } = useQuery({
     queryKey: foldersQueryKey,
     queryFn: () => getFolders(currentVaultId ?? undefined),
@@ -345,9 +434,25 @@ export function AppShell({ children }: AppShellProps) {
                 Nodeira
               </Text>
             </Group>
-            <ActionIcon variant="subtle" onClick={toggleColorScheme} title="Toggle dark/light mode">
-              {colorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
-            </ActionIcon>
+            <Group gap="xs">
+              {networkStatus === "offline" && (
+                <Badge
+                  color="orange"
+                  variant="light"
+                  size="sm"
+                  leftSection={<IconWifiOff size={11} />}
+                >
+                  Offline
+                </Badge>
+              )}
+              <ActionIcon
+                variant="subtle"
+                onClick={toggleColorScheme}
+                title="Toggle dark/light mode"
+              >
+                {colorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
+              </ActionIcon>
+            </Group>
           </Group>
         </MantineAppShell.Header>
 

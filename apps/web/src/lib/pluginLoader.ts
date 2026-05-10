@@ -2,6 +2,7 @@ import { pluginRegistry, pluginRegistryVersionAtom } from "./pluginRegistry.js";
 import { createPluginAPI } from "./pluginApi.js";
 import { jotaiStore } from "../store/jotaiStore.js";
 import type { PluginModule } from "./pluginTypes.js";
+import "./electronAPI.js";
 
 // ── CDN URL construction ───────────────────────────────────────────────────────
 
@@ -40,15 +41,13 @@ export async function loadPlugin(source: string): Promise<void> {
       if (!loader) throw new Error(`No dev plugin registered for id "${pluginId}"`);
       pluginModule = await loader();
     } else {
-      // In DEV mode, check for a local override keyed by "owner/repo" (no version).
       const devLoader = import.meta.env.DEV
         ? devPluginModules.get(source.slice(0, source.lastIndexOf("@")))
         : undefined;
       if (devLoader) {
         pluginModule = await devLoader();
       } else {
-        const url = buildCdnUrl(source);
-        pluginModule = (await import(/* @vite-ignore */ url)) as PluginModule;
+        pluginModule = await loadFromCdnWithCache(source);
       }
     }
 
@@ -57,6 +56,39 @@ export async function loadPlugin(source: string): Promise<void> {
     loadedSources.add(source);
   } catch (err) {
     console.error(`[Nodeira] Failed to load plugin "${source}":`, err);
+  }
+}
+
+async function loadFromCdnWithCache(source: string): Promise<PluginModule> {
+  const desktopPlugin = window.electronAPI?.plugin;
+  const url = buildCdnUrl(source);
+
+  // Try CDN first
+  try {
+    const mod = (await import(/* @vite-ignore */ url)) as PluginModule;
+    // Cache the bundle text for offline use (best-effort — don't block load on failure)
+    if (desktopPlugin) {
+      fetch(url)
+        .then((r) => r.text())
+        .then((bundle) => desktopPlugin.setCachedBundle(source, bundle))
+        .catch(() => undefined);
+    }
+    return mod;
+  } catch (cdnErr) {
+    // CDN failed — try SQLite cache if running in Electron
+    if (desktopPlugin) {
+      const cached = await desktopPlugin.getCachedBundle(source);
+      if (cached) {
+        const blob = new Blob([cached], { type: "application/javascript" });
+        const blobUrl = URL.createObjectURL(blob);
+        try {
+          return (await import(/* @vite-ignore */ blobUrl)) as PluginModule;
+        } finally {
+          URL.revokeObjectURL(blobUrl);
+        }
+      }
+    }
+    throw cdnErr;
   }
 }
 

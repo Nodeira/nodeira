@@ -6,8 +6,8 @@ const config: Config = {
   tagline: "AI-enhanced, offline-first note-taking",
   favicon: "img/favicon.ico",
 
-  url: "https://nodeira.dev",
-  baseUrl: "/",
+  url: "https://nodeira.github.io",
+  baseUrl: "/nodeira/",
 
   onBrokenLinks: "throw",
   markdown: {

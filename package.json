@@ -22,8 +22,10 @@
       "@nestjs/core",
       "@prisma/engines",
       "@scarf/scarf",
+      "better-sqlite3",
       "core-js",
       "core-js-pure",
+      "electron",
       "esbuild",
       "leveldown",
       "prisma"
