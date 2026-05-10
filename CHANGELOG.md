@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/Nodeira/nodeira/compare/v1.4.0...v1.4.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* updating package description, ci fixes ([a768ab5](https://github.com/Nodeira/nodeira/commit/a768ab5a0e4b12f0cd9de4ab0dc48404c22e1dd1))
+
 # [1.4.0](https://github.com/Nodeira/nodeira/compare/v1.3.0...v1.4.0) (2026-05-10)
 
 
