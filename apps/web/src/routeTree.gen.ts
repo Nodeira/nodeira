@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -26,6 +27,11 @@ const SetupRoute = SetupRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectRoute = ConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -62,6 +68,7 @@ const AuthenticatedNotesNoteIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
 }
 export interface FileRoutesByTo {
+  '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
@@ -81,6 +89,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/_authenticated/quick-notes': typeof AuthenticatedQuickNotesRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/connect'
     | '/login'
     | '/setup'
     | '/quick-notes'
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
     | '/plugins/$pluginId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/connect'
     | '/login'
     | '/setup'
     | '/quick-notes'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/connect'
     | '/login'
     | '/setup'
     | '/_authenticated/quick-notes'
@@ -122,6 +134,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  ConnectRoute: typeof ConnectRoute
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
 }
@@ -140,6 +153,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect': {
+      id: '/connect'
+      path: '/connect'
+      fullPath: '/connect'
+      preLoaderRoute: typeof ConnectRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -209,6 +229,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  ConnectRoute: ConnectRoute,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
 }

@@ -13,6 +13,12 @@ export function markSetupComplete() {
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
+    // In Electron with no server URL configured → show connect screen first
+    if (window.electronAPI !== undefined && !window.electronAPI.apiBaseUrl) {
+      if (location.pathname !== "/connect") throw redirect({ to: "/connect" });
+      return;
+    }
+
     if (!_setupChecked) {
       try {
         const status = await getSetupStatus();

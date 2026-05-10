@@ -20,6 +20,18 @@
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
     },
+    "electron:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "electron:build": {
+      "dependsOn": ["^build"],
+      "outputs": [".vite/**"]
+    },
+    "electron:package": {
+      "dependsOn": ["@nodeira/web#build", "electron:build"],
+      "outputs": ["out/**"]
+    },
     "e2e": {
       "cache": false,
       "inputs": [

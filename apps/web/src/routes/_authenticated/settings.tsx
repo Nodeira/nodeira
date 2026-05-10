@@ -27,17 +27,66 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 function SettingsPage() {
+  const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
   return (
     <Stack gap="md">
       <Title order={3}>Settings</Title>
-      <Tabs defaultValue="plugins">
+      <Tabs defaultValue={isElectron ? "connection" : "plugins"}>
         <Tabs.List>
+          {isElectron && <Tabs.Tab value="connection">Connection</Tabs.Tab>}
           <Tabs.Tab value="plugins">Plugins</Tabs.Tab>
         </Tabs.List>
+        {isElectron && (
+          <Tabs.Panel value="connection" pt="md">
+            <ConnectionTab />
+          </Tabs.Panel>
+        )}
         <Tabs.Panel value="plugins" pt="md">
           <PluginsTab />
         </Tabs.Panel>
       </Tabs>
+    </Stack>
+  );
+}
+
+function ConnectionTab() {
+  const [url, setUrl] = useState(window.electronAPI?.apiBaseUrl ?? "");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSave() {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      setError("Server URL is required");
+      return;
+    }
+    if (!/^https?:\/\/.+/.test(trimmed)) {
+      setError("Enter a valid URL starting with http:// or https://");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    await window.electronAPI!.settings.setServerUrl(trimmed);
+  }
+
+  return (
+    <Stack gap="md" style={{ maxWidth: 500 }}>
+      <TextInput
+        label="Server URL"
+        description="The URL of your Nodeira server. The app will reload when you save."
+        placeholder="http://localhost:3001"
+        value={url}
+        onChange={(e) => setUrl(e.currentTarget.value)}
+        error={error}
+      />
+      <Button
+        loading={loading}
+        disabled={url.trim() === (window.electronAPI?.apiBaseUrl ?? "")}
+        onClick={() => void handleSave()}
+        style={{ alignSelf: "flex-start" }}
+      >
+        Save &amp; Reconnect
+      </Button>
     </Stack>
   );
 }

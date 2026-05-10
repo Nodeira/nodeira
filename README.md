@@ -78,6 +78,29 @@ cd apps/api && pnpm exec prisma db push && cd ../..
 pnpm run dev
 ```
 
+Electron app launch:
+
+```
+  1. API server (already need this running anyway):
+  pnpm exec turbo run dev --filter=@nodeira/api
+
+  2. Web dev server (Electron loads http://localhost:5173 in dev mode):
+  pnpm exec turbo run dev --filter=@nodeira/web
+
+  3. Electron (once the web server is up):
+  pnpm --filter @nodeira/desktop run start
+
+  ---
+  One prerequisite first — better-sqlite3 is a native addon and pnpm blocked its build scripts during install (you saw the "run pnpm approve-builds" prompt). Run this once:
+
+  ! pnpm approve-builds
+
+  Then reinstall so the postinstall rebuild runs:
+  ! pnpm install
+
+  After that, pnpm --filter @nodeira/desktop run start will bundle the main + preload via Vite and launch the Electron window pointing at your web dev server.
+```
+
 Open `http://localhost:5173`. On first visit you will be directed to the setup page to create your admin account.
 
 For full configuration and deployment docs, see the **[documentation](https://Nodeira.github.io/nodeira/)**.
