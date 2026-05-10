@@ -19,7 +19,12 @@ const config: ForgeConfig = {
     {
       name: "@electron-forge/maker-deb",
       config: {
-        options: { name: "nodeira", productName: "Nodeira", categories: ["Utility"] },
+        options: {
+          name: "nodeira",
+          bin: "nodeira",
+          productName: "Nodeira",
+          categories: ["Utility"],
+        },
       },
     },
     {
