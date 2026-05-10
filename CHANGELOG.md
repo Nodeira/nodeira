@@ -1,3 +1,16 @@
+# [1.4.0](https://github.com/Nodeira/nodeira/compare/v1.3.0...v1.4.0) (2026-05-10)
+
+
+### Bug Fixes
+
+* fix build command ([bacfaf0](https://github.com/Nodeira/nodeira/commit/bacfaf04e1db5cd985154aa182d03f384aa66a7c))
+* removing hardcoded version ([6651215](https://github.com/Nodeira/nodeira/commit/6651215afdc5471a4152deb626030ef287891cde))
+
+
+### Features
+
+* initial electron desktop application ([11ac522](https://github.com/Nodeira/nodeira/commit/11ac5227902b128913f7b48aa31173241765eaf4))
+
 # [1.3.0](https://github.com/Nodeira/nodeira/compare/v1.2.1...v1.3.0) (2026-05-09)
 
 
