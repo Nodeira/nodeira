@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
+  // Relative base so built assets load correctly when served via file:// in
+  // the Electron desktop app (absolute /assets/... paths break under file://).
+  base: "./",
   plugins: [
     // tanstackRouter MUST come before react() — it generates routeTree.gen.ts
     tanstackRouter({

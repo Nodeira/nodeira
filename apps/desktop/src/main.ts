@@ -148,6 +148,10 @@ function createTray(): void {
 // ── Global shortcuts ──────────────────────────────────────────────────────────
 
 function registerGlobalShortcuts(): void {
+  globalShortcut.register("F12", () => {
+    mainWindow?.webContents.toggleDevTools();
+  });
+
   globalShortcut.register("Ctrl+Shift+Space", () => {
     if (!mainWindow) {
       createWindow();
