@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/Nodeira/nodeira/compare/v1.4.2...v1.5.0) (2026-05-20)
+
+
+### Features
+
+* auth files, basic cli addition ([0553bdb](https://github.com/Nodeira/nodeira/commit/0553bdbf3e3550460f3ab9971e97476e4395509f))
+
 ## [1.4.2](https://github.com/Nodeira/nodeira/compare/v1.4.1...v1.4.2) (2026-05-10)
 
 
