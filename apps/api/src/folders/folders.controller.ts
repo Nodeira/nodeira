@@ -7,11 +7,17 @@ import {
   Patch,
   Post,
   Query,
+  Request,
   UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
+import type { AuthenticatedUser } from "../auth/jwt.strategy.js";
 import { FoldersService } from "./folders.service.js";
 import { CreateFolderDto } from "./dto/create-folder.dto.js";
+
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser;
+}
 
 @UseGuards(JwtAuthGuard)
 @Controller("folders")
@@ -24,8 +30,8 @@ export class FoldersController {
   }
 
   @Get()
-  findAll(@Query("vaultId") vaultId?: string) {
-    return this.foldersService.findAll(vaultId);
+  findAll(@Request() req: RequestWithUser, @Query("vaultId") vaultId?: string) {
+    return this.foldersService.findAll(vaultId, req.user.vaultScope);
   }
 
   @Patch(":id")

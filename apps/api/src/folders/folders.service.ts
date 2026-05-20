@@ -10,9 +10,10 @@ export class FoldersService {
     return this.prisma.folder.create({ data: { name: dto.name, vaultId: dto.vaultId ?? null } });
   }
 
-  async findAll(vaultId?: string) {
+  async findAll(vaultId?: string, vaultScope?: string | null) {
+    const effectiveVaultId = vaultScope ?? vaultId;
     return this.prisma.folder.findMany({
-      ...(vaultId ? { where: { vaultId } } : {}),
+      ...(effectiveVaultId ? { where: { vaultId: effectiveVaultId } } : {}),
       orderBy: { name: "asc" },
     });
   }

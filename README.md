@@ -51,7 +51,7 @@ Edit `docker-compose.yml` — replace both `CHANGE_ME` values with a strong data
 
 ```bash
 docker compose up -d
-docker compose exec nodeira bunx prisma migrate deploy
+docker compose exec nodeira pnpm exec prisma migrate deploy
 ```
 
 Open `http://localhost:3001`. On first visit you will be directed to the setup page to create your admin account.

@@ -26,7 +26,7 @@ Then start the stack:
 
 ```bash
 docker compose up -d
-docker compose exec nodeira bunx prisma migrate deploy
+docker compose exec nodeira pnpm exec prisma migrate deploy
 ```
 
 Open **http://localhost:3001**. You will be redirected to the setup page to create your admin account.

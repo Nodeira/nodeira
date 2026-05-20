@@ -7,16 +7,16 @@ sidebar_position: 1
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) ≥ 1.3
+- [Node.js](https://nodejs.org) ≥ 22
+- [pnpm](https://pnpm.io) ≥ 9
 - [Docker](https://www.docker.com) (for PostgreSQL) or a local PostgreSQL 14+ instance
-- [Node.js](https://nodejs.org) ≥ 20 (for some tooling)
 
 ## Setup
 
 ```bash
 git clone https://github.com/Nodeira/nodeira.git
 cd nodeira
-bun install
+pnpm install
 ```
 
 Start a local PostgreSQL instance:
@@ -31,13 +31,13 @@ Configure the server and push the schema:
 
 ```bash
 cp apps/api/.env.example apps/api/.env
-cd apps/api && bunx prisma db push && cd ../..
+cd apps/api && pnpm exec prisma db push && cd ../..
 ```
 
 Start all dev servers:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 | Service    | URL                   |
@@ -49,16 +49,16 @@ bun run dev
 ## Common commands
 
 ```bash
-bun run build        # production build for all packages
-bun run typecheck    # type-check all packages
-bun run test         # run all tests
-bun run lint         # lint all packages
-bun run format       # format with Prettier
+pnpm run build        # production build for all packages
+pnpm run typecheck    # type-check all packages
+pnpm run test         # run all tests
+pnpm run lint         # lint all packages
+pnpm run format       # format with Prettier
 
 # Run a single app
-bunx turbo run dev --filter=@nodeira/web
-bunx turbo run dev --filter=@nodeira/api
-bunx turbo run dev --filter=@nodeira/docs
+pnpm exec turbo run dev --filter=@nodeira/web
+pnpm exec turbo run dev --filter=@nodeira/api
+pnpm exec turbo run dev --filter=@nodeira/docs
 ```
 
 ## Commit conventions
@@ -78,7 +78,7 @@ Releases are automated: merging to `main` triggers semantic-release, which updat
 
 1. Fork the repo and create a branch from `main`.
 2. Make your changes and add tests where appropriate.
-3. Run `bun run typecheck && bun run lint` and fix any errors.
+3. Run `pnpm run typecheck && pnpm run lint` and fix any errors.
 4. Open a PR — the PR template will guide you through the description.
 5. CI runs ESLint and commitlint automatically.
 

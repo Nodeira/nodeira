@@ -69,6 +69,26 @@ jobs:
       - name: Test
         run: pnpm run test
 
+  cli-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/cli/go.mod
+          cache-dependency-path: apps/cli/go.sum
+
+      - name: Build CLI
+        working-directory: apps/cli
+        run: go build -o /dev/null .
+
+      - name: Vet
+        working-directory: apps/cli
+        run: go vet ./...
+
   commitlint:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'

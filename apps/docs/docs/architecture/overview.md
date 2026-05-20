@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Architecture Overview
 
-Nodeira is a monorepo managed by [Turborepo](https://turbo.build) and [Bun workspaces](https://bun.sh/docs/install/workspaces).
+Nodeira is a monorepo managed by [Turborepo](https://turbo.build) and [pnpm workspaces](https://pnpm.io/workspaces).
 
 ## Packages
 
@@ -42,4 +42,4 @@ Vite's dev proxy keeps the browser origin consistent so cookies and WebSocket up
 | Real-time    | Hocuspocus (Yjs WebSocket server)                    |
 | ORM          | Prisma                                               |
 | Database     | PostgreSQL                                           |
-| Monorepo     | Turborepo, Bun workspaces                            |
+| Monorepo     | Turborepo, pnpm workspaces                           |

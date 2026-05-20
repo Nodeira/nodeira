@@ -2,6 +2,7 @@ import { NotFoundException } from "@nestjs/common";
 import type { PrismaClient } from "@prisma/client";
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "vitest";
 import { asPrismaService, cleanDatabase, createTestPrisma } from "../test/prisma-test-client.js";
+import { MarkdownConverterService } from "./markdown-converter.service.js";
 import { NotesService } from "./notes.service.js";
 
 let prisma: PrismaClient;
@@ -10,7 +11,7 @@ let service: NotesService;
 beforeAll(async () => {
   prisma = createTestPrisma();
   await prisma.$connect();
-  service = new NotesService(asPrismaService(prisma));
+  service = new NotesService(asPrismaService(prisma), new MarkdownConverterService());
 });
 
 afterAll(async () => {

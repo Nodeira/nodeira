@@ -15,6 +15,7 @@ export interface AuthenticatedUser {
   email: string;
   name: string | null;
   role: string;
+  vaultScope?: string | null;
 }
 
 @Injectable()

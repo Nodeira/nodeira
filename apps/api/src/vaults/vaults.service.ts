@@ -25,7 +25,11 @@ export class VaultsService implements OnModuleInit {
     return this.prisma.vault.create({ data: { name: dto.name } });
   }
 
-  async findAll() {
+  async findAll(vaultScope?: string | null) {
+    if (vaultScope) {
+      const vault = await this.prisma.vault.findUnique({ where: { id: vaultScope } });
+      return vault ? [vault] : [];
+    }
     return this.prisma.vault.findMany({ orderBy: { createdAt: "asc" } });
   }
 

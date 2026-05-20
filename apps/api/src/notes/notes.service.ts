@@ -1,15 +1,23 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service.js";
 import type { CreateNoteDto } from "./dto/create-note.dto.js";
 import type { UpdateNoteDto } from "./dto/update-note.dto.js";
 import type { ReorderNoteItemDto } from "./dto/reorder-notes.dto.js";
+import { MarkdownConverterService } from "./markdown-converter.service.js";
 
 @Injectable()
 export class NotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly markdownConverter: MarkdownConverterService,
+  ) {}
 
-  async create(dto: CreateNoteDto) {
+  async create(dto: CreateNoteDto, vaultScope?: string | null) {
+    if (vaultScope && dto.vaultId !== vaultScope) {
+      throw new ForbiddenException("Token is scoped to a different vault");
+    }
+
     let position = dto.position;
     if (position === undefined) {
       const agg = await this.prisma.note.aggregate({
@@ -32,9 +40,10 @@ export class NotesService {
     });
   }
 
-  async findAll(vaultId?: string) {
+  async findAll(vaultId?: string, vaultScope?: string | null) {
+    const effectiveVaultId = vaultScope ?? vaultId;
     return this.prisma.note.findMany({
-      ...(vaultId ? { where: { vaultId } } : {}),
+      ...(effectiveVaultId ? { where: { vaultId: effectiveVaultId } } : {}),
       select: {
         id: true,
         title: true,
@@ -53,13 +62,17 @@ export class NotesService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, vaultScope?: string | null) {
     const note = await this.prisma.note.findUnique({ where: { id } });
     if (!note) throw new NotFoundException(`Note ${id} not found`);
+    if (vaultScope && note.vaultId !== vaultScope) {
+      throw new ForbiddenException("Token is scoped to a different vault");
+    }
     return note;
   }
 
-  async update(id: string, dto: UpdateNoteDto) {
+  async update(id: string, dto: UpdateNoteDto, vaultScope?: string | null) {
+    await this.findOne(id, vaultScope);
     try {
       return await this.prisma.note.update({
         where: { id },
@@ -92,7 +105,8 @@ export class NotesService {
     );
   }
 
-  async remove(id: string) {
+  async remove(id: string, vaultScope?: string | null) {
+    await this.findOne(id, vaultScope);
     try {
       return await this.prisma.note.delete({ where: { id } });
     } catch {
@@ -106,5 +120,18 @@ export class NotesService {
       update: { yjsState },
       create: { id, yjsState, title: "Untitled", type: "note", position: 0 },
     });
+  }
+
+  async getContent(id: string, vaultScope?: string | null): Promise<{ content: string }> {
+    const note = await this.findOne(id, vaultScope);
+    if (!note.yjsState) return { content: "" };
+    const content = await this.markdownConverter.yjsStateToMarkdown(note.yjsState as Uint8Array);
+    return { content };
+  }
+
+  async setContent(id: string, markdown: string, vaultScope?: string | null): Promise<void> {
+    await this.findOne(id, vaultScope);
+    const yjsState = await this.markdownConverter.markdownToYjsState(markdown);
+    await this.prisma.note.update({ where: { id }, data: { yjsState: Buffer.from(yjsState) } });
   }
 }

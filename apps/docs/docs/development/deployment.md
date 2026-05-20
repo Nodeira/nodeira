@@ -49,7 +49,7 @@ Run the stack:
 
 ```bash
 docker compose up -d
-docker compose exec server bunx prisma db push
+docker compose exec server pnpm exec prisma db push
 ```
 
 ## Environment variables
@@ -94,10 +94,10 @@ location /uploads/ {
 
 ## Database migrations
 
-Nodeira uses Prisma. In development `bunx prisma db push` applies the schema directly. In production, generate and apply migration files:
+Nodeira uses Prisma. In development `pnpm exec prisma db push` applies the schema directly. In production, generate and apply migration files:
 
 ```bash
-bunx prisma migrate deploy
+pnpm exec prisma migrate deploy
 ```
 
 :::caution

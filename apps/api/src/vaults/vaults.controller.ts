@@ -1,7 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
+import type { AuthenticatedUser } from "../auth/jwt.strategy.js";
 import { VaultsService } from "./vaults.service.js";
 import { CreateVaultDto } from "./dto/create-vault.dto.js";
+
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser;
+}
 
 @UseGuards(JwtAuthGuard)
 @Controller("vaults")
@@ -14,8 +19,8 @@ export class VaultsController {
   }
 
   @Get()
-  findAll() {
-    return this.vaultsService.findAll();
+  findAll(@Request() req: RequestWithUser) {
+    return this.vaultsService.findAll(req.user.vaultScope);
   }
 
   @Delete(":id")

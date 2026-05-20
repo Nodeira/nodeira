@@ -154,6 +154,57 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  cli:
+    needs: [release]
+    if: |
+      needs.release.result == 'success' &&
+      needs.release.outputs.version != ''
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            artifact: nodeira-linux-amd64
+          - goos: linux
+            goarch: arm64
+            artifact: nodeira-linux-arm64
+          - goos: darwin
+            goarch: amd64
+            artifact: nodeira-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            artifact: nodeira-darwin-arm64
+          - goos: windows
+            goarch: amd64
+            artifact: nodeira-windows-amd64.exe
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/cli/go.mod
+          cache-dependency-path: apps/cli/go.sum
+
+      - name: Build
+        working-directory: apps/cli
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: go build -ldflags="-s -w -X main.version=v${{ needs.release.outputs.version }}" -o ${{ matrix.artifact }} .
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.release.outputs.version }}
+          files: apps/cli/${{ matrix.artifact }}
+
   desktop:
     needs: [release]
     if: |
