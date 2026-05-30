@@ -1,3 +1,16 @@
+# [1.6.0](https://github.com/Nodeira/nodeira/compare/v1.5.0...v1.6.0) (2026-05-30)
+
+
+### Bug Fixes
+
+* **mobile:** resolve typecheck errors in CanvasView and config ([402e8ca](https://github.com/Nodeira/nodeira/commit/402e8caf5b93d16f7879fcff7d649cada5df3cdc))
+* resolve CI typecheck and build failures ([7bfec14](https://github.com/Nodeira/nodeira/commit/7bfec14cc53d08fb6113545b710b727addadba09))
+
+
+### Features
+
+* adding canvas, mobile build ([e4643c4](https://github.com/Nodeira/nodeira/commit/e4643c46242171235e87c659aa57222628770c21))
+
 # [1.5.0](https://github.com/Nodeira/nodeira/compare/v1.4.2...v1.5.0) (2026-05-20)
 
 
