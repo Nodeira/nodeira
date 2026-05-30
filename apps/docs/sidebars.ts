@@ -7,7 +7,7 @@ const sidebars: SidebarsConfig = {
     {
       type: "category",
       label: "Features",
-      items: ["features/vaults", "features/folders", "features/notes", "features/image-upload"],
+      items: ["features/vaults", "features/folders", "features/notes", "features/image-upload", "features/canvas"],
     },
   ],
   devSidebar: [

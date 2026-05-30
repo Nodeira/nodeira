@@ -34,7 +34,10 @@ export type NoteMetadata = Pick<
   | "folderId"
   | "pinned"
   | "icon"
+  | "tags"
   | "createdAt"
   | "updatedAt"
   | "position"
->;
+> & {
+  preview?: string;
+};

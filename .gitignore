@@ -7,6 +7,7 @@ dist/
 .tanstack
 *.tsbuildinfo
 *.timestamp-*.mjs
+apps/api/uploads
 
 ebooker/
 
@@ -23,3 +24,7 @@ out/
 apps/e2e/playwright-report/
 apps/e2e/test-results/
 apps/e2e/.seed-manifest.json
+
+# Expo cruft
+
+.expo/

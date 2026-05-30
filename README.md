@@ -105,6 +105,10 @@ Open `http://localhost:5173`. On first visit you will be directed to the setup p
 
 For full configuration and deployment docs, see the **[documentation](https://Nodeira.github.io/nodeira/)**.
 
+## Browser Notes
+
+**Brave Browser:** Brave's Shields feature includes canvas fingerprinting protection that interferes with the Graph View's click detection. If nodes in the graph are not clickable, disable Shields for your Nodeira instance (click the Brave lion icon in the address bar → toggle Shields off). This is safe to do for a self-hosted app on your own server.
+
 ## Commits
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/). Releases are automated — pushing to `main` triggers semantic versioning and a GitHub release based on commit types.

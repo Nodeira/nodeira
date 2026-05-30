@@ -6,6 +6,7 @@ import {
   Button,
   Code,
   Group,
+  Select,
   Stack,
   Switch,
   Tabs,
@@ -13,14 +14,19 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { useAtomValue } from "jotai";
 import {
   getPlugins,
+  getUserPreferences,
   installPlugin,
+  patchUserPreferences,
   pluginsKeys,
   setPluginEnabled,
   uninstallPlugin,
+  userPreferencesKeys,
 } from "../../lib/api.js";
 import { loadPlugin } from "../../lib/pluginLoader.js";
+import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -31,11 +37,15 @@ function SettingsPage() {
   return (
     <Stack gap="md">
       <Title order={3}>Settings</Title>
-      <Tabs defaultValue={isElectron ? "connection" : "plugins"}>
+      <Tabs defaultValue="general">
         <Tabs.List>
+          <Tabs.Tab value="general">General</Tabs.Tab>
           {isElectron && <Tabs.Tab value="connection">Connection</Tabs.Tab>}
           <Tabs.Tab value="plugins">Plugins</Tabs.Tab>
         </Tabs.List>
+        <Tabs.Panel value="general" pt="md">
+          <GeneralTab />
+        </Tabs.Panel>
         {isElectron && (
           <Tabs.Panel value="connection" pt="md">
             <ConnectionTab />
@@ -45,6 +55,47 @@ function SettingsPage() {
           <PluginsTab />
         </Tabs.Panel>
       </Tabs>
+    </Stack>
+  );
+}
+
+const BUILTIN_STARTUP_VIEWS = [
+  { value: "home", label: "Home" },
+  { value: "quick-notes", label: "Quick Notes" },
+  { value: "graph", label: "Graph" },
+];
+
+function GeneralTab() {
+  const qc = useQueryClient();
+  // Re-derive options when plugins register new pages
+  useAtomValue(pluginRegistryVersionAtom);
+
+  const { data: prefs } = useQuery({
+    queryKey: userPreferencesKeys.me,
+    queryFn: getUserPreferences,
+    staleTime: Infinity,
+  });
+
+  const mutation = useMutation({
+    mutationFn: (startupView: string) => patchUserPreferences({ startupView }),
+    onSuccess: (updated) => qc.setQueryData(userPreferencesKeys.me, updated),
+  });
+
+  const pluginOptions = pluginRegistry
+    .getPages()
+    .map((p) => ({ value: `plugin:${p.pluginId}`, label: p.label }));
+
+  const startupViewOptions = [...BUILTIN_STARTUP_VIEWS, ...pluginOptions];
+
+  return (
+    <Stack gap="md" style={{ maxWidth: 500 }}>
+      <Select
+        label="Startup View"
+        description="Which view opens when the app first loads."
+        data={startupViewOptions}
+        value={prefs?.startupView ?? "home"}
+        onChange={(v) => v && mutation.mutate(v)}
+      />
     </Stack>
   );
 }

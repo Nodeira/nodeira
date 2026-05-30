@@ -17,14 +17,15 @@ enum Role {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  name      String?
-  role      Role       @default(USER)
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
-  apiTokens ApiToken[]
+  id          String     @id @default(uuid())
+  email       String     @unique
+  password    String
+  name        String?
+  role        Role       @default(USER)
+  preferences Json?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  apiTokens   ApiToken[]
 
   @@map("users")
 }
@@ -50,6 +51,7 @@ model Vault {
   updatedAt DateTime @updatedAt @map("updated_at")
   notes     Note[]
   folders   Folder[]
+  canvases  Canvas[]
 
   @@map("vaults")
 }
@@ -63,28 +65,42 @@ model Folder {
   updatedAt DateTime @updatedAt @map("updated_at")
   vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
   notes     Note[]
+  canvases  Canvas[]
 
   @@map("folders")
 }
 
 model Note {
-  id        String   @id @default(uuid())
-  title     String   @default("Untitled")
-  type      NoteType @default(note)
-  vaultId   String?  @map("vault_id")
-  folderId  String?  @map("folder_id")
-  pinned    Boolean  @default(false)
+  id        String     @id @default(uuid())
+  title     String     @default("Untitled")
+  type      NoteType   @default(note)
+  vaultId   String?    @map("vault_id")
+  folderId  String?    @map("folder_id")
+  pinned    Boolean    @default(false)
   icon      String?
-  position  Int      @default(0)
+  position  Int        @default(0)
   kind      String?
-  kindMeta  Json?    @map("kind_meta")
-  yjsState  Bytes?   @map("yjs_state")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
-  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  kindMeta  Json?      @map("kind_meta")
+  yjsState  Bytes?     @map("yjs_state")
+  tags      String[]   @default([])
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  vault     Vault?     @relation(fields: [vaultId], references: [id], onDelete: SetNull)
+  folder    Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  linksOut  NoteLink[] @relation("NoteLinksOut")
+  linksIn   NoteLink[] @relation("NoteLinksIn")
 
   @@map("notes")
+}
+
+model NoteLink {
+  sourceId String @map("source_id")
+  targetId String @map("target_id")
+  source   Note   @relation("NoteLinksOut", fields: [sourceId], references: [id], onDelete: Cascade)
+  target   Note   @relation("NoteLinksIn", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@id([sourceId, targetId])
+  @@map("note_links")
 }
 
 model AppState {
@@ -93,6 +109,23 @@ model AppState {
   activeNoteId String? @map("active_note_id")
 
   @@map("app_state")
+}
+
+model Canvas {
+  id        String   @id @default(uuid())
+  title     String   @default("Untitled Canvas")
+  vaultId   String?  @map("vault_id")
+  folderId  String?  @map("folder_id")
+  data      Json     @default("{\"nodes\":[],\"edges\":[]}")
+  pinned    Boolean  @default(false)
+  icon      String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
+  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@map("canvases")
 }
 
 model Plugin {

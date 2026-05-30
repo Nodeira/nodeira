@@ -2,10 +2,13 @@ import {
   IconBolt,
   IconChevronDown,
   IconFile,
+  IconLayout,
   IconLayoutColumns,
   IconLogout,
+  IconNetwork,
   IconPlus,
   IconSettings,
+  IconTag,
   IconTrash,
 } from "@tabler/icons-react";
 import {
@@ -40,6 +43,8 @@ import { DynamicIcon } from "../DynamicIcon.js";
 import { SortableNoteItem } from "./SortableNoteItem.js";
 import { FolderNavItem } from "./FolderNavItem.js";
 import type { Folder, NoteMetadata, Vault } from "@nodeira/shared-types";
+import { useQuery } from "@tanstack/react-query";
+import { canvasKeys, getCanvases } from "../../lib/api.js";
 
 interface SidebarProps {
   vaults: Vault[];
@@ -115,7 +120,16 @@ export function Sidebar({
     .sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime());
 
   const isOnQuickNotes = routerState.location.pathname === "/quick-notes";
+  const isOnGraph = routerState.location.pathname === "/graph";
+  const isOnTags = routerState.location.pathname === "/tags";
+  const isOnCanvases = routerState.location.pathname.startsWith("/canvas");
   const isOnSettings = routerState.location.pathname === "/settings";
+
+  const { data: canvasResults = [] } = useQuery({
+    queryKey: canvasKeys.search(search),
+    queryFn: () => getCanvases({ ...(currentVaultId ? { vaultId: currentVaultId } : {}), q: search }),
+    enabled: search.length > 0,
+  });
 
   return (
     <Stack gap="xs" h="100%">
@@ -306,6 +320,60 @@ export function Sidebar({
               />
             </Link>
 
+            {/* Graph view */}
+            <Link to="/graph" style={{ textDecoration: "none" }}>
+              <NavLink
+                component="div"
+                label={<Text size="sm">Graph</Text>}
+                leftSection={<IconNetwork size={14} />}
+                active={isOnGraph}
+              />
+            </Link>
+
+            {/* Tags view */}
+            <Link to="/tags" style={{ textDecoration: "none" }}>
+              <NavLink
+                component="div"
+                label={<Text size="sm">Tags</Text>}
+                leftSection={<IconTag size={14} />}
+                active={isOnTags}
+              />
+            </Link>
+
+            {/* Canvases */}
+            <Link to="/canvases" style={{ textDecoration: "none" }}>
+              <NavLink
+                component="div"
+                label={<Text size="sm">Canvases</Text>}
+                leftSection={<IconLayout size={14} />}
+                active={isOnCanvases}
+              />
+            </Link>
+
+            {/* Canvas search results */}
+            {search && canvasResults.length > 0 && (
+              <>
+                <Text size="xs" fw={600} tt="uppercase" c="dimmed" px={8} pt={4} pb={2}
+                  style={{ letterSpacing: "0.08em" }}>
+                  Canvases
+                </Text>
+                {canvasResults.map((canvas) => (
+                  <Link
+                    key={canvas.id}
+                    to="/canvas/$canvasId"
+                    params={{ canvasId: canvas.id }}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <NavLink
+                      component="div"
+                      label={<Text size="sm">{canvas.title}</Text>}
+                      leftSection={<IconLayout size={14} />}
+                    />
+                  </Link>
+                ))}
+              </>
+            )}
+
             {/* Plugin pages */}
             {pluginPages.map((page) => {
               const isOnPage = routerState.location.pathname === `/plugins/${page.pluginId}`;
@@ -344,7 +412,8 @@ export function Sidebar({
             )}
 
             {folders.map((folder) => {
-              const folderNotes = regularNotes.filter((n) => n.folderId === folder.id);
+              // Exclude pinned notes — they already appear in the Pinned section above
+              const folderNotes = regularNotes.filter((n) => n.folderId === folder.id && !n.pinned);
               return (
                 <FolderNavItem
                   key={folder.id}
@@ -408,21 +477,29 @@ export function Sidebar({
       <Box>
         <Divider mb="xs" />
         <Stack gap={0}>
-          <NavLink
-            component="div"
-            label={authUser?.name ?? authUser?.email ?? "User"}
-            leftSection={
-              <Avatar size="sm" color="blue" radius="xl">
-                {(authUser?.name ?? authUser?.email ?? "U")[0]?.toUpperCase()}
-              </Avatar>
-            }
-            rightSection={
-              <ActionIcon size="xs" variant="subtle" title="Sign out" onClick={handleLogout}>
-                <IconLogout size={12} />
-              </ActionIcon>
-            }
-            style={{ cursor: "default" }}
-          />
+          <Link to="/settings" style={{ textDecoration: "none" }}>
+            <NavLink
+              component="div"
+              label={authUser?.name ?? authUser?.email ?? "User"}
+              leftSection={
+                <Avatar size="sm" color="blue" radius="xl">
+                  {(authUser?.name ?? authUser?.email ?? "U")[0]?.toUpperCase()}
+                </Avatar>
+              }
+            />
+          </Link>
+          <Box px="xs" pb="xs">
+            <Button
+              fullWidth
+              size="xs"
+              color="red"
+              variant="light"
+              leftSection={<IconLogout size={13} />}
+              onClick={handleLogout}
+            >
+              Sign out
+            </Button>
+          </Box>
           <Link to="/settings" style={{ textDecoration: "none" }}>
             <NavLink
               component="div"

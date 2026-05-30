@@ -156,6 +156,28 @@
   object-fit: cover;
 }
 
+/* ── Wiki-link picker items ────────────────────────────────────────── */
+
+.wiki-pick-item {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 3px 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wiki-pick-item:hover {
+  background: var(--mantine-color-default-hover);
+}
+
 /* ── Inline code ───────────────────────────────────────────────────── */
 
 .tiptap code:not(pre code) {

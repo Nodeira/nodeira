@@ -83,6 +83,7 @@ export function FolderNavItem({
             <ActionIcon
               size="xs"
               variant="subtle"
+              color="green"
               title={`New note in ${folder.name}`}
               onClick={(e) => {
                 e.stopPropagation();

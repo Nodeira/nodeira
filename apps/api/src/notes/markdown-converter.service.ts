@@ -48,6 +48,30 @@ export class MarkdownConverterService {
     return Y.encodeStateAsUpdate(ydoc);
   }
 
+  yjsStateToPreview(state: Uint8Array, maxLength = 250): string {
+    try {
+      const ydoc = new Y.Doc();
+      Y.applyUpdate(ydoc, state);
+      const json = yDocToProsemirrorJSON(ydoc, "default") as TipTapNode;
+      if (!json.content?.length) return "";
+      const parts: string[] = [];
+      for (const block of json.content) {
+        const text = this.extractPlainText(block).trim();
+        if (text) parts.push(text);
+      }
+      const full = parts.join("\n");
+      return full.length > maxLength ? full.slice(0, maxLength) + "…" : full;
+    } catch {
+      return "";
+    }
+  }
+
+  private extractPlainText(node: TipTapNode): string {
+    if (node.type === "text") return node.text ?? "";
+    if (node.type === "wikiLink") return (node.attrs as { title?: string })?.title ?? "";
+    return (node.content ?? []).map((c) => this.extractPlainText(c)).join("");
+  }
+
   async yjsStateToMarkdown(state: Uint8Array): Promise<string> {
     const ydoc = new Y.Doc();
     Y.applyUpdate(ydoc, state);
@@ -208,6 +232,9 @@ export class MarkdownConverterService {
   private inlineToMarkdown(nodes: TipTapNode[]): string {
     return nodes
       .map((node) => {
+        if (node.type === "wikiLink") {
+          return `[[${(node.attrs as { title?: string })?.title ?? ""}]]`;
+        }
         if (node.type !== "text" || !node.text) return "";
         const marks = node.marks ?? [];
         const types = marks.map((m) => m.type);

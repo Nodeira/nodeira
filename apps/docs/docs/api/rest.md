@@ -212,6 +212,93 @@ Deletes a note.
 
 ---
 
+## Canvases
+
+### `GET /api/canvases?vaultId=<id>&q=<search>`
+
+Returns all canvases, ordered by `position` then `createdAt`. Both query params are optional.
+
+**Response**
+
+```json
+[
+  {
+    "id": "clc...",
+    "title": "Architecture diagram",
+    "vaultId": "clv...",
+    "folderId": null,
+    "data": { "nodes": [], "edges": [] },
+    "pinned": false,
+    "icon": "🗺️",
+    "position": 0,
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+]
+```
+
+### `POST /api/canvases`
+
+Creates a new canvas.
+
+**Body**
+
+```json
+{ "title": "My diagram", "vaultId": "clv...", "folderId": "clf..." }
+```
+
+All fields are optional. `title` defaults to `"Untitled Canvas"`. Position is auto-assigned.
+
+### `GET /api/canvases/:id`
+
+Returns a single canvas including full `data` (nodes + edges).
+
+### `PATCH /api/canvases/:id`
+
+Updates canvas metadata or data.
+
+**Body** (all fields optional)
+
+```json
+{
+  "title": "Renamed",
+  "data": { "nodes": [...], "edges": [...] },
+  "pinned": true,
+  "icon": "🗺️",
+  "position": 2
+}
+```
+
+### `DELETE /api/canvases/:id`
+
+Deletes the canvas. Returns `204 No Content`.
+
+### `POST /api/canvases/preview`
+
+Fetches Open Graph metadata for a URL (used for Link nodes).
+
+**Body**
+
+```json
+{ "url": "https://example.com" }
+```
+
+**Response**
+
+```json
+{
+  "title": "Example Domain",
+  "description": "...",
+  "image": "https://example.com/og.png",
+  "favicon": "https://example.com/favicon.ico",
+  "url": "https://example.com"
+}
+```
+
+Returns `422 Unprocessable Entity` if the URL cannot be fetched.
+
+---
+
 ## Upload
 
 ### `POST /api/upload`
