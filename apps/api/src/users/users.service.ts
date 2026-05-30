@@ -2,6 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service.js";
 import bcrypt from "bcryptjs";
 
+export interface UserPreferences {
+  startupView?: string;
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -19,5 +23,22 @@ export class UsersService {
 
   count() {
     return this.prisma.user.count();
+  }
+
+  async getPreferences(userId: string): Promise<UserPreferences> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+    const p = user?.preferences;
+    if (p && typeof p === "object" && !Array.isArray(p)) return p as UserPreferences;
+    return {};
+  }
+
+  async updatePreferences(userId: string, patch: Partial<UserPreferences>): Promise<UserPreferences> {
+    const current = await this.getPreferences(userId);
+    const updated = { ...current, ...patch };
+    await this.prisma.user.update({ where: { id: userId }, data: { preferences: updated } });
+    return updated;
   }
 }

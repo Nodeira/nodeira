@@ -15,9 +15,14 @@
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
     "db:wipe": "bash scripts/wipe-db.sh",
-    "test:e2e": "turbo run e2e --filter=@nodeira/e2e"
+    "test:e2e": "turbo run e2e --filter=@nodeira/e2e",
+    "prepare": "husky"
   },
   "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0"
+    },
     "onlyBuiltDependencies": [
       "@nestjs/core",
       "@prisma/engines",
@@ -31,6 +36,11 @@
       "prisma"
     ]
   },
+  "lint-staged": {
+    "*.{ts,tsx,js,json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
     "@commitlint/config-conventional": "^20.5.0",
@@ -39,6 +49,8 @@
     "@semantic-release/github": "^10.3.5",
     "@semantic-release/npm": "^12.0.1",
     "@types/node": "^22.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.6",
     "prettier": "^3.5.0",
     "semantic-release": "^25.0.3",
     "turbo": "^2.9.6",

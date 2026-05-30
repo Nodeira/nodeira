@@ -1,6 +1,7 @@
 import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
+import { authStorage } from "../lib/authStorage.js";
 import "../lib/electronAPI.js";
 
 export interface YjsContext {
@@ -71,6 +72,7 @@ export function getOrCreateYjsContext(noteId: string): YjsContext {
     url: getWsUrl(),
     name: noteId,
     document: doc,
+    token: authStorage.getToken() ?? null,
     onStatus: ({ status }) => {
       window.dispatchEvent(new CustomEvent("yjs:ws-status", { detail: status }));
     },

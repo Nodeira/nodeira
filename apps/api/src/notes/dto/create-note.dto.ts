@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
@@ -46,4 +47,9 @@ export class CreateNoteDto {
   @IsObject()
   @IsOptional()
   kindMeta?: Record<string, unknown>;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  tags?: string[];
 }

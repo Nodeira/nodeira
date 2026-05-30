@@ -40,10 +40,13 @@ export class NotesService {
     });
   }
 
-  async findAll(vaultId?: string, vaultScope?: string | null) {
+  async findAll(vaultId?: string, vaultScope?: string | null, tag?: string) {
     const effectiveVaultId = vaultScope ?? vaultId;
-    return this.prisma.note.findMany({
-      ...(effectiveVaultId ? { where: { vaultId: effectiveVaultId } } : {}),
+    const notes = await this.prisma.note.findMany({
+      where: {
+        ...(effectiveVaultId ? { vaultId: effectiveVaultId } : {}),
+        ...(tag ? { tags: { has: tag } } : {}),
+      },
       select: {
         id: true,
         title: true,
@@ -55,11 +58,20 @@ export class NotesService {
         pinned: true,
         icon: true,
         position: true,
+        tags: true,
         createdAt: true,
         updatedAt: true,
+        yjsState: true,
       },
       orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     });
+
+    return notes.map(({ yjsState, ...meta }) => ({
+      ...meta,
+      preview: yjsState
+        ? this.markdownConverter.yjsStateToPreview(yjsState as Uint8Array)
+        : undefined,
+    }));
   }
 
   async findOne(id: string, vaultScope?: string | null) {
@@ -84,6 +96,7 @@ export class NotesService {
           ...(dto.kindMeta !== undefined && { kindMeta: dto.kindMeta as Prisma.InputJsonValue }),
           ...(dto.folderId !== undefined && { folderId: dto.folderId ?? null }),
           ...(dto.vaultId !== undefined && { vaultId: dto.vaultId ?? null }),
+          ...(dto.tags !== undefined && { tags: dto.tags }),
         },
       });
     } catch {
@@ -91,9 +104,10 @@ export class NotesService {
     }
   }
 
-  async reorder(items: ReorderNoteItemDto[]) {
+  async reorder(items: ReorderNoteItemDto[], vaultScope?: string | null) {
     await Promise.all(
-      items.map((item) => {
+      items.map(async (item) => {
+        await this.findOne(item.id, vaultScope);
         const data: { position: number; folderId?: string | null } = {
           position: item.position,
         };
@@ -119,6 +133,103 @@ export class NotesService {
       where: { id },
       update: { yjsState },
       create: { id, yjsState, title: "Untitled", type: "note", position: 0 },
+    });
+  }
+
+  async syncLinks(sourceId: string, targetIds: string[]) {
+    const validNotes =
+      targetIds.length > 0
+        ? await this.prisma.note.findMany({
+            where: { id: { in: targetIds } },
+            select: { id: true },
+          })
+        : [];
+    const validIds = validNotes.map((n) => n.id);
+
+    await this.prisma.noteLink.deleteMany({ where: { sourceId } });
+    if (validIds.length > 0) {
+      await this.prisma.noteLink.createMany({
+        data: validIds.map((targetId) => ({ sourceId, targetId })),
+      });
+    }
+  }
+
+  async syncTags(id: string, tags: string[]) {
+    await this.prisma.note.update({ where: { id }, data: { tags } });
+  }
+
+  async getAllTags(vaultScope?: string | null): Promise<{ tag: string; count: number }[]> {
+    const notes = await this.prisma.note.findMany({
+      where: vaultScope ? { vaultId: vaultScope } : {},
+      select: { tags: true },
+    });
+    const tagCount = new Map<string, number>();
+    for (const note of notes) {
+      for (const tag of note.tags) {
+        tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+      }
+    }
+    return [...tagCount.entries()]
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  async getBacklinks(targetId: string, vaultScope?: string | null) {
+    await this.findOne(targetId, vaultScope);
+    const links = await this.prisma.noteLink.findMany({
+      where: { targetId, ...(vaultScope ? { source: { vaultId: vaultScope } } : {}) },
+      include: {
+        source: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            kind: true,
+            kindMeta: true,
+            vaultId: true,
+            folderId: true,
+            pinned: true,
+            icon: true,
+            position: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+    return links.map((l) => l.source);
+  }
+
+  async getOutLinks(sourceId: string, vaultScope?: string | null) {
+    await this.findOne(sourceId, vaultScope);
+    const links = await this.prisma.noteLink.findMany({
+      where: { sourceId },
+      include: {
+        target: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            kind: true,
+            kindMeta: true,
+            vaultId: true,
+            folderId: true,
+            pinned: true,
+            icon: true,
+            position: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+    return links.map((l) => l.target);
+  }
+
+  async getAllLinks(vaultScope?: string | null) {
+    return this.prisma.noteLink.findMany({
+      where: vaultScope ? { source: { vaultId: vaultScope } } : {},
+      select: { sourceId: true, targetId: true },
     });
   }
 

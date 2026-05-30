@@ -1,10 +1,14 @@
 import { IconMaximize, IconMinimize } from "@tabler/icons-react";
 import { ActionIcon, Box, Collapse, Divider, Group, Select, Stack, Text } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useResizeObserver } from "@mantine/hooks";
 import { useAtomValue } from "jotai";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { noteKindRegistry, TASK_STATUSES } from "../../lib/noteKindRegistry.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
+import { backlinksKeys, getBacklinks } from "../../lib/api.js";
 import type { Folder, NoteMetadata } from "@nodeira/shared-types";
+import { LocalGraph } from "./LocalGraph.js";
 
 export function NoteAsidePanel({
   note,
@@ -20,8 +24,16 @@ export function NoteAsidePanel({
   isFullscreen: boolean;
 }) {
   const [propertiesOpen, setPropertiesOpen] = useDisclosure(true);
+  const [graphOpen, setGraphOpen] = useDisclosure(true);
+  const [graphRef, graphRect] = useResizeObserver<HTMLDivElement>();
   useAtomValue(pluginRegistryVersionAtom);
   const asideSections = pluginRegistry.getAsideSections();
+
+  const { data: backlinks = [] } = useQuery({
+    queryKey: backlinksKeys.forNote(note?.id ?? ""),
+    queryFn: () => getBacklinks(note!.id),
+    enabled: !!note,
+  });
 
   const folderName = note?.folderId
     ? (folders.find((f) => f.id === note.folderId)?.name ?? "—")
@@ -49,6 +61,35 @@ export function NoteAsidePanel({
         </ActionIcon>
       </Group>
 
+      {/* Local graph */}
+      <Box>
+        <Group
+          justify="space-between"
+          px="md"
+          py={6}
+          style={{ cursor: "pointer", borderBottom: "1px solid var(--mantine-color-default-border)" }}
+          onClick={setGraphOpen.toggle}
+        >
+          <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }}>
+            Local Graph
+          </Text>
+          <Text size="xs" c="dimmed">{graphOpen ? "▾" : "▸"}</Text>
+        </Group>
+        <Collapse expanded={graphOpen}>
+          <Box ref={graphRef} style={{ overflow: "hidden" }}>
+            {note && graphRect.width > 0 ? (
+              <LocalGraph note={note} width={graphRect.width} />
+            ) : (
+              <Box h={220} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Text size="xs" c="dimmed" fs="italic">Open a note to see its graph</Text>
+              </Box>
+            )}
+          </Box>
+        </Collapse>
+      </Box>
+
+      <Divider />
+
       <Box p="md" pb="xs">
         <Text
           size="xs"
@@ -58,15 +99,36 @@ export function NoteAsidePanel({
           style={{ letterSpacing: "0.08em" }}
           mb="xs"
         >
-          Backlinks · 0
+          Backlinks · {backlinks.length}
         </Text>
         {note ? (
-          <Text size="xs" c="dimmed" fs="italic">
-            No backlinks yet.{" "}
-            <Text span size="xs" ff="monospace" c="dimmed">
-              [[link to this note]]
+          backlinks.length > 0 ? (
+            <Stack gap={2}>
+              {backlinks.map((bl) => (
+                <Link
+                  key={bl.id}
+                  to="/notes/$noteId"
+                  params={{ noteId: bl.id }}
+                  style={{ textDecoration: "none" }}
+                >
+                  <Text
+                    size="xs"
+                    c="blue"
+                    style={{ textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                  >
+                    {bl.title || "Untitled"}
+                  </Text>
+                </Link>
+              ))}
+            </Stack>
+          ) : (
+            <Text size="xs" c="dimmed" fs="italic">
+              No backlinks yet.{" "}
+              <Text span size="xs" ff="monospace" c="dimmed">
+                [[link to this note]]
+              </Text>
             </Text>
-          </Text>
+          )
         ) : (
           <Text size="xs" c="dimmed" fs="italic">
             Open a note to see backlinks

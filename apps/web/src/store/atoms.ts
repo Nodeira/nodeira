@@ -27,3 +27,6 @@ export const fullscreenPaneAtom = atom<"left" | "browse" | "right" | "editor" | 
 
 // Currently authenticated user (seeded from localStorage on load)
 export const authUserAtom = atom<StoredUser | null>(authStorage.getUser());
+
+// ID of the currently open canvas (null = none)
+export const activeCanvasIdAtom = atom<string | null>(null);

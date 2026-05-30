@@ -1,4 +1,4 @@
-import type { Folder, NoteMetadata, NoteType, PluginRecord, Vault } from "@nodeira/shared-types";
+import type { Canvas, CanvasData, Folder, NoteMetadata, NoteType, OgPreview, PluginRecord, Vault } from "@nodeira/shared-types";
 import { authStorage } from "./authStorage.js";
 import "./electronAPI.js";
 
@@ -141,15 +141,46 @@ export const notesKeys = {
   detail: (id: string) => ["notes", id] as const,
 };
 
+export const backlinksKeys = {
+  forNote: (noteId: string) => ["backlinks", noteId] as const,
+};
+
+export const linksKeys = {
+  forNote: (noteId: string) => ["links", noteId] as const,
+};
+
+export const graphKeys = {
+  all: ["graph"] as const,
+};
+
+export const tagsKeys = {
+  all: ["tags"] as const,
+  forTag: (tag: string) => ["tags", "notes", tag] as const,
+};
+
 export async function getNotes(vaultId?: string): Promise<NoteMetadata[]> {
   const path = vaultId ? `/notes?vaultId=${vaultId}` : "/notes";
   const raw = await request<RawNoteMetadata[]>(path);
   return raw.map(parseNote);
 }
 
+export async function getTags(): Promise<{ tag: string; count: number }[]> {
+  return request<{ tag: string; count: number }[]>("/notes/tags");
+}
+
+export async function getNotesByTag(tag: string): Promise<NoteMetadata[]> {
+  const raw = await request<RawNoteMetadata[]>(`/notes?tag=${encodeURIComponent(tag)}`);
+  return raw.map(parseNote);
+}
+
 export async function getNote(id: string): Promise<NoteMetadata> {
   const raw = await request<RawNoteMetadata>(`/notes/${id}`);
   return parseNote(raw);
+}
+
+export async function getNoteContent(id: string): Promise<string> {
+  const res = await request<{ content: string }>(`/notes/${id}/content`);
+  return res.content;
 }
 
 export async function createNote(body: {
@@ -233,6 +264,20 @@ export async function reorderNotes(
   });
 }
 
+export async function getBacklinks(noteId: string): Promise<NoteMetadata[]> {
+  const raw = await request<RawNoteMetadata[]>(`/notes/${noteId}/backlinks`);
+  return raw.map(parseNote);
+}
+
+export async function getOutLinks(noteId: string): Promise<NoteMetadata[]> {
+  const raw = await request<RawNoteMetadata[]>(`/notes/${noteId}/links`);
+  return raw.map(parseNote);
+}
+
+export async function getAllLinks(): Promise<{ sourceId: string; targetId: string }[]> {
+  return request<{ sourceId: string; targetId: string }[]>("/notes/graph");
+}
+
 // ── Folders ───────────────────────────────────────────────────────────────────
 
 export const foldersKeys = {
@@ -308,6 +353,35 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   return request<{ url: string }>("/upload", { method: "POST", body: form });
 }
 
+export async function uploadPdf(file: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  return request<{ url: string }>("/upload", { method: "POST", body: form });
+}
+
+// ── User Preferences ──────────────────────────────────────────────────────────
+
+export interface UserPreferences {
+  startupView?: string;
+}
+
+export const userPreferencesKeys = {
+  me: ["userPreferences"] as const,
+};
+
+export async function getUserPreferences(): Promise<UserPreferences> {
+  return request<UserPreferences>("/users/me/preferences");
+}
+
+export async function patchUserPreferences(
+  patch: Partial<UserPreferences>,
+): Promise<UserPreferences> {
+  return request<UserPreferences>("/users/me/preferences", {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
 // ── Plugins ───────────────────────────────────────────────────────────────────
 
 type RawPluginRecord = Omit<PluginRecord, "installedAt" | "updatedAt"> & {
@@ -346,4 +420,74 @@ export async function setPluginEnabled(pluginId: string, enabled: boolean): Prom
 
 export async function uninstallPlugin(pluginId: string): Promise<void> {
   await request(`/plugins/${pluginId}`, { method: "DELETE" });
+}
+
+// ── Canvases ──────────────────────────────────────────────────────────────────
+
+type RawCanvas = Omit<Canvas, "createdAt" | "updatedAt"> & {
+  createdAt: string;
+  updatedAt: string;
+};
+
+function parseCanvas(raw: RawCanvas): Canvas {
+  return {
+    ...raw,
+    createdAt: new Date(raw.createdAt),
+    updatedAt: new Date(raw.updatedAt),
+  };
+}
+
+export const canvasKeys = {
+  all: ["canvases"] as const,
+  search: (q: string) => ["canvases", "search", q] as const,
+  byVault: (vaultId: string) => ["canvases", "vault", vaultId] as const,
+  detail: (id: string) => ["canvases", id] as const,
+};
+
+export async function getCanvases(params?: { vaultId?: string; q?: string }): Promise<Canvas[]> {
+  const search = new URLSearchParams();
+  if (params?.vaultId) search.set("vaultId", params.vaultId);
+  if (params?.q) search.set("q", params.q);
+  const qs = search.toString();
+  const raw = await request<RawCanvas[]>(`/canvases${qs ? `?${qs}` : ""}`);
+  return raw.map(parseCanvas);
+}
+
+export async function getCanvas(id: string): Promise<Canvas> {
+  const raw = await request<RawCanvas>(`/canvases/${id}`);
+  return parseCanvas(raw);
+}
+
+export async function createCanvas(body: {
+  title?: string;
+  vaultId?: string;
+  folderId?: string;
+}): Promise<Canvas> {
+  const raw = await request<RawCanvas>("/canvases", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return parseCanvas(raw);
+}
+
+export async function updateCanvas(
+  id: string,
+  body: { title?: string; data?: CanvasData; pinned?: boolean; icon?: string | null },
+): Promise<Canvas> {
+  const raw = await request<RawCanvas>(`/canvases/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return parseCanvas(raw);
+}
+
+export async function deleteCanvas(id: string): Promise<void> {
+  await request(`/canvases/${id}`, { method: "DELETE" });
+}
+
+export async function fetchUrlPreview(url: string): Promise<OgPreview> {
+  return request<OgPreview>("/canvases/preview", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
 }

@@ -29,15 +29,18 @@ import {
 } from "@mantine/core";
 import { useClickOutside } from "@mantine/hooks";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAtomValue } from "jotai";
 import {
   createNote,
   deleteNote,
   getNotes,
   notesKeys,
   updateNotePin,
+  updateNoteTitle,
   uploadImage,
 } from "../../lib/api.js";
 import { getOrCreateYjsContext } from "../../providers/YjsProvider.js";
+import { currentVaultAtom } from "../../store/atoms.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 import "../../components/editor.css";
 
@@ -47,6 +50,12 @@ export const Route = createFileRoute("/_authenticated/quick-notes")({
 
 // ── Per-card collapsed height (≈ 10 lines at 1.5 line-height) ────────────────
 const COLLAPSED_HEIGHT = "15rem";
+
+function deriveTitle(text: string): string {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "Untitled";
+  return words.slice(0, 5).join(" ").slice(0, 40);
+}
 
 // ── Individual quick-note card ────────────────────────────────────────────────
 
@@ -61,14 +70,23 @@ function QuickNoteCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
+  const [titleValue, setTitleValue] = useState(note.title ?? "Untitled");
   const contentRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoTitleDoneRef = useRef(note.title !== "Untitled");
+  const autoTitleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   // Collapse when clicking outside the card
   const cardRef = useClickOutside<HTMLDivElement>(() => setExpanded(false));
 
   const { doc } = getOrCreateYjsContext(note.id);
+
+  const saveTitleMutation = useMutation({
+    mutationFn: (t: string) => updateNoteTitle(note.id, t.trim() || "Untitled"),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+  });
 
   const editor = useEditor({
     extensions: [
@@ -85,10 +103,20 @@ function QuickNoteCard({
       TaskItem.configure({ nested: false }),
       Image,
     ],
-    onTransaction: () => {
-      // Check whether content overflows the collapsed height
+    onTransaction: ({ editor: e }) => {
       if (contentRef.current) {
         setOverflows(contentRef.current.scrollHeight > contentRef.current.clientHeight);
+      }
+      if (!autoTitleDoneRef.current) {
+        const derived = deriveTitle(e.getText());
+        setTitleValue(derived);
+        if (autoTitleTimerRef.current) clearTimeout(autoTitleTimerRef.current);
+        if (derived !== "Untitled") {
+          autoTitleTimerRef.current = setTimeout(() => {
+            autoTitleDoneRef.current = true;
+            saveTitleMutation.mutate(derived);
+          }, 800);
+        }
       }
     },
   });
@@ -122,6 +150,32 @@ function QuickNoteCard({
       onClick={handleCardClick}
     >
       <Stack gap={4} style={{ height: "100%" }}>
+        {/* Title */}
+        <TextInput
+          value={titleValue}
+          onChange={(e) => setTitleValue(e.currentTarget.value)}
+          onFocus={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onBlur={() => {
+            autoTitleDoneRef.current = titleValue.trim() !== "Untitled";
+            saveTitleMutation.mutate(titleValue);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          variant="unstyled"
+          placeholder="Untitled"
+          styles={{
+            input: {
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              padding: 0,
+              color: "var(--mantine-color-dimmed)",
+              cursor: "text",
+            },
+          }}
+        />
+
         {/* Content area — capped height when collapsed */}
         <Box
           ref={contentRef}
@@ -192,6 +246,7 @@ function QuickNoteCard({
             <ActionIcon
               size="sm"
               variant="subtle"
+              color="green"
               title="Insert image"
               onClick={(e) => {
                 e.stopPropagation();
@@ -246,7 +301,12 @@ function QuickNoteCard({
 function QuickNotesPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const { data: notes = [] } = useQuery({ queryKey: notesKeys.all, queryFn: () => getNotes() });
+  const currentVaultId = useAtomValue(currentVaultAtom);
+  const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
+  const { data: notes = [] } = useQuery({
+    queryKey: notesQueryKey,
+    queryFn: () => getNotes(currentVaultId ?? undefined),
+  });
 
   const quickNotes = notes.filter((n) => n.type === "quick");
 
@@ -258,18 +318,18 @@ function QuickNotesPage() {
   const unpinned = filtered.filter((n) => !n.pinned);
 
   const createNoteMutation = useMutation({
-    mutationFn: () => createNote({ type: "quick" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+    mutationFn: () => createNote({ type: "quick", ...(currentVaultId ? { vaultId: currentVaultId } : {}) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
   });
 
   const deleteNoteMutation = useMutation({
     mutationFn: deleteNote,
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
   });
 
   const pinMutation = useMutation({
     mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => updateNotePin(id, pinned),
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
   });
 
   function renderGrid(noteList: NoteMetadata[]) {

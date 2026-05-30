@@ -34,8 +34,24 @@ export class NotesController {
   }
 
   @Get()
-  findAll(@Request() req: RequestWithUser, @Query("vaultId") vaultId?: string) {
-    return this.notesService.findAll(vaultId, req.user.vaultScope);
+  findAll(
+    @Request() req: RequestWithUser,
+    @Query("vaultId") vaultId?: string,
+    @Query("tag") tag?: string,
+  ) {
+    return this.notesService.findAll(vaultId, req.user.vaultScope, tag);
+  }
+
+  // Must be before :id routes to avoid "graph" being treated as a note id
+  @Get("graph")
+  getAllLinks(@Request() req: RequestWithUser) {
+    return this.notesService.getAllLinks(req.user.vaultScope);
+  }
+
+  // Must be before :id routes
+  @Get("tags")
+  getAllTags(@Request() req: RequestWithUser) {
+    return this.notesService.getAllTags(req.user.vaultScope);
   }
 
   @Get(":id")
@@ -45,8 +61,8 @@ export class NotesController {
 
   // Must be before PATCH :id so "reorder" is not treated as an id param
   @Patch("reorder")
-  reorder(@Body() dto: ReorderNotesDto) {
-    return this.notesService.reorder(dto.items);
+  reorder(@Request() req: RequestWithUser, @Body() dto: ReorderNotesDto) {
+    return this.notesService.reorder(dto.items, req.user.vaultScope);
   }
 
   @Patch(":id")
@@ -57,6 +73,16 @@ export class NotesController {
   @Delete(":id")
   remove(@Request() req: RequestWithUser, @Param("id") id: string) {
     return this.notesService.remove(id, req.user.vaultScope);
+  }
+
+  @Get(":id/backlinks")
+  getBacklinks(@Request() req: RequestWithUser, @Param("id") id: string) {
+    return this.notesService.getBacklinks(id, req.user.vaultScope);
+  }
+
+  @Get(":id/links")
+  getOutLinks(@Request() req: RequestWithUser, @Param("id") id: string) {
+    return this.notesService.getOutLinks(id, req.user.vaultScope);
   }
 
   @Get(":id/content")

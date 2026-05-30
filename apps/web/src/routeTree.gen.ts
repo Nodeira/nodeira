@@ -14,10 +14,14 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedTagsRouteImport } from './routes/_authenticated/tags'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedQuickNotesRouteImport } from './routes/_authenticated/quick-notes'
+import { Route as AuthenticatedGraphRouteImport } from './routes/_authenticated/graph'
+import { Route as AuthenticatedCanvasesRouteImport } from './routes/_authenticated/canvases'
 import { Route as AuthenticatedPluginsPluginIdRouteImport } from './routes/_authenticated/plugins/$pluginId'
 import { Route as AuthenticatedNotesNoteIdRouteImport } from './routes/_authenticated/notes/$noteId'
+import { Route as AuthenticatedCanvasCanvasIdRouteImport } from './routes/_authenticated/canvas.$canvasId'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -43,6 +47,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedTagsRoute = AuthenticatedTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -51,6 +60,16 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedQuickNotesRoute = AuthenticatedQuickNotesRouteImport.update({
   id: '/quick-notes',
   path: '/quick-notes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedGraphRoute = AuthenticatedGraphRouteImport.update({
+  id: '/graph',
+  path: '/graph',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCanvasesRoute = AuthenticatedCanvasesRouteImport.update({
+  id: '/canvases',
+  path: '/canvases',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPluginsPluginIdRoute =
@@ -65,14 +84,24 @@ const AuthenticatedNotesNoteIdRoute =
     path: '/notes/$noteId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCanvasCanvasIdRoute =
+  AuthenticatedCanvasCanvasIdRouteImport.update({
+    id: '/canvas/$canvasId',
+    path: '/canvas/$canvasId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/canvases': typeof AuthenticatedCanvasesRoute
+  '/graph': typeof AuthenticatedGraphRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/tags': typeof AuthenticatedTagsRoute
+  '/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
   '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
 }
@@ -80,9 +109,13 @@ export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/canvases': typeof AuthenticatedCanvasesRoute
+  '/graph': typeof AuthenticatedGraphRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/tags': typeof AuthenticatedTagsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
   '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
 }
@@ -92,9 +125,13 @@ export interface FileRoutesById {
   '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/_authenticated/canvases': typeof AuthenticatedCanvasesRoute
+  '/_authenticated/graph': typeof AuthenticatedGraphRoute
   '/_authenticated/quick-notes': typeof AuthenticatedQuickNotesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/tags': typeof AuthenticatedTagsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/_authenticated/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
   '/_authenticated/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
 }
@@ -105,8 +142,12 @@ export interface FileRouteTypes {
     | '/connect'
     | '/login'
     | '/setup'
+    | '/canvases'
+    | '/graph'
     | '/quick-notes'
     | '/settings'
+    | '/tags'
+    | '/canvas/$canvasId'
     | '/notes/$noteId'
     | '/plugins/$pluginId'
   fileRoutesByTo: FileRoutesByTo
@@ -114,9 +155,13 @@ export interface FileRouteTypes {
     | '/connect'
     | '/login'
     | '/setup'
+    | '/canvases'
+    | '/graph'
     | '/quick-notes'
     | '/settings'
+    | '/tags'
     | '/'
+    | '/canvas/$canvasId'
     | '/notes/$noteId'
     | '/plugins/$pluginId'
   id:
@@ -125,9 +170,13 @@ export interface FileRouteTypes {
     | '/connect'
     | '/login'
     | '/setup'
+    | '/_authenticated/canvases'
+    | '/_authenticated/graph'
     | '/_authenticated/quick-notes'
     | '/_authenticated/settings'
+    | '/_authenticated/tags'
     | '/_authenticated/'
+    | '/_authenticated/canvas/$canvasId'
     | '/_authenticated/notes/$noteId'
     | '/_authenticated/plugins/$pluginId'
   fileRoutesById: FileRoutesById
@@ -176,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/tags': {
+      id: '/_authenticated/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof AuthenticatedTagsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -188,6 +244,20 @@ declare module '@tanstack/react-router' {
       path: '/quick-notes'
       fullPath: '/quick-notes'
       preLoaderRoute: typeof AuthenticatedQuickNotesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/graph': {
+      id: '/_authenticated/graph'
+      path: '/graph'
+      fullPath: '/graph'
+      preLoaderRoute: typeof AuthenticatedGraphRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/canvases': {
+      id: '/_authenticated/canvases'
+      path: '/canvases'
+      fullPath: '/canvases'
+      preLoaderRoute: typeof AuthenticatedCanvasesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/plugins/$pluginId': {
@@ -204,21 +274,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotesNoteIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/canvas/$canvasId': {
+      id: '/_authenticated/canvas/$canvasId'
+      path: '/canvas/$canvasId'
+      fullPath: '/canvas/$canvasId'
+      preLoaderRoute: typeof AuthenticatedCanvasCanvasIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedCanvasesRoute: typeof AuthenticatedCanvasesRoute
+  AuthenticatedGraphRoute: typeof AuthenticatedGraphRoute
   AuthenticatedQuickNotesRoute: typeof AuthenticatedQuickNotesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTagsRoute: typeof AuthenticatedTagsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedCanvasCanvasIdRoute: typeof AuthenticatedCanvasCanvasIdRoute
   AuthenticatedNotesNoteIdRoute: typeof AuthenticatedNotesNoteIdRoute
   AuthenticatedPluginsPluginIdRoute: typeof AuthenticatedPluginsPluginIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedCanvasesRoute: AuthenticatedCanvasesRoute,
+  AuthenticatedGraphRoute: AuthenticatedGraphRoute,
   AuthenticatedQuickNotesRoute: AuthenticatedQuickNotesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTagsRoute: AuthenticatedTagsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedCanvasCanvasIdRoute: AuthenticatedCanvasCanvasIdRoute,
   AuthenticatedNotesNoteIdRoute: AuthenticatedNotesNoteIdRoute,
   AuthenticatedPluginsPluginIdRoute: AuthenticatedPluginsPluginIdRoute,
 }

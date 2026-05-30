@@ -21,6 +21,7 @@ export function asPrismaService(client: PrismaClient): PrismaService {
 
 export async function cleanDatabase(prisma: PrismaClient) {
   await prisma.note.deleteMany();
+  await prisma.canvas.deleteMany();
   await prisma.folder.deleteMany();
   await prisma.vault.deleteMany();
 }
