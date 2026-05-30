@@ -6,16 +6,16 @@ on:
   workflow_dispatch:
     inputs:
       platforms:
-        description: 'Target platforms'
+        description: "Target platforms"
         required: true
         type: choice
         options:
-          - 'linux/amd64,linux/arm64'
-          - 'linux/amd64'
-          - 'linux/arm64'
-        default: 'linux/amd64,linux/arm64'
+          - "linux/amd64,linux/arm64"
+          - "linux/amd64"
+          - "linux/arm64"
+        default: "linux/amd64,linux/arm64"
       version:
-        description: 'Image version tag (without v prefix; defaults to latest git tag)'
+        description: "Image version tag (without v prefix; defaults to latest git tag)"
         required: false
         type: string
 
@@ -253,7 +253,7 @@ jobs:
 
       - name: Rebuild native maker deps (macOS)
         if: runner.os == 'macOS'
-        run: npm rebuild macos-alias
+        run: npm rebuild macos-alias fs-xattr
 
       - name: Build web app
         run: pnpm --filter @nodeira/web run build

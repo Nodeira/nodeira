@@ -3,10 +3,10 @@ name: Mobile (EAS Build)
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ["v*"]
     paths:
-      - 'apps/mobile/**'
-      - 'packages/**'
+      - "apps/mobile/**"
+      - "packages/**"
 
 jobs:
   eas-build:
@@ -30,10 +30,6 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS (preview)
+      - name: Build iOS + Android (preview)
         working-directory: apps/mobile
-        run: eas build --platform ios --profile preview --non-interactive --no-wait
-
-      - name: Build Android (preview)
-        working-directory: apps/mobile
-        run: eas build --platform android --profile preview --non-interactive --no-wait
+        run: eas build --platform all --profile preview --non-interactive --no-wait
