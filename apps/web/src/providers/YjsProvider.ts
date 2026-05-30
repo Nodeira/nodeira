@@ -72,7 +72,7 @@ export function getOrCreateYjsContext(noteId: string): YjsContext {
     url: getWsUrl(),
     name: noteId,
     document: doc,
-    token: authStorage.getToken() ?? undefined,
+    token: authStorage.getToken() ?? null,
     onStatus: ({ status }) => {
       window.dispatchEvent(new CustomEvent("yjs:ws-status", { detail: status }));
     },
