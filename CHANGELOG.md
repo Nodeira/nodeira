@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/Nodeira/nodeira/compare/v1.6.0...v1.6.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **ci:** rebuild fs-xattr for macOS DMG, consolidate EAS platforms ([89c8557](https://github.com/Nodeira/nodeira/commit/89c8557cddc44fd8157dba63e0f0a8809b281568))
+
 # [1.6.0](https://github.com/Nodeira/nodeira/compare/v1.5.0...v1.6.0) (2026-05-30)
 
 
