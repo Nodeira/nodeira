@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/Nodeira/nodeira/compare/v1.6.1...v1.6.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* another ci fix ([5d3ff64](https://github.com/Nodeira/nodeira/commit/5d3ff64a6ca37c223368086b4bf707f7cd7e0509))
+
 ## [1.6.1](https://github.com/Nodeira/nodeira/compare/v1.6.0...v1.6.1) (2026-05-30)
 
 
