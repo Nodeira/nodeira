@@ -15,7 +15,7 @@ disable-model-invocation: true
 5. If documentation is required, ensure that it is added to docusaurus and that it builds without errors
    a. User documentation is needed for any new UI features or changes, this should be added to the docs site (apps/docs) with clear instructions and screenshots if necessary
    b. Developer documentation is needed for any new backend features or changes, this should be added to the docs site (apps/docs) with clear explanations of the API endpoints, data models, and any relevant implementation details
-6. If database changes are required, ensure that prisma schema is updated and that the generated client is used in the codebase
+6. If database changes are required, ensure that prisma schema is updated and that the generated client is used in the codebase. Ensure that all fields in the schema have migrations.
 7. If Docker changes are required, ensure that the Dockerfile and docker-compose.yml are updated accordingly and that the app builds and runs without errors in a containerized environment
 8. If this change needs to be added to the mobile app, ensure that the mobile app is updated with the new API endpoints and that it builds and runs without errors on both iOS and Android, ask the user if unsure about if mobile changes are needed.
 9. Run pnpm lint and pnpm test to ensure that there are no linting errors or failing tests before creating the pull request
