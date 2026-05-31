@@ -3,6 +3,8 @@
 
   <h1>Nodeira</h1>
 
+> **⚠️ Early Development — Please do not use this project yet.** It is under active development, is not stable, and is not ready for any real use. Breaking changes happen frequently with no migration path.
+
 [![Docs](https://img.shields.io/badge/docs-Nodeira.github.io%2Fnodeira-0284c7)](https://Nodeira.github.io/nodeira/)
 [![Latest release](https://img.shields.io/github/v/release/Nodeira/nodeira?logo=github)](https://github.com/Nodeira/nodeira/releases)
 [![CI](https://github.com/Nodeira/nodeira/actions/workflows/release.yml/badge.svg)](https://github.com/Nodeira/nodeira/actions/workflows/release.yml)
