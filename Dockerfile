@@ -19,7 +19,8 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/api/prisma ./apps/api/prisma
 COPY apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts --store-dir /pnpm/store
 
 # Copy source (apps/docs excluded via .dockerignore — manifest above is enough)
 COPY apps/api ./apps/api
