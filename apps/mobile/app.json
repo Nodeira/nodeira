@@ -7,6 +7,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "nodeira",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.deranjer.nodeira"
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
