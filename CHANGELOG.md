@@ -1,3 +1,10 @@
+## [1.6.4](https://github.com/Nodeira/nodeira/compare/v1.6.3...v1.6.4) (2026-05-31)
+
+
+### Bug Fixes
+
+* case fix for ghcr ([e84ce6d](https://github.com/Nodeira/nodeira/commit/e84ce6d320cb5d21ddd1df715c62454fd6b6eabc))
+
 ## [1.6.3](https://github.com/Nodeira/nodeira/compare/v1.6.2...v1.6.3) (2026-05-31)
 
 
