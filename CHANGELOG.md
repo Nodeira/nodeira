@@ -1,3 +1,10 @@
+## [1.6.8](https://github.com/Nodeira/nodeira/compare/v1.6.7...v1.6.8) (2026-05-31)
+
+
+### Bug Fixes
+
+* only building android ([228a488](https://github.com/Nodeira/nodeira/commit/228a488448d9417463ebc921b43299aaa76acef3))
+
 ## [1.6.7](https://github.com/Nodeira/nodeira/compare/v1.6.6...v1.6.7) (2026-05-31)
 
 
