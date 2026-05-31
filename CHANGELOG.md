@@ -1,3 +1,10 @@
+## [1.6.6](https://github.com/Nodeira/nodeira/compare/v1.6.5...v1.6.6) (2026-05-31)
+
+
+### Bug Fixes
+
+* more react version tweaking ([f18b709](https://github.com/Nodeira/nodeira/commit/f18b709b061330a9370d8dd5b481c84d6e1f5159))
+
 ## [1.6.5](https://github.com/Nodeira/nodeira/compare/v1.6.4...v1.6.5) (2026-05-31)
 
 
