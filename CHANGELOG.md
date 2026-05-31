@@ -1,3 +1,10 @@
+## [1.6.3](https://github.com/Nodeira/nodeira/compare/v1.6.2...v1.6.3) (2026-05-31)
+
+
+### Bug Fixes
+
+* another ci docker build fix ([31214c7](https://github.com/Nodeira/nodeira/commit/31214c73168abf85b312fe1761dd64b7bd4e9825))
+
 ## [1.6.2](https://github.com/Nodeira/nodeira/compare/v1.6.1...v1.6.2) (2026-05-31)
 
 
