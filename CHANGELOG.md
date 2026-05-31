@@ -1,3 +1,10 @@
+## [1.6.5](https://github.com/Nodeira/nodeira/compare/v1.6.4...v1.6.5) (2026-05-31)
+
+
+### Bug Fixes
+
+* **db:** squash migrations and add early-dev warning to README ([7469c33](https://github.com/Nodeira/nodeira/commit/7469c334edfb711b2c16e827ef0418c096e93955))
+
 ## [1.6.4](https://github.com/Nodeira/nodeira/compare/v1.6.3...v1.6.4) (2026-05-31)
 
 
