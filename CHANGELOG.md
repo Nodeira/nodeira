@@ -1,3 +1,10 @@
+## [1.6.7](https://github.com/Nodeira/nodeira/compare/v1.6.6...v1.6.7) (2026-05-31)
+
+
+### Bug Fixes
+
+* eas missing info ([d9dfb14](https://github.com/Nodeira/nodeira/commit/d9dfb149df3fff920be8007678d5bc738f04fb59))
+
 ## [1.6.6](https://github.com/Nodeira/nodeira/compare/v1.6.5...v1.6.6) (2026-05-31)
 
 
