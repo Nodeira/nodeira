@@ -120,12 +120,12 @@ jobs:
           PLATFORMS="${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'linux/amd64,linux/arm64' }}"
           MATRIX='[]'
           if echo "$PLATFORMS" | grep -q "linux/amd64"; then
-            MATRIX=$(echo "$MATRIX" | jq '. + [{"platform":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"}]')
+            MATRIX=$(echo "$MATRIX" | jq -c '. + [{"platform":"linux/amd64","runner":"ubuntu-latest","suffix":"amd64"}]')
           fi
           if echo "$PLATFORMS" | grep -q "linux/arm64"; then
-            MATRIX=$(echo "$MATRIX" | jq '. + [{"platform":"linux/arm64","runner":"ubuntu-24.04-arm","suffix":"arm64"}]')
+            MATRIX=$(echo "$MATRIX" | jq -c '. + [{"platform":"linux/arm64","runner":"ubuntu-24.04-arm","suffix":"arm64"}]')
           fi
-          echo "value={\"include\":$MATRIX}" >> $GITHUB_OUTPUT
+          echo "value=$(echo "{\"include\":$MATRIX}" | jq -c .)" >> $GITHUB_OUTPUT
 
   docker-build:
     needs: [docker-setup]
