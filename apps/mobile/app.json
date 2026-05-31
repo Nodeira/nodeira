@@ -8,7 +8,10 @@
     "scheme": "nodeira",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.deranjer.nodeira"
+      "bundleIdentifier": "com.deranjer.nodeira",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
