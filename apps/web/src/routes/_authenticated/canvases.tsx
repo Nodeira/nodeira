@@ -24,7 +24,9 @@ function CanvasThumbnail({ data }: { data: CanvasData }) {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0]?.isIntersecting) setMounted(true); },
+      (entries) => {
+        if (entries[0]?.isIntersecting) setMounted(true);
+      },
       { threshold: 0.1 },
     );
     observer.observe(el);
@@ -82,7 +84,8 @@ function CanvasCard({ canvas, onDelete }: { canvas: Canvas; onDelete: () => void
       <Group justify="space-between" mt="xs" gap="xs">
         <div style={{ flex: 1, minWidth: 0 }}>
           <Text size="sm" fw={600} lineClamp={1}>
-            {canvas.icon ? `${canvas.icon} ` : ""}{canvas.title}
+            {canvas.icon ? `${canvas.icon} ` : ""}
+            {canvas.title}
           </Text>
           <Text size="xs" c="dimmed">
             {new Date(canvas.updatedAt).toLocaleDateString()}
@@ -90,11 +93,7 @@ function CanvasCard({ canvas, onDelete }: { canvas: Canvas; onDelete: () => void
         </div>
         <Menu withinPortal position="bottom-end">
           <Menu.Target>
-            <ActionIcon
-              variant="subtle"
-              size="sm"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <ActionIcon variant="subtle" size="sm" onClick={(e) => e.stopPropagation()}>
               <IconDots size={14} />
             </ActionIcon>
           </Menu.Target>
@@ -132,6 +131,7 @@ function CanvasesPage() {
       void queryClient.invalidateQueries({ queryKey: canvasKeys.all });
       void navigate({ to: "/canvas/$canvasId", params: { canvasId: canvas.id } });
     },
+    onError: () => notifications.show({ message: "Couldn't create canvas", color: "red" }),
   });
 
   const deleteMutation = useMutation({
@@ -140,6 +140,7 @@ function CanvasesPage() {
       void queryClient.invalidateQueries({ queryKey: canvasKeys.all });
       notifications.show({ message: "Canvas deleted", color: "red" });
     },
+    onError: () => notifications.show({ message: "Couldn't delete canvas", color: "red" }),
   });
 
   return (
@@ -150,7 +151,9 @@ function CanvasesPage() {
         style={{ borderBottom: "1px solid var(--mantine-color-default-border)", flexShrink: 0 }}
         justify="space-between"
       >
-        <Title order={5} style={{ fontWeight: 600 }}>Canvases</Title>
+        <Title order={5} style={{ fontWeight: 600 }}>
+          Canvases
+        </Title>
         <Button
           size="xs"
           leftSection={<IconPlus size={14} />}
@@ -163,11 +166,15 @@ function CanvasesPage() {
 
       <Box p="md" style={{ flex: 1, overflowY: "auto" }}>
         {isLoading ? (
-          <Text c="dimmed" size="sm">Loading…</Text>
+          <Text c="dimmed" size="sm">
+            Loading…
+          </Text>
         ) : canvases.length === 0 ? (
           <Box ta="center" py="xl">
             <IconLayout size={48} color="var(--mantine-color-gray-4)" />
-            <Text c="dimmed" mt="sm">No canvases yet. Create one to get started.</Text>
+            <Text c="dimmed" mt="sm">
+              No canvases yet. Create one to get started.
+            </Text>
           </Box>
         ) : (
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">

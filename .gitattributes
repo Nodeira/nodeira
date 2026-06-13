@@ -1,0 +1,7 @@
+# Normalize line endings. Git stores text as LF; Windows checkouts may use CRLF
+# for regular files, but shell scripts and git hooks MUST stay LF or bash breaks.
+* text=auto
+
+*.sh text eol=lf
+.husky/* text eol=lf
+scripts/* text eol=lf

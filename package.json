@@ -15,26 +15,9 @@
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
     "db:wipe": "bash scripts/wipe-db.sh",
+    "db:start": "docker compose -p nodeira -f docker-compose.dev.yml up -d",
     "test:e2e": "turbo run e2e --filter=@nodeira/e2e",
     "prepare": "husky"
-  },
-  "pnpm": {
-    "overrides": {
-      "react": "19.2.6",
-      "react-dom": "19.2.6"
-    },
-    "onlyBuiltDependencies": [
-      "@nestjs/core",
-      "@prisma/engines",
-      "@scarf/scarf",
-      "better-sqlite3",
-      "core-js",
-      "core-js-pure",
-      "electron",
-      "esbuild",
-      "leveldown",
-      "prisma"
-    ]
   },
   "lint-staged": {
     "*.{ts,tsx,js,json,md,yml,yaml}": [

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { notifications } from "@mantine/notifications";
 import {
   IconArrowUpRight,
   IconPhoto,
@@ -318,13 +319,16 @@ function QuickNotesPage() {
   const unpinned = filtered.filter((n) => !n.pinned);
 
   const createNoteMutation = useMutation({
-    mutationFn: () => createNote({ type: "quick", ...(currentVaultId ? { vaultId: currentVaultId } : {}) }),
+    mutationFn: () =>
+      createNote({ type: "quick", ...(currentVaultId ? { vaultId: currentVaultId } : {}) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onError: () => notifications.show({ message: "Couldn't create note", color: "red" }),
   });
 
   const deleteNoteMutation = useMutation({
     mutationFn: deleteNote,
     onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onError: () => notifications.show({ message: "Couldn't delete note", color: "red" }),
   });
 
   const pinMutation = useMutation({

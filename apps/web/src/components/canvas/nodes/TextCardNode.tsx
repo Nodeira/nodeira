@@ -1,15 +1,16 @@
 import { Paper, Textarea } from "@mantine/core";
 import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react";
 import { useCallback, useRef, useState } from "react";
+import { useNodeDataChange } from "../CanvasView.js";
 
 export interface TextCardNodeData {
   text: string;
-  onChange?: (text: string) => void;
   readOnly?: boolean;
 }
 
-export function TextCardNode({ data, selected }: NodeProps) {
+export function TextCardNode({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as TextCardNodeData;
+  const onNodeDataChange = useNodeDataChange();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(nodeData.text ?? "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -22,8 +23,8 @@ export function TextCardNode({ data, selected }: NodeProps) {
 
   const handleBlur = useCallback(() => {
     setEditing(false);
-    nodeData.onChange?.(text);
-  }, [text, nodeData]);
+    onNodeDataChange?.(id, { text });
+  }, [id, text, onNodeDataChange]);
 
   return (
     <>
@@ -55,7 +56,9 @@ export function TextCardNode({ data, selected }: NodeProps) {
           />
         ) : (
           <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.5 }}>
-            {text || <span style={{ color: "var(--mantine-color-dimmed)" }}>Double-click to edit…</span>}
+            {text || (
+              <span style={{ color: "var(--mantine-color-dimmed)" }}>Double-click to edit…</span>
+            )}
           </div>
         )}
       </Paper>

@@ -50,7 +50,7 @@ function saveYjsState(noteId, state) {
   db.prepare("INSERT OR REPLACE INTO yjs_state (note_id, state, updated_at) VALUES (?, ?, ?)").run(
     noteId,
     Buffer.from(state),
-    Date.now()
+    Date.now(),
   );
 }
 function loadNoteMetadata() {
@@ -80,7 +80,7 @@ function upsertNoteMetadata(notes) {
         n.icon ?? null,
         n.createdAt.getTime(),
         n.updatedAt.getTime(),
-        n.position
+        n.position,
       );
     }
   });
@@ -99,7 +99,7 @@ function rowToMetadata(row) {
     icon: row.icon,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    position: row.position
+    position: row.position,
   };
 }
 function pluginIdFromSource(source) {
@@ -118,7 +118,7 @@ function setCachedBundle(source, bundle) {
   if (!db) return;
   const pluginId = pluginIdFromSource(source);
   db.prepare(
-    "INSERT OR REPLACE INTO plugin_cache (plugin_id, source, bundle, cached_at) VALUES (?, ?, ?, ?)"
+    "INSERT OR REPLACE INTO plugin_cache (plugin_id, source, bundle, cached_at) VALUES (?, ?, ?, ?)",
   ).run(pluginId, source, bundle, Date.now());
 }
 function getSetting(key) {
@@ -157,8 +157,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
-      sandbox: true
-    }
+      sandbox: true,
+    },
   });
   if (isDev) {
     void mainWindow.loadURL("http://localhost:5173");
@@ -167,6 +167,11 @@ function createWindow() {
     const distPath = path.join(process.resourcesPath, "dist");
     void mainWindow.loadFile(path.join(distPath, "index.html"));
   }
+  mainWindow.webContents.on("before-input-event", (_event, input) => {
+    if (input.type === "keyDown" && input.key === "F12") {
+      mainWindow == null ? void 0 : mainWindow.webContents.toggleDevTools();
+    }
+  });
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -189,10 +194,10 @@ function setupCSP() {
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob: file: http://localhost:*",
             "font-src 'self' data:",
-            `connect-src 'self' file: http://localhost:* ws://localhost:* wss://localhost:* https://cdn.jsdelivr.net ${serverUrl} ${wsUrl}`.trimEnd()
-          ].join("; ")
-        ]
-      }
+            `connect-src 'self' file: http://localhost:* ws://localhost:* wss://localhost:* https://cdn.jsdelivr.net ${serverUrl} ${wsUrl}`.trimEnd(),
+          ].join("; "),
+        ],
+      },
     });
   });
 }
@@ -210,7 +215,7 @@ function createTray() {
           mainWindow.show();
           mainWindow.focus();
         }
-      }
+      },
     },
     { type: "separator" },
     {
@@ -218,8 +223,8 @@ function createTray() {
       click: () => {
         isQuitting = true;
         electron.app.quit();
-      }
-    }
+      },
+    },
   ]);
   tray.setContextMenu(contextMenu);
   tray.on("click", () => {
@@ -243,9 +248,11 @@ function registerGlobalShortcuts() {
     if (!mainWindow) {
       createWindow();
       const win = mainWindow;
-      win == null ? void 0 : win.webContents.once("did-finish-load", () => {
-        win == null ? void 0 : win.webContents.send("new-note");
-      });
+      win == null
+        ? void 0
+        : win.webContents.once("did-finish-load", () => {
+            win == null ? void 0 : win.webContents.send("new-note");
+          });
       return;
     }
     if (mainWindow.isMinimized()) mainWindow.restore();
@@ -263,32 +270,28 @@ function registerIpcHandlers() {
     setSetting("serverUrl", trimmed);
     serverUrl = trimmed;
     wsUrl = trimmed.replace(/^http/, "ws");
-    setImmediate(() => mainWindow == null ? void 0 : mainWindow.reload());
+    setImmediate(() => (mainWindow == null ? void 0 : mainWindow.reload()));
   });
   electron.ipcMain.handle("sqlite:loadYjsState", (_, noteId) => loadYjsState(noteId));
-  electron.ipcMain.handle(
-    "sqlite:saveYjsState",
-    (_, noteId, state) => saveYjsState(noteId, state)
-  );
+  electron.ipcMain.handle("sqlite:saveYjsState", (_, noteId, state) => saveYjsState(noteId, state));
   electron.ipcMain.handle("sqlite:getNoteMetadata", () => {
     return loadNoteMetadata().map((n) => ({
       ...n,
       createdAt: n.createdAt.toISOString(),
-      updatedAt: n.updatedAt.toISOString()
+      updatedAt: n.updatedAt.toISOString(),
     }));
   });
   electron.ipcMain.handle("sqlite:upsertNoteMetadata", (_, notes) => {
     const parsed = notes.map((n) => ({
       ...n,
       createdAt: new Date(n["createdAt"]),
-      updatedAt: new Date(n["updatedAt"])
+      updatedAt: new Date(n["updatedAt"]),
     }));
     upsertNoteMetadata(parsed);
   });
   electron.ipcMain.handle("plugin:getCachedBundle", (_, source) => getCachedBundle(source));
-  electron.ipcMain.handle(
-    "plugin:setCachedBundle",
-    (_, source, bundle) => setCachedBundle(source, bundle)
+  electron.ipcMain.handle("plugin:setCachedBundle", (_, source, bundle) =>
+    setCachedBundle(source, bundle),
   );
 }
 electron.app.on("second-instance", () => {
