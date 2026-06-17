@@ -48,6 +48,15 @@
           "photosPermission": "Allow Nodeira to access your photos to insert images into notes.",
           "cameraPermission": "Allow Nodeira to use your camera to take photos for notes."
         }
+      ],
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Nodeira to use your location to remind you when you arrive at or leave a place.",
+          "locationWhenInUsePermission": "Allow Nodeira to use your location to set place-based reminders.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
       ]
     ],
     "experiments": {

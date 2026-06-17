@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { IconFile, IconLayoutSidebarRight, IconMaximize, IconMinimize } from "@tabler/icons-react";
+import {
+  IconFile,
+  IconLayout,
+  IconLayoutSidebarRight,
+  IconMaximize,
+  IconMinimize,
+} from "@tabler/icons-react";
 import { ActionIcon, Group, Paper, Text } from "@mantine/core";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAtom } from "jotai";
@@ -10,9 +16,23 @@ import {
   fullscreenPaneAtom,
   currentVaultAtom,
 } from "../store/atoms.js";
-import { getNotes, notesKeys, getAppState, patchAppState } from "../lib/api.js";
+import {
+  getNotes,
+  notesKeys,
+  getCanvases,
+  canvasKeys,
+  getAppState,
+  patchAppState,
+} from "../lib/api.js";
 
 type ContextMenuState = { tabId: string; x: number; y: number } | null;
+
+// Tabs are keyed by note id, or `canvas:<id>` for canvases, so a single string[]
+// (persisted as-is in app state) can hold both kinds. Bare ids are notes, which
+// keeps previously-saved tab lists backwards-compatible.
+const CANVAS_PREFIX = "canvas:";
+const isCanvasTab = (id: string) => id.startsWith(CANVAS_PREFIX);
+const canvasIdOf = (id: string) => id.slice(CANVAS_PREFIX.length);
 
 export function TabBar() {
   const [tabs, setTabs] = useAtom(openTabsAtom);
@@ -28,9 +48,23 @@ export function TabBar() {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { data: notes = [] } = useQuery({ queryKey: notesKeys.all, queryFn: () => getNotes() });
+  const { data: canvases = [] } = useQuery({
+    queryKey: canvasKeys.all,
+    queryFn: () => getCanvases(),
+  });
 
-  const match = routerState.location.pathname.match(/^\/notes\/([^/]+)$/);
-  const currentNoteId = match?.[1] ?? null;
+  const noteMatch = routerState.location.pathname.match(/^\/notes\/([^/]+)$/);
+  const canvasMatch = routerState.location.pathname.match(/^\/canvas\/([^/]+)$/);
+  const currentNoteId = noteMatch?.[1] ?? null;
+  const currentTabId = currentNoteId ?? (canvasMatch ? `${CANVAS_PREFIX}${canvasMatch[1]}` : null);
+
+  function navigateToTab(id: string) {
+    if (isCanvasTab(id)) {
+      void navigate({ to: "/canvas/$canvasId", params: { canvasId: canvasIdOf(id) } });
+    } else {
+      void navigate({ to: "/notes/$noteId", params: { noteId: id } });
+    }
+  }
 
   // Load persisted state on mount; restore active note if opening at root
   useEffect(() => {
@@ -49,20 +83,25 @@ export function TabBar() {
 
   // Sync current route into open tabs
   useEffect(() => {
-    if (currentNoteId && !tabs.includes(currentNoteId)) {
-      setTabs((prev) => [...prev, currentNoteId]);
+    if (currentTabId && !tabs.includes(currentTabId)) {
+      setTabs((prev) => [...prev, currentTabId]);
     }
-  }, [currentNoteId]);
+  }, [currentTabId]);
 
-  // Persist tabs + active note to DB (debounced)
+  // Persist tabs + active note to DB (debounced). activeNoteId is only updated
+  // while on a note route, so opening a canvas doesn't clobber the note to
+  // restore at the next root visit.
   useEffect(() => {
     if (!initializedRef.current) return;
     clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      patchAppState({ openTabs: tabs, activeNoteId: currentNoteId }).catch(console.error);
+      patchAppState({
+        openTabs: tabs,
+        ...(currentNoteId !== null ? { activeNoteId: currentNoteId } : {}),
+      }).catch(console.error);
     }, 500);
     return () => clearTimeout(saveTimeoutRef.current);
-  }, [tabs, currentNoteId]);
+  }, [tabs, currentTabId]);
 
   // Close context menu on outside click
   useEffect(() => {
@@ -72,16 +111,16 @@ export function TabBar() {
     return () => window.removeEventListener("mousedown", close);
   }, [contextMenu]);
 
-  if (!currentNoteId && tabs.length === 0) return null;
+  if (!currentTabId && tabs.length === 0) return null;
 
   function closeTab(id: string) {
     setTabs((prev) => {
       const next = prev.filter((t) => t !== id);
-      if (id === currentNoteId) {
+      if (id === currentTabId) {
         const idx = prev.indexOf(id);
         const nextActive = next[Math.max(0, idx - 1)];
         if (nextActive) {
-          void navigate({ to: "/notes/$noteId", params: { noteId: nextActive } });
+          navigateToTab(nextActive);
         } else {
           void navigate({ to: "/" });
         }
@@ -92,8 +131,8 @@ export function TabBar() {
 
   function closeOtherTabs(id: string) {
     setTabs([id]);
-    if (id !== currentNoteId) {
-      void navigate({ to: "/notes/$noteId", params: { noteId: id } });
+    if (id !== currentTabId) {
+      navigateToTab(id);
     }
   }
 
@@ -101,8 +140,8 @@ export function TabBar() {
     setTabs((prev) => {
       const idx = prev.indexOf(id);
       const next = prev.slice(0, idx + 1);
-      if (currentNoteId && !next.includes(currentNoteId)) {
-        void navigate({ to: "/notes/$noteId", params: { noteId: id } });
+      if (currentTabId && !next.includes(currentTabId)) {
+        navigateToTab(id);
       }
       return next;
     });
@@ -111,13 +150,15 @@ export function TabBar() {
   function closeTabsNotInVault(_id: string) {
     setTabs((prev) => {
       const next = prev.filter((tabId) => {
-        const note = notes.find((n) => n.id === tabId);
-        return note?.vaultId === currentVaultId;
+        const vaultId = isCanvasTab(tabId)
+          ? canvases.find((c) => c.id === canvasIdOf(tabId))?.vaultId
+          : notes.find((n) => n.id === tabId)?.vaultId;
+        return vaultId === currentVaultId;
       });
-      if (currentNoteId && !next.includes(currentNoteId)) {
+      if (currentTabId && !next.includes(currentTabId)) {
         const fallback = next[next.length - 1];
         if (fallback) {
-          void navigate({ to: "/notes/$noteId", params: { noteId: fallback } });
+          navigateToTab(fallback);
         } else {
           void navigate({ to: "/" });
         }
@@ -141,13 +182,18 @@ export function TabBar() {
       >
         <div style={{ display: "flex", alignItems: "stretch", flex: 1, overflow: "hidden" }}>
           {tabs.map((id) => {
-            const note = notes.find((n) => n.id === id);
-            const isActive = id === currentNoteId;
+            const isCanvas = isCanvasTab(id);
+            const entityId = isCanvas ? canvasIdOf(id) : id;
+            const title = isCanvas
+              ? canvases.find((c) => c.id === entityId)?.title
+              : notes.find((n) => n.id === entityId)?.title;
+            const TabIcon = isCanvas ? IconLayout : IconFile;
+            const isActive = id === currentTabId;
             return (
               <div
                 key={id}
                 onClick={() => {
-                  if (!isActive) void navigate({ to: "/notes/$noteId", params: { noteId: id } });
+                  if (!isActive) navigateToTab(id);
                 }}
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -169,7 +215,7 @@ export function TabBar() {
                   userSelect: "none",
                 }}
               >
-                <IconFile
+                <TabIcon
                   size={13}
                   style={{
                     color: isActive
@@ -188,7 +234,7 @@ export function TabBar() {
                     color: isActive ? "var(--mantine-color-text)" : "var(--mantine-color-dimmed)",
                   }}
                 >
-                  {note?.title || "Untitled"}
+                  {title || "Untitled"}
                 </Text>
                 <div
                   onClick={(e) => {

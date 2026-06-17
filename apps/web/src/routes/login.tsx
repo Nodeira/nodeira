@@ -5,6 +5,7 @@ import {
   Button,
   Center,
   Checkbox,
+  Group,
   Paper,
   PasswordInput,
   Text,
@@ -15,6 +16,7 @@ import { useSetAtom } from "jotai";
 import { login } from "../lib/api.js";
 import { authStorage } from "../lib/authStorage.js";
 import { authUserAtom } from "../store/atoms.js";
+import { ServerIndicator } from "../components/ServerIndicator.js";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -91,6 +93,10 @@ function LoginPage() {
             </Button>
           </form>
         </Paper>
+
+        <Group justify="center" mt="lg">
+          <ServerIndicator />
+        </Group>
       </Box>
     </Center>
   );

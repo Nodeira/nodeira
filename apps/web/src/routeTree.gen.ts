@@ -16,6 +16,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedTagsRouteImport } from './routes/_authenticated/tags'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedRemindersRouteImport } from './routes/_authenticated/reminders'
 import { Route as AuthenticatedQuickNotesRouteImport } from './routes/_authenticated/quick-notes'
 import { Route as AuthenticatedGraphRouteImport } from './routes/_authenticated/graph'
 import { Route as AuthenticatedCanvasesRouteImport } from './routes/_authenticated/canvases'
@@ -55,6 +56,11 @@ const AuthenticatedTagsRoute = AuthenticatedTagsRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRemindersRoute = AuthenticatedRemindersRouteImport.update({
+  id: '/reminders',
+  path: '/reminders',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedQuickNotesRoute = AuthenticatedQuickNotesRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/canvases': typeof AuthenticatedCanvasesRoute
   '/graph': typeof AuthenticatedGraphRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
+  '/reminders': typeof AuthenticatedRemindersRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tags': typeof AuthenticatedTagsRoute
   '/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/canvases': typeof AuthenticatedCanvasesRoute
   '/graph': typeof AuthenticatedGraphRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
+  '/reminders': typeof AuthenticatedRemindersRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tags': typeof AuthenticatedTagsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/_authenticated/canvases': typeof AuthenticatedCanvasesRoute
   '/_authenticated/graph': typeof AuthenticatedGraphRoute
   '/_authenticated/quick-notes': typeof AuthenticatedQuickNotesRoute
+  '/_authenticated/reminders': typeof AuthenticatedRemindersRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tags': typeof AuthenticatedTagsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/canvases'
     | '/graph'
     | '/quick-notes'
+    | '/reminders'
     | '/settings'
     | '/tags'
     | '/canvas/$canvasId'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/canvases'
     | '/graph'
     | '/quick-notes'
+    | '/reminders'
     | '/settings'
     | '/tags'
     | '/'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/_authenticated/canvases'
     | '/_authenticated/graph'
     | '/_authenticated/quick-notes'
+    | '/_authenticated/reminders'
     | '/_authenticated/settings'
     | '/_authenticated/tags'
     | '/_authenticated/'
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/reminders': {
+      id: '/_authenticated/reminders'
+      path: '/reminders'
+      fullPath: '/reminders'
+      preLoaderRoute: typeof AuthenticatedRemindersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/quick-notes': {
       id: '/_authenticated/quick-notes'
       path: '/quick-notes'
@@ -288,6 +307,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCanvasesRoute: typeof AuthenticatedCanvasesRoute
   AuthenticatedGraphRoute: typeof AuthenticatedGraphRoute
   AuthenticatedQuickNotesRoute: typeof AuthenticatedQuickNotesRoute
+  AuthenticatedRemindersRoute: typeof AuthenticatedRemindersRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTagsRoute: typeof AuthenticatedTagsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -300,6 +320,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCanvasesRoute: AuthenticatedCanvasesRoute,
   AuthenticatedGraphRoute: AuthenticatedGraphRoute,
   AuthenticatedQuickNotesRoute: AuthenticatedQuickNotesRoute,
+  AuthenticatedRemindersRoute: AuthenticatedRemindersRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTagsRoute: AuthenticatedTagsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

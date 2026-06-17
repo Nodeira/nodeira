@@ -2,6 +2,7 @@ import {
   app,
   BrowserWindow,
   Menu,
+  Notification,
   Tray,
   globalShortcut,
   ipcMain,
@@ -233,6 +234,26 @@ function registerIpcHandlers(): void {
   ipcMain.handle("plugin:setCachedBundle", (_, source: string, bundle: string) =>
     setCachedBundle(source, bundle),
   );
+
+  // Native reminder notification — shows even when minimized to tray; clicking
+  // it brings the window forward.
+  ipcMain.handle("notification:show", (_, payload: { title: string; body?: string }) => {
+    if (!Notification.isSupported()) return;
+    const notification = new Notification({
+      title: payload.title,
+      body: payload.body ?? "",
+    });
+    notification.on("click", () => {
+      if (!mainWindow) {
+        createWindow();
+        return;
+      }
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    });
+    notification.show();
+  });
 }
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────

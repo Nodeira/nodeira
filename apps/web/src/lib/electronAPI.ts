@@ -32,6 +32,9 @@ declare global {
         setCachedBundle(source: string, bundle: string): Promise<void>;
       };
 
+      /** Show a native OS notification (desktop only). */
+      showNotification?(payload: { title: string; body?: string }): Promise<void>;
+
       /** Subscribe to "create new note" events from the main process menu/global shortcut. Returns an unsubscribe function. */
       onNewNote(callback: () => void): () => void;
       /** Subscribe to "open search" events from the main process menu. Returns an unsubscribe function. */

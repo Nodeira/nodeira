@@ -17,6 +17,7 @@ import { createAdmin } from "../lib/api.js";
 import { authStorage } from "../lib/authStorage.js";
 import { authUserAtom } from "../store/atoms.js";
 import { markSetupComplete } from "./__root.js";
+import { ServerIndicator } from "../components/ServerIndicator.js";
 
 export const Route = createFileRoute("/setup")({
   component: SetupPage,
@@ -165,6 +166,10 @@ function SetupPage() {
             )}
           </Group>
         </Paper>
+
+        <Group justify="center" mt="lg">
+          <ServerIndicator />
+        </Group>
       </Box>
     </Center>
   );

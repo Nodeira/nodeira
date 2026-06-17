@@ -43,6 +43,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
     },
   },
 
+  // ── Native notifications ───────────────────────────────────────────────────
+  /** Show a native OS notification for a fired reminder (works from the tray). */
+  showNotification(payload: { title: string; body?: string }): Promise<void> {
+    return ipcRenderer.invoke("notification:show", payload) as Promise<void>;
+  },
+
   // ── Renderer ← Main events ────────────────────────────────────────────────
   /** Listen for "create new note" triggered by menu/global shortcut */
   onNewNote(callback: () => void): () => void {

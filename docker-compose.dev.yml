@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
-    container_name: postgres
+    container_name: nodeira-postgres
     environment:
       POSTGRES_DB: nodeira
       POSTGRES_USER: postgres

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { notifications } from "@mantine/notifications";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -158,6 +159,7 @@ function PluginsTab() {
       await loadPlugin(plugin.source);
       setInstallSource("");
     },
+    onError: () => notifications.show({ message: "Couldn't install plugin", color: "red" }),
   });
 
   const toggleMutation = useMutation({
@@ -169,6 +171,7 @@ function PluginsTab() {
   const removeMutation = useMutation({
     mutationFn: uninstallPlugin,
     onSuccess: () => qc.invalidateQueries({ queryKey: pluginsKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't remove plugin", color: "red" }),
   });
 
   return (

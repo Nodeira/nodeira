@@ -24,13 +24,12 @@ const NATIVE_DEPS = ["better-sqlite3", "bindings", "file-uri-to-path"];
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
-    name: "Nodeira",
-    executableName: "nodeira",
     // Unpack .node files from the asar — Electron cannot dlopen them from
     // inside the archive. Explicit here because the packageAfterCopy hook
     // copies native deps after AutoUnpackNativesPlugin has already scanned.
-    asarUnpack: ["**/*.node"],
+    asar: { unpack: "**/*.node" },
+    name: "Nodeira",
+    executableName: "nodeira",
     // Include the built web app so the renderer can load it from file://
     extraResource: ["../../apps/web/dist"],
   },

@@ -14,6 +14,7 @@ import { UploadModule } from "./upload/upload.module.js";
 import { VaultsModule } from "./vaults/vaults.module.js";
 import { PluginsModule } from "./plugins/plugins.module.js";
 import { CanvasModule } from "./canvas/canvas.module.js";
+import { RemindersModule } from "./reminders/reminders.module.js";
 
 const webDistPath = join(process.cwd(), "public");
 
@@ -27,7 +28,7 @@ const webDistPath = join(process.cwd(), "public");
           ServeStaticModule.forRoot({
             rootPath: webDistPath,
             // Don't intercept API, WebSocket, Swagger, or upload paths
-            exclude: ["/api/(.*)", "/sync(.*)", "/docs(.*)", "/uploads(.*)"],
+            exclude: ["/api/(.*)", "/sync(.*)", "/notifications(.*)", "/docs(.*)", "/uploads(.*)"],
           }),
         ]
       : []),
@@ -42,6 +43,7 @@ const webDistPath = join(process.cwd(), "public");
     VaultsModule,
     PluginsModule,
     CanvasModule,
+    RemindersModule,
   ],
 })
 export class AppModule {}

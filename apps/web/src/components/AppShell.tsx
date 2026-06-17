@@ -22,6 +22,7 @@ import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMantineColorScheme } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { networkStatusAtom } from "../store/networkStatusAtom.js";
 import "../lib/electronAPI.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,10 +55,12 @@ import {
   vaultsKeys,
 } from "../lib/api.js";
 import { loadAllPlugins } from "../lib/pluginLoader.js";
+import { useReminderSocket } from "../lib/useReminderSocket.js";
 import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
 import { noteKindRegistry } from "../lib/noteKindRegistry.js";
 import { Sidebar } from "./sidebar/Sidebar.js";
+import { ServerIndicator } from "./ServerIndicator.js";
 import { NoteAsidePanel } from "./aside/NoteAsidePanel.js";
 import { CreateVaultModal } from "./modals/CreateVaultModal.js";
 import { CreateFolderModal } from "./modals/CreateFolderModal.js";
@@ -87,6 +90,9 @@ export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const qc = useQueryClient();
+
+  // Subscribe to fired reminders (toast) and register this client as a device.
+  useReminderSocket();
 
   const { data: vaults = [] } = useQuery({ queryKey: vaultsKeys.all, queryFn: getVaults });
   const { data: installedPlugins = [] } = useQuery({
@@ -213,23 +219,28 @@ export function AppShell({ children }: AppShellProps) {
   const createNoteMutation = useMutation({
     mutationFn: createNote,
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't create note", color: "red" }),
   });
   const createFolderMutation = useMutation({
     mutationFn: ({ name, vaultId }: { name: string; vaultId?: string }) =>
       createFolder(name, vaultId),
     onSuccess: () => qc.invalidateQueries({ queryKey: foldersQueryKey }),
+    onError: () => notifications.show({ message: "Couldn't create folder", color: "red" }),
   });
   const createVaultMutation = useMutation({
     mutationFn: createVault,
     onSuccess: () => qc.invalidateQueries({ queryKey: vaultsKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't create vault", color: "red" }),
   });
   const deleteVaultMutation = useMutation({
     mutationFn: deleteVault,
     onSuccess: () => qc.invalidateQueries({ queryKey: vaultsKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't delete vault", color: "red" }),
   });
   const deleteNoteMutation = useMutation({
     mutationFn: deleteNote,
     onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onError: () => notifications.show({ message: "Couldn't delete note", color: "red" }),
   });
   const deleteFolderMutation = useMutation({
     mutationFn: deleteFolder,
@@ -237,6 +248,7 @@ export function AppShell({ children }: AppShellProps) {
       qc.invalidateQueries({ queryKey: foldersQueryKey });
       qc.invalidateQueries({ queryKey: notesQueryKey });
     },
+    onError: () => notifications.show({ message: "Couldn't delete folder", color: "red" }),
   });
   const reorderMutation = useMutation({ mutationFn: reorderNotes });
   const pinMutation = useMutation({
@@ -435,6 +447,7 @@ export function AppShell({ children }: AppShellProps) {
               </Text>
             </Group>
             <Group gap="xs">
+              <ServerIndicator />
               {networkStatus === "offline" && (
                 <Badge
                   color="orange"

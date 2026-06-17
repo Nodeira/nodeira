@@ -18,7 +18,14 @@ import {
   type Node,
   type NodeChange,
 } from "@xyflow/react";
-import { createContext, forwardRef, useCallback, useContext, useImperativeHandle, useRef } from "react";
+import {
+  createContext,
+  forwardRef,
+  useCallback,
+  useContext,
+  useImperativeHandle,
+  useRef,
+} from "react";
 import { CanvasEdge, type CanvasEdgeData } from "./CanvasEdge.js";
 import { GroupNode } from "./nodes/GroupNode.js";
 import { ImageNode } from "./nodes/ImageNode.js";
@@ -32,6 +39,14 @@ type EdgeDataChangeFn = (id: string, patch: Partial<CanvasEdgeData>) => void;
 export const EdgeDataChangeContext = createContext<EdgeDataChangeFn | null>(null);
 export function useEdgeDataChange(): EdgeDataChangeFn | null {
   return useContext(EdgeDataChangeContext);
+}
+
+// Same pattern for nodes: lets a node (e.g. text/group) persist content edits back
+// through the controlled setNodes + save path, without storing functions in node data.
+type NodeDataChangeFn = (id: string, patch: Record<string, unknown>) => void;
+export const NodeDataChangeContext = createContext<NodeDataChangeFn | null>(null);
+export function useNodeDataChange(): NodeDataChangeFn | null {
+  return useContext(NodeDataChangeContext);
 }
 
 const nodeTypes = {
@@ -84,14 +99,16 @@ function flowToCanvasData(nodes: Node[], edges: Edge[]): CanvasData {
     nodes: nodes.map((n) => {
       const base = {
         id: n.id,
+        type: n.type,
         x: n.position.x,
         y: n.position.y,
         width: (n.style?.width as number) ?? 200,
         height: (n.style?.height as number) ?? 100,
       };
       const nodeData = n.data as Record<string, unknown>;
-      // Exclude position/size/id — stale creation values that would override current React Flow position
-      const EXCLUDED = new Set(["readOnly", "onChange", "x", "y", "width", "height", "id"]);
+      // Exclude position/size/id/type — these come from the React Flow node itself (base),
+      // not from data; keeping them in data could override current values with stale ones.
+      const EXCLUDED = new Set(["readOnly", "onChange", "type", "x", "y", "width", "height", "id"]);
       const rest = Object.fromEntries(Object.entries(nodeData).filter(([k]) => !EXCLUDED.has(k)));
       return { ...base, ...rest } as CanvasData["nodes"][number];
     }),
@@ -117,7 +134,12 @@ function flowToCanvasData(nodes: Node[], edges: Edge[]): CanvasData {
 
 export interface CanvasViewHandle {
   addNode: (type: AddNodeType, x: number, y: number, extraData?: Record<string, unknown>) => void;
-  addNodeAtScreenPos: (type: AddNodeType, screenX: number, screenY: number, extraData?: Record<string, unknown>) => void;
+  addNodeAtScreenPos: (
+    type: AddNodeType,
+    screenX: number,
+    screenY: number,
+    extraData?: Record<string, unknown>,
+  ) => void;
 }
 
 interface CanvasViewProps {
@@ -142,7 +164,13 @@ const NODE_SIZE: Record<AddNodeType, { width: number; height: number }> = {
   group: { width: 300, height: 200 },
 };
 
-function buildFlowNode(type: AddNodeType, x: number, y: number, extraData: Record<string, unknown>, readOnly: boolean): Node {
+function buildFlowNode(
+  type: AddNodeType,
+  x: number,
+  y: number,
+  extraData: Record<string, unknown>,
+  readOnly: boolean,
+): Node {
   const size = NODE_SIZE[type];
   return {
     id: `node-${Date.now()}`,
@@ -153,107 +181,126 @@ function buildFlowNode(type: AddNodeType, x: number, y: number, extraData: Recor
   };
 }
 
-export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(
-  function CanvasView({ initialData, onChange, readOnly = false }, ref) {
-    const { nodes: initNodes, edges: initEdges } = canvasDataToFlow(initialData, readOnly);
-    const [nodes, setNodes] = useNodesState(initNodes);
-    const [edges, setEdges] = useEdgesState(initEdges);
-    const reactFlow = useReactFlow();
+export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function CanvasView(
+  { initialData, onChange, readOnly = false },
+  ref,
+) {
+  const { nodes: initNodes, edges: initEdges } = canvasDataToFlow(initialData, readOnly);
+  const [nodes, setNodes] = useNodesState(initNodes);
+  const [edges, setEdges] = useEdgesState(initEdges);
+  const reactFlow = useReactFlow();
 
-    // Ref always holds the latest nodes so edge data change handler avoids stale closure
-    const nodesRef = useRef(nodes);
-    nodesRef.current = nodes;
+  // Ref always holds the latest nodes so edge data change handler avoids stale closure
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
 
-    const onNodesChange = useCallback(
-      (changes: NodeChange[]) => {
-        setNodes((nds) => {
-          const updated = applyNodeChanges(changes, nds);
-          onChange?.(flowToCanvasData(updated, edges));
-          return updated;
-        });
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      setNodes((nds) => {
+        const updated = applyNodeChanges(changes, nds);
+        onChange?.(flowToCanvasData(updated, edges));
+        return updated;
+      });
+    },
+    [setNodes, onChange, edges],
+  );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      setEdges((eds) => {
+        const updated = applyEdgeChanges(changes, eds);
+        onChange?.(flowToCanvasData(nodes, updated));
+        return updated;
+      });
+    },
+    [setEdges, onChange, nodes],
+  );
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      if (readOnly) return;
+      setEdges((eds) => {
+        const newEdges = addEdge(
+          {
+            ...connection,
+            id: `e-${Date.now()}`,
+            type: "canvas",
+            markerEnd: { type: "arrowclosed" },
+            data: { label: "", lineStyle: "bezier" as CanvasEdgeLineStyle, readOnly },
+          },
+          eds,
+        );
+        onChange?.(flowToCanvasData(nodes, newEdges));
+        return newEdges;
+      });
+    },
+    [readOnly, setEdges, onChange, nodes],
+  );
+
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, _node: Node, allNodes: Node[]) => {
+      onChange?.(flowToCanvasData(allNodes, edges));
+    },
+    [onChange, edges],
+  );
+
+  // Called by a node (via context) when its content changes (e.g. text/label edits)
+  const handleNodeDataChange = useCallback(
+    (nodeId: string, patch: Record<string, unknown>) => {
+      setNodes((nds) => {
+        const updated = nds.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...(n.data as object), ...patch } } : n,
+        );
+        onChange?.(flowToCanvasData(updated, edges));
+        return updated;
+      });
+    },
+    [setNodes, onChange, edges],
+  );
+
+  // Called by CanvasEdge (via context) when label or lineStyle changes
+  const handleEdgeDataChange = useCallback(
+    (edgeId: string, patch: Partial<CanvasEdgeData>) => {
+      setEdges((eds) => {
+        const updated = eds.map((e) =>
+          e.id === edgeId ? { ...e, data: { ...(e.data as object), ...patch } } : e,
+        );
+        onChange?.(flowToCanvasData(nodesRef.current, updated));
+        return updated;
+      });
+    },
+    [setEdges, onChange],
+  );
+
+  const addNodeAt = useCallback(
+    (type: AddNodeType, x: number, y: number, extraData: Record<string, unknown> = {}) => {
+      const newNode = buildFlowNode(type, x, y, extraData, readOnly);
+      setNodes((nds) => {
+        const updated = [...nds, newNode];
+        onChange?.(flowToCanvasData(updated, edges));
+        return updated;
+      });
+    },
+    [setNodes, onChange, edges, readOnly],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      addNode: (type, x, y, extraData = {}) => {
+        addNodeAt(type, x, y, extraData);
       },
-      [setNodes, onChange, edges],
-    );
-
-    const onEdgesChange = useCallback(
-      (changes: EdgeChange[]) => {
-        setEdges((eds) => {
-          const updated = applyEdgeChanges(changes, eds);
-          onChange?.(flowToCanvasData(nodes, updated));
-          return updated;
-        });
+      addNodeAtScreenPos: (type, screenX, screenY, extraData = {}) => {
+        const pos = reactFlow.screenToFlowPosition({ x: screenX, y: screenY });
+        addNodeAt(type, pos.x, pos.y, extraData);
       },
-      [setEdges, onChange, nodes],
-    );
+    }),
+    [addNodeAt, reactFlow],
+  );
 
-    const onConnect = useCallback(
-      (connection: Connection) => {
-        if (readOnly) return;
-        setEdges((eds) => {
-          const newEdges = addEdge(
-            {
-              ...connection,
-              id: `e-${Date.now()}`,
-              type: "canvas",
-              markerEnd: { type: "arrowclosed" },
-              data: { label: "", lineStyle: "bezier" as CanvasEdgeLineStyle, readOnly },
-            },
-            eds,
-          );
-          onChange?.(flowToCanvasData(nodes, newEdges));
-          return newEdges;
-        });
-      },
-      [readOnly, setEdges, onChange, nodes],
-    );
-
-    const onNodeDragStop = useCallback(
-      (_event: React.MouseEvent, _node: Node, allNodes: Node[]) => {
-        onChange?.(flowToCanvasData(allNodes, edges));
-      },
-      [onChange, edges],
-    );
-
-    // Called by CanvasEdge (via context) when label or lineStyle changes
-    const handleEdgeDataChange = useCallback(
-      (edgeId: string, patch: Partial<CanvasEdgeData>) => {
-        setEdges((eds) => {
-          const updated = eds.map((e) =>
-            e.id === edgeId ? { ...e, data: { ...(e.data as object), ...patch } } : e,
-          );
-          onChange?.(flowToCanvasData(nodesRef.current, updated));
-          return updated;
-        });
-      },
-      [setEdges, onChange],
-    );
-
-    const addNodeAt = useCallback(
-      (type: AddNodeType, x: number, y: number, extraData: Record<string, unknown> = {}) => {
-        const newNode = buildFlowNode(type, x, y, extraData, readOnly);
-        setNodes((nds) => {
-          const updated = [...nds, newNode];
-          onChange?.(flowToCanvasData(updated, edges));
-          return updated;
-        });
-      },
-      [setNodes, onChange, edges, readOnly],
-    );
-
-    useImperativeHandle(
-      ref,
-      () => ({
-        addNode: (type, x, y, extraData = {}) => { addNodeAt(type, x, y, extraData); },
-        addNodeAtScreenPos: (type, screenX, screenY, extraData = {}) => {
-          const pos = reactFlow.screenToFlowPosition({ x: screenX, y: screenY });
-          addNodeAt(type, pos.x, pos.y, extraData);
-        },
-      }),
-      [addNodeAt, reactFlow],
-    );
-
-    return (
-      <EdgeDataChangeContext.Provider value={handleEdgeDataChange}>
+  return (
+    <EdgeDataChangeContext.Provider value={handleEdgeDataChange}>
+      <NodeDataChangeContext.Provider value={handleNodeDataChange}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -277,7 +324,7 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(
           {!readOnly && <Controls />}
           {!readOnly && <MiniMap />}
         </ReactFlow>
-      </EdgeDataChangeContext.Provider>
-    );
-  },
-);
+      </NodeDataChangeContext.Provider>
+    </EdgeDataChangeContext.Provider>
+  );
+});

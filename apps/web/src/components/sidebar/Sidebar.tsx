@@ -1,4 +1,5 @@
 import {
+  IconBell,
   IconBolt,
   IconChevronDown,
   IconFile,
@@ -123,11 +124,13 @@ export function Sidebar({
   const isOnGraph = routerState.location.pathname === "/graph";
   const isOnTags = routerState.location.pathname === "/tags";
   const isOnCanvases = routerState.location.pathname.startsWith("/canvas");
+  const isOnReminders = routerState.location.pathname === "/reminders";
   const isOnSettings = routerState.location.pathname === "/settings";
 
   const { data: canvasResults = [] } = useQuery({
     queryKey: canvasKeys.search(search),
-    queryFn: () => getCanvases({ ...(currentVaultId ? { vaultId: currentVaultId } : {}), q: search }),
+    queryFn: () =>
+      getCanvases({ ...(currentVaultId ? { vaultId: currentVaultId } : {}), q: search }),
     enabled: search.length > 0,
   });
 
@@ -350,11 +353,29 @@ export function Sidebar({
               />
             </Link>
 
+            {/* Reminders */}
+            <Link to="/reminders" style={{ textDecoration: "none" }}>
+              <NavLink
+                component="div"
+                label={<Text size="sm">Reminders</Text>}
+                leftSection={<IconBell size={14} />}
+                active={isOnReminders}
+              />
+            </Link>
+
             {/* Canvas search results */}
             {search && canvasResults.length > 0 && (
               <>
-                <Text size="xs" fw={600} tt="uppercase" c="dimmed" px={8} pt={4} pb={2}
-                  style={{ letterSpacing: "0.08em" }}>
+                <Text
+                  size="xs"
+                  fw={600}
+                  tt="uppercase"
+                  c="dimmed"
+                  px={8}
+                  pt={4}
+                  pb={2}
+                  style={{ letterSpacing: "0.08em" }}
+                >
                   Canvases
                 </Text>
                 {canvasResults.map((canvas) => (

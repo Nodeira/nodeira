@@ -1,15 +1,16 @@
 import { Paper, TextInput } from "@mantine/core";
 import { NodeResizer, type NodeProps } from "@xyflow/react";
 import { useCallback, useState } from "react";
+import { useNodeDataChange } from "../CanvasView.js";
 
 export interface GroupNodeData {
   label?: string;
-  onChange?: (label: string) => void;
   readOnly?: boolean;
 }
 
-export function GroupNode({ data, selected }: NodeProps) {
+export function GroupNode({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as GroupNodeData;
+  const onNodeDataChange = useNodeDataChange();
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(nodeData.label ?? "Group");
 
@@ -20,8 +21,8 @@ export function GroupNode({ data, selected }: NodeProps) {
 
   const handleBlur = useCallback(() => {
     setEditing(false);
-    nodeData.onChange?.(label);
-  }, [label, nodeData]);
+    onNodeDataChange?.(id, { label });
+  }, [id, label, onNodeDataChange]);
 
   return (
     <>
@@ -57,7 +58,9 @@ export function GroupNode({ data, selected }: NodeProps) {
               styles={{ input: { fontSize: 12, height: 22, minHeight: 22 } }}
             />
           ) : (
-            <span style={{ fontSize: 12, color: "var(--mantine-color-dimmed)", userSelect: "none" }}>
+            <span
+              style={{ fontSize: 12, color: "var(--mantine-color-dimmed)", userSelect: "none" }}
+            >
               {label}
             </span>
           )}
