@@ -1,3 +1,11 @@
+# [1.7.0](https://github.com/Nodeira/nodeira/compare/v1.6.8...v1.7.0) (2026-06-17)
+
+
+### Features
+
+* notifications and reminders ([b688ba2](https://github.com/Nodeira/nodeira/commit/b688ba25e506915bf5909d928ee54d589b0524d3))
+* **web:** show canvases as tabs, plus assorted branch fix-ups ([58a3f3d](https://github.com/Nodeira/nodeira/commit/58a3f3d1350051e9d7947546307a4b2781b9a61a))
+
 ## [1.6.8](https://github.com/Nodeira/nodeira/compare/v1.6.7...v1.6.8) (2026-05-31)
 
 
