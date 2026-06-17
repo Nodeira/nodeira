@@ -25,7 +25,8 @@ export function openDatabase(userDataPath: string): void {
       icon       TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
-      position   INTEGER NOT NULL DEFAULT 0
+      position   INTEGER NOT NULL DEFAULT 0,
+      tags       TEXT
     );
 
     CREATE TABLE IF NOT EXISTS plugin_cache (
@@ -40,6 +41,14 @@ export function openDatabase(userDataPath: string): void {
       value TEXT NOT NULL
     );
   `);
+
+  // Migrate older databases that predate the tags column (CREATE TABLE
+  // IF NOT EXISTS won't add it). SQLite throws if the column already exists.
+  try {
+    db.exec("ALTER TABLE note_metadata ADD COLUMN tags TEXT");
+  } catch {
+    /* column already exists */
+  }
 }
 
 // ── Yjs state ────────────────────────────────────────────────────────────────
@@ -76,6 +85,7 @@ type NoteMetadataRow = {
   created_at: number;
   updated_at: number;
   position: number;
+  tags: string | null;
 };
 
 export function loadNoteMetadata(): NoteMetadata[] {
@@ -90,9 +100,9 @@ export function upsertNoteMetadata(notes: NoteMetadata[]): void {
   if (!db) return;
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO note_metadata
-      (note_id, title, type, kind, kind_meta, vault_id, folder_id, pinned, icon, created_at, updated_at, position)
+      (note_id, title, type, kind, kind_meta, vault_id, folder_id, pinned, icon, created_at, updated_at, position, tags)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const tx = db.transaction((items: NoteMetadata[]) => {
     for (const n of items) {
@@ -109,6 +119,7 @@ export function upsertNoteMetadata(notes: NoteMetadata[]): void {
         n.createdAt.getTime(),
         n.updatedAt.getTime(),
         n.position,
+        JSON.stringify(n.tags ?? []),
       );
     }
   });
@@ -129,6 +140,7 @@ function rowToMetadata(row: NoteMetadataRow): NoteMetadata {
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     position: row.position,
+    tags: row.tags ? (JSON.parse(row.tags) as string[]) : [],
   };
 }
 

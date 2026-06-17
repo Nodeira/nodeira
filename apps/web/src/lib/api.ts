@@ -1,4 +1,15 @@
-import type { Canvas, CanvasData, Folder, NoteMetadata, NoteType, OgPreview, PluginRecord, Vault } from "@nodeira/shared-types";
+import type {
+  Canvas,
+  CanvasData,
+  Device,
+  Folder,
+  NoteMetadata,
+  NoteType,
+  OgPreview,
+  PluginRecord,
+  Reminder,
+  Vault,
+} from "@nodeira/shared-types";
 import { authStorage } from "./authStorage.js";
 import "./electronAPI.js";
 
@@ -490,4 +501,101 @@ export async function fetchUrlPreview(url: string): Promise<OgPreview> {
     method: "POST",
     body: JSON.stringify({ url }),
   });
+}
+
+// ── Reminders ─────────────────────────────────────────────────────────────────
+
+type RawReminder = Omit<
+  Reminder,
+  "fireAt" | "snoozeUntil" | "lastFiredAt" | "createdAt" | "updatedAt"
+> & {
+  fireAt: string | null;
+  snoozeUntil: string | null;
+  lastFiredAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function parseReminder(raw: RawReminder): Reminder {
+  return {
+    ...raw,
+    fireAt: raw.fireAt ? new Date(raw.fireAt) : null,
+    snoozeUntil: raw.snoozeUntil ? new Date(raw.snoozeUntil) : null,
+    lastFiredAt: raw.lastFiredAt ? new Date(raw.lastFiredAt) : null,
+    createdAt: new Date(raw.createdAt),
+    updatedAt: new Date(raw.updatedAt),
+  };
+}
+
+export const remindersKeys = {
+  all: ["reminders"] as const,
+};
+
+export interface CreateReminderBody {
+  title: string;
+  body?: string;
+  targetType?: Reminder["targetType"];
+  targetNoteId?: string;
+  targetCanvasId?: string;
+  targetNodeId?: string;
+  triggerType: Reminder["triggerType"];
+  fireAt?: string; // ISO
+  timezone?: string;
+  recurrence?: Reminder["recurrence"];
+  lat?: number;
+  lng?: number;
+  radiusM?: number;
+  locationName?: string;
+  onLeave?: boolean;
+}
+
+export async function getReminders(): Promise<Reminder[]> {
+  const raw = await request<RawReminder[]>("/reminders");
+  return raw.map(parseReminder);
+}
+
+export async function createReminder(body: CreateReminderBody): Promise<Reminder> {
+  const raw = await request<RawReminder>("/reminders", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return parseReminder(raw);
+}
+
+export async function updateReminder(
+  id: string,
+  body: Partial<CreateReminderBody>,
+): Promise<Reminder> {
+  const raw = await request<RawReminder>(`/reminders/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return parseReminder(raw);
+}
+
+export async function snoozeReminder(id: string, until: string): Promise<Reminder> {
+  const raw = await request<RawReminder>(`/reminders/${id}/snooze`, {
+    method: "POST",
+    body: JSON.stringify({ until }),
+  });
+  return parseReminder(raw);
+}
+
+export async function dismissReminder(id: string): Promise<Reminder> {
+  const raw = await request<RawReminder>(`/reminders/${id}/dismiss`, { method: "POST" });
+  return parseReminder(raw);
+}
+
+export async function deleteReminder(id: string): Promise<void> {
+  await request(`/reminders/${id}`, { method: "DELETE" });
+}
+
+// ── Devices (push / WS clients) ───────────────────────────────────────────────
+
+export async function registerDevice(body: {
+  platform: Device["platform"];
+  pushToken?: string;
+  name?: string;
+}): Promise<Device> {
+  return request<Device>("/devices", { method: "POST", body: JSON.stringify(body) });
 }

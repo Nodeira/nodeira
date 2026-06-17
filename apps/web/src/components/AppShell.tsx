@@ -55,6 +55,7 @@ import {
   vaultsKeys,
 } from "../lib/api.js";
 import { loadAllPlugins } from "../lib/pluginLoader.js";
+import { useReminderSocket } from "../lib/useReminderSocket.js";
 import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
 import { noteKindRegistry } from "../lib/noteKindRegistry.js";
@@ -89,6 +90,9 @@ export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const qc = useQueryClient();
+
+  // Subscribe to fired reminders (toast) and register this client as a device.
+  useReminderSocket();
 
   const { data: vaults = [] } = useQuery({ queryKey: vaultsKeys.all, queryFn: getVaults });
   const { data: installedPlugins = [] } = useQuery({

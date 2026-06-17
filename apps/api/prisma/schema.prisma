@@ -16,6 +16,26 @@ enum Role {
   ADMIN
 }
 
+enum ReminderTargetType {
+  NONE
+  NOTE
+  CANVAS
+  CANVAS_NODE
+}
+
+enum ReminderTriggerType {
+  TIME
+  LOCATION
+}
+
+enum ReminderStatus {
+  SCHEDULED
+  FIRED
+  DISMISSED
+  SNOOZED
+  CANCELLED
+}
+
 model User {
   id          String     @id @default(uuid())
   email       String     @unique
@@ -26,6 +46,8 @@ model User {
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
   apiTokens   ApiToken[]
+  reminders   Reminder[]
+  devices     Device[]
 
   @@map("users")
 }
@@ -137,4 +159,57 @@ model Plugin {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("plugins")
+}
+
+model Reminder {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String
+  body  String?
+
+  // optional polymorphic target (NONE = standalone reminder)
+  targetType     ReminderTargetType @default(NONE) @map("target_type")
+  targetNoteId   String?            @map("target_note_id")
+  targetCanvasId String?            @map("target_canvas_id")
+  targetNodeId   String?            @map("target_node_id") // node id inside a canvas's JSON
+
+  triggerType ReminderTriggerType @map("trigger_type")
+
+  // TIME trigger (server-scheduled)
+  fireAt     DateTime? @map("fire_at")
+  timezone   String?
+  recurrence String? // null = one-shot; DAILY | WEEKLY | MONTHLY | YEARLY
+
+  // LOCATION trigger (evaluated on-device, mobile only)
+  lat          Float?
+  lng          Float?
+  radiusM      Int?     @map("radius_m")
+  locationName String?  @map("location_name")
+  onLeave      Boolean  @default(false) @map("on_leave") // false = on enter, true = on exit
+
+  status      ReminderStatus @default(SCHEDULED)
+  snoozeUntil DateTime?      @map("snooze_until")
+  lastFiredAt DateTime?      @map("last_fired_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, status, fireAt])
+  @@map("reminders")
+}
+
+model Device {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform   String // ios | android | desktop | web
+  pushToken  String?  @map("push_token") // Expo push token (mobile); null for WS-only clients
+  name       String?
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, pushToken])
+  @@map("devices")
 }

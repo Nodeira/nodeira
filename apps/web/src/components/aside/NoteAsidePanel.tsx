@@ -1,14 +1,33 @@
-import { IconMaximize, IconMinimize } from "@tabler/icons-react";
-import { ActionIcon, Box, Collapse, Divider, Group, Select, Stack, Text } from "@mantine/core";
+import { useState } from "react";
+import { IconBell, IconMaximize, IconMinimize } from "@tabler/icons-react";
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Collapse,
+  Divider,
+  Group,
+  Select,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useDisclosure, useResizeObserver } from "@mantine/hooks";
 import { useAtomValue } from "jotai";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
 import { Link } from "@tanstack/react-router";
 import { noteKindRegistry, TASK_STATUSES } from "../../lib/noteKindRegistry.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
-import { backlinksKeys, getBacklinks } from "../../lib/api.js";
+import {
+  backlinksKeys,
+  createReminder,
+  getBacklinks,
+  remindersKeys,
+  type CreateReminderBody,
+} from "../../lib/api.js";
 import type { Folder, NoteMetadata } from "@nodeira/shared-types";
 import { LocalGraph } from "./LocalGraph.js";
+import { ReminderModal } from "../modals/ReminderModal.js";
 
 export function NoteAsidePanel({
   note,
@@ -25,9 +44,21 @@ export function NoteAsidePanel({
 }) {
   const [propertiesOpen, setPropertiesOpen] = useDisclosure(true);
   const [graphOpen, setGraphOpen] = useDisclosure(true);
+  const [reminderOpen, setReminderOpen] = useState(false);
   const [graphRef, graphRect] = useResizeObserver<HTMLDivElement>();
   useAtomValue(pluginRegistryVersionAtom);
   const asideSections = pluginRegistry.getAsideSections();
+  const qc = useQueryClient();
+
+  const createReminderMutation = useMutation({
+    mutationFn: (body: CreateReminderBody) => createReminder(body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: remindersKeys.all });
+      setReminderOpen(false);
+      notifications.show({ message: "Reminder set", color: "blue" });
+    },
+    onError: () => notifications.show({ message: "Couldn't create reminder", color: "red" }),
+  });
 
   const { data: backlinks = [] } = useQuery({
     queryKey: backlinksKeys.forNote(note?.id ?? ""),
@@ -51,6 +82,17 @@ export function NoteAsidePanel({
         py={4}
         style={{ borderBottom: "1px solid var(--mantine-color-default-border)" }}
       >
+        {note && (
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            leftSection={<IconBell size={13} />}
+            mr="auto"
+            onClick={() => setReminderOpen(true)}
+          >
+            Add reminder
+          </Button>
+        )}
         <ActionIcon
           size="xs"
           variant="subtle"
@@ -61,27 +103,47 @@ export function NoteAsidePanel({
         </ActionIcon>
       </Group>
 
+      {note && (
+        <ReminderModal
+          opened={reminderOpen}
+          onClose={() => setReminderOpen(false)}
+          onSubmit={(body) => createReminderMutation.mutate(body)}
+          submitting={createReminderMutation.isPending}
+          target={{ targetType: "NOTE", targetNoteId: note.id, label: note.title || "Untitled" }}
+        />
+      )}
+
       {/* Local graph */}
       <Box>
         <Group
           justify="space-between"
           px="md"
           py={6}
-          style={{ cursor: "pointer", borderBottom: "1px solid var(--mantine-color-default-border)" }}
+          style={{
+            cursor: "pointer",
+            borderBottom: "1px solid var(--mantine-color-default-border)",
+          }}
           onClick={setGraphOpen.toggle}
         >
           <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: "0.08em" }}>
             Local Graph
           </Text>
-          <Text size="xs" c="dimmed">{graphOpen ? "▾" : "▸"}</Text>
+          <Text size="xs" c="dimmed">
+            {graphOpen ? "▾" : "▸"}
+          </Text>
         </Group>
         <Collapse expanded={graphOpen}>
           <Box ref={graphRef} style={{ overflow: "hidden" }}>
             {note && graphRect.width > 0 ? (
               <LocalGraph note={note} width={graphRect.width} />
             ) : (
-              <Box h={220} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Text size="xs" c="dimmed" fs="italic">Open a note to see its graph</Text>
+              <Box
+                h={220}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <Text size="xs" c="dimmed" fs="italic">
+                  Open a note to see its graph
+                </Text>
               </Box>
             )}
           </Box>
@@ -114,7 +176,12 @@ export function NoteAsidePanel({
                   <Text
                     size="xs"
                     c="blue"
-                    style={{ textDecoration: "underline", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    style={{
+                      textDecoration: "underline",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {bl.title || "Untitled"}
                   </Text>
