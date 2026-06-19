@@ -7,6 +7,7 @@
     "@hocuspocus/provider": "^4.0.0",
     "@nodeira/shared-types": "workspace:*",
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-navigation/native": "^7.1.8",
     "@tanstack/react-query": "^5.62.0",
@@ -60,6 +61,8 @@
     "ios": "expo start --dev-client --ios",
     "web": "expo start --web",
     "build:dev:android": "eas build --profile development --platform android",
+    "build:dev:local:android": "eas build:dev",
+    "build:prod:android": "eas build --profile production --platform android",
     "build:dev:ios": "eas build --profile development --platform ios",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint"

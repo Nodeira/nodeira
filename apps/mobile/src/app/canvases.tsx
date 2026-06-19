@@ -1,8 +1,8 @@
-import type { Canvas } from '@nodeira/shared-types';
-import { Feather } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import type { Canvas } from "@nodeira/shared-types";
+import { Feather } from "@expo/vector-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,32 +12,38 @@ import {
   Text,
   View,
   useColorScheme,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { canvasKeys, createCanvas, deleteCanvas, getCanvases } from '@/lib/api';
+import { ErrorState } from "@/components/ErrorState";
+import { canvasKeys, createCanvas, deleteCanvas, getCanvases } from "@/lib/api";
 
 export default function CanvasesScreen() {
   const router = useRouter();
   const qc = useQueryClient();
-  const dark = useColorScheme() === 'dark';
+  const dark = useColorScheme() === "dark";
   const { vaultId } = useLocalSearchParams<{ vaultId?: string }>();
 
-  const bg = dark ? '#1a1b1e' : '#ffffff';
-  const bgSubtle = dark ? '#25262b' : '#f8f9fa';
-  const border = dark ? '#373a40' : '#e9ecef';
-  const textColor = dark ? '#c1c2c5' : '#212529';
-  const textMute = '#868e96';
+  const bg = dark ? "#1a1b1e" : "#ffffff";
+  const bgSubtle = dark ? "#25262b" : "#f8f9fa";
+  const border = dark ? "#373a40" : "#e9ecef";
+  const textColor = dark ? "#c1c2c5" : "#212529";
+  const textMute = "#868e96";
 
   const [menuCanvas, setMenuCanvas] = useState<Canvas | null>(null);
 
-  const { data: canvases, isLoading } = useQuery({
+  const {
+    data: canvases,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [...canvasKeys.all, vaultId ?? null],
     queryFn: () => getCanvases(vaultId),
   });
 
   const createMutation = useMutation({
-    mutationFn: () => createCanvas({ title: 'Untitled Canvas', vaultId: vaultId ?? null }),
+    mutationFn: () => createCanvas({ title: "Untitled Canvas", vaultId: vaultId ?? null }),
     onSuccess: (canvas) => {
       void qc.invalidateQueries({ queryKey: canvasKeys.all, exact: true });
       router.push(`/canvas/${canvas.id}` as "/");
@@ -57,23 +63,25 @@ export default function CanvasesScreen() {
   }
 
   function confirmDelete(canvas: Canvas) {
-    Alert.alert('Delete Canvas', `Delete "${canvas.title}"? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Delete Canvas", `Delete "${canvas.title}"? This cannot be undone.`, [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Delete',
-        style: 'destructive',
+        text: "Delete",
+        style: "destructive",
         onPress: () => deleteMutation.mutate(canvas.id),
       },
     ]);
   }
+
+  if (isError) return <ErrorState onRetry={refetch} title="Failed to load canvases" />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
       {/* Header */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           paddingHorizontal: 16,
           paddingVertical: 12,
           borderBottomWidth: 1,
@@ -83,7 +91,7 @@ export default function CanvasesScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginRight: 12 }}>
           <Feather name="arrow-left" size={20} color={textColor} />
         </Pressable>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: textColor, flex: 1 }}>Canvases</Text>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: textColor, flex: 1 }}>Canvases</Text>
         <Pressable
           onPress={() => createMutation.mutate()}
           disabled={createMutation.isPending}
@@ -94,14 +102,22 @@ export default function CanvasesScreen() {
       </View>
 
       {isLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color="#4263eb" />
         </View>
       ) : canvases?.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, gap: 12 }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 32,
+            gap: 12,
+          }}
+        >
           <Feather name="layout" size={40} color={textMute} />
-          <Text style={{ fontSize: 16, fontWeight: '600', color: textColor }}>No canvases yet</Text>
-          <Text style={{ fontSize: 14, color: textMute, textAlign: 'center' }}>
+          <Text style={{ fontSize: 16, fontWeight: "600", color: textColor }}>No canvases yet</Text>
+          <Text style={{ fontSize: 14, color: textMute, textAlign: "center" }}>
             Create a canvas to start building visual boards and diagrams.
           </Text>
           <Pressable
@@ -112,10 +128,10 @@ export default function CanvasesScreen() {
               paddingVertical: 12,
               paddingHorizontal: 24,
               borderRadius: 8,
-              backgroundColor: '#4263eb',
+              backgroundColor: "#4263eb",
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>Create Canvas</Text>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>Create Canvas</Text>
           </Pressable>
         </View>
       ) : (
@@ -141,18 +157,18 @@ export default function CanvasesScreen() {
                 minHeight: 120,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 {item.icon ? (
                   <Text style={{ fontSize: 20 }}>{item.icon}</Text>
                 ) : (
                   <Feather name="layout" size={18} color="#4263eb" />
                 )}
               </View>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: textColor }} numberOfLines={2}>
-                {item.title || 'Untitled Canvas'}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: textColor }} numberOfLines={2}>
+                {item.title || "Untitled Canvas"}
               </Text>
               <Text style={{ fontSize: 11, color: textMute }}>
-                {item.data.nodes.length} {item.data.nodes.length === 1 ? 'node' : 'nodes'}
+                {item.data.nodes.length} {item.data.nodes.length === 1 ? "node" : "nodes"}
               </Text>
               <Text style={{ fontSize: 11, color: textMute }}>{formatDate(item.updatedAt)}</Text>
             </Pressable>
@@ -168,7 +184,7 @@ export default function CanvasesScreen() {
         onRequestClose={() => setMenuCanvas(null)}
       >
         <Pressable
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
           onPress={() => setMenuCanvas(null)}
         >
           <Pressable
@@ -181,18 +197,41 @@ export default function CanvasesScreen() {
               paddingTop: 16,
             }}
           >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: border, alignSelf: 'center', marginBottom: 16 }} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: textColor, paddingHorizontal: 20, paddingBottom: 16 }}>
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: border,
+                alignSelf: "center",
+                marginBottom: 16,
+              }}
+            />
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: textColor,
+                paddingHorizontal: 20,
+                paddingBottom: 16,
+              }}
+            >
               {menuCanvas?.title}
             </Text>
             <Pressable
               onPress={() => {
                 if (menuCanvas) confirmDelete(menuCanvas);
               }}
-              style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 14 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 20,
+                paddingVertical: 14,
+                gap: 14,
+              }}
             >
               <Feather name="trash-2" size={18} color="#e03131" />
-              <Text style={{ fontSize: 15, color: '#e03131' }}>Delete Canvas</Text>
+              <Text style={{ fontSize: 15, color: "#e03131" }}>Delete Canvas</Text>
             </Pressable>
           </Pressable>
         </Pressable>
