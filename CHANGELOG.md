@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/Nodeira/nodeira/compare/v1.8.0...v1.8.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* ci fix ([31f9161](https://github.com/Nodeira/nodeira/commit/31f9161c8f7baadb4f181e917743d07bb9ef4cea))
+
 # [1.8.0](https://github.com/Nodeira/nodeira/compare/v1.7.0...v1.8.0) (2026-06-19)
 
 
