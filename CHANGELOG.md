@@ -1,3 +1,11 @@
+# [1.8.0](https://github.com/Nodeira/nodeira/compare/v1.7.0...v1.8.0) (2026-06-19)
+
+
+### Features
+
+* **mobile:** f-droid distribution via per-abi signed apks ([900917c](https://github.com/Nodeira/nodeira/commit/900917c47b4e9109e44303107ec212110d6ed01b))
+* **mobile:** menu drawer, reminder editor, and create-new sheet ([dce1bde](https://github.com/Nodeira/nodeira/commit/dce1bde1e8b55015706cf09f7ca8b62a602e2f46))
+
 # [1.7.0](https://github.com/Nodeira/nodeira/compare/v1.6.8...v1.7.0) (2026-06-17)
 
 
