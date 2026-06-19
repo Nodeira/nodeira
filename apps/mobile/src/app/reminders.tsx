@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import type { Reminder } from "@nodeira/shared-types";
 
+import { ErrorState } from "@/components/ErrorState";
+import { ReminderEditor } from "@/components/ReminderEditor";
 import { TopBar } from "@/components/TopBar";
 import {
   createReminder,
@@ -22,6 +24,7 @@ import {
   dismissReminder,
   getReminders,
   remindersKeys,
+  updateReminder,
   type CreateReminderBody,
 } from "@/lib/reminders";
 import { syncGeofences } from "@/lib/notifications";
@@ -33,6 +36,8 @@ export default function RemindersScreen() {
   const dark = useColorScheme() === "dark";
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<Reminder | null>(null);
 
   const bg = dark ? "#1a1b1e" : "#ffffff";
   const bgSubtle = dark ? "#25262b" : "#f8f9fa";
@@ -43,6 +48,7 @@ export default function RemindersScreen() {
   const {
     data: reminders,
     isLoading,
+    isError,
     isRefetching,
     refetch,
   } = useQuery({
@@ -60,9 +66,20 @@ export default function RemindersScreen() {
     mutationFn: (body: CreateReminderBody) => createReminder(body),
     onSuccess: () => {
       setTitle("");
+      setEditorOpen(false);
       invalidate();
     },
     onError: () => Alert.alert("Error", "Couldn't create reminder"),
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: CreateReminderBody }) =>
+      updateReminder(id, body),
+    onSuccess: () => {
+      setEditorOpen(false);
+      setEditing(null);
+      invalidate();
+    },
+    onError: () => Alert.alert("Error", "Couldn't save reminder"),
   });
   const dismissMutation = useMutation({
     mutationFn: (id: string) => dismissReminder(id),
@@ -121,6 +138,24 @@ export default function RemindersScreen() {
     });
   }
 
+  function openNewEditor() {
+    setEditing(null);
+    setEditorOpen(true);
+  }
+
+  function openEditEditor(r: Reminder) {
+    setEditing(r);
+    setEditorOpen(true);
+  }
+
+  function handleEditorSubmit(body: CreateReminderBody) {
+    if (editing) {
+      updateMutation.mutate({ id: editing.id, body });
+    } else {
+      createMutation.mutate(body);
+    }
+  }
+
   function whenLabel(r: Reminder): string {
     if (r.triggerType === "LOCATION") {
       return `${r.onLeave ? "Leaving" : "Near"} ${r.locationName ?? "a place"}`;
@@ -138,9 +173,14 @@ export default function RemindersScreen() {
     );
   });
 
+  if (isError) return <ErrorState onRetry={refetch} title="Failed to load reminders" />;
+
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
-      <TopBar title="Reminders" onBack={() => router.back()} />
+      <TopBar
+        title="Reminders"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+      />
 
       {/* Quick create */}
       <View
@@ -195,6 +235,21 @@ export default function RemindersScreen() {
             </Pressable>
           ))}
         </View>
+        <Pressable
+          onPress={openNewEditor}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            paddingVertical: 10,
+            borderRadius: 8,
+            backgroundColor: "#4263eb",
+          }}
+        >
+          <Feather name="sliders" size={14} color="#fff" />
+          <Text style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>Custom reminder…</Text>
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -216,18 +271,19 @@ export default function RemindersScreen() {
           renderItem={({ item: r }) => {
             const active = ACTIVE.includes(r.status);
             return (
-              <View
-                style={{
+              <Pressable
+                onPress={() => openEditEditor(r)}
+                style={({ pressed }) => ({
                   paddingHorizontal: 16,
                   paddingVertical: 14,
                   borderBottomWidth: 1,
                   borderBottomColor: border,
-                  backgroundColor: bg,
+                  backgroundColor: pressed ? bgSubtle : bg,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
                   opacity: active ? 1 : 0.55,
-                }}
+                })}
               >
                 <Feather
                   name={r.triggerType === "LOCATION" ? "map-pin" : "clock"}
@@ -253,11 +309,23 @@ export default function RemindersScreen() {
                 <Pressable onPress={() => deleteMutation.mutate(r.id)} hitSlop={8}>
                   <Feather name="trash-2" size={16} color="#fa5252" />
                 </Pressable>
-              </View>
+              </Pressable>
             );
           }}
         />
       )}
+
+      <ReminderEditor
+        visible={editorOpen}
+        initial={editing}
+        initialTitle={title}
+        submitting={createMutation.isPending || updateMutation.isPending}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditing(null);
+        }}
+        onSubmit={handleEditorSubmit}
+      />
     </View>
   );
 }

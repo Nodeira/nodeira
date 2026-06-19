@@ -1,9 +1,9 @@
-import type { NoteMetadata, Vault } from '@nodeira/shared-types';
-import { Feather } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
-import { useRef } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import type { NoteMetadata, Vault } from "@nodeira/shared-types";
+import { Feather } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,40 +12,47 @@ import {
   TextInput,
   View,
   useColorScheme,
-} from 'react-native';
+} from "react-native";
 
-import { NoteContextMenu } from '@/components/NoteContextMenu';
-import { TopBar } from '@/components/TopBar';
-import { api } from '@/lib/api';
+import { ErrorState } from "@/components/ErrorState";
+import { NoteContextMenu } from "@/components/NoteContextMenu";
+import { TopBar } from "@/components/TopBar";
+import { api } from "@/lib/api";
 
-type SortKey = 'updated' | 'created' | 'title';
+type SortKey = "updated" | "created" | "title";
 
 export default function RecentsScreen() {
   const router = useRouter();
-  const dark = useColorScheme() === 'dark';
+  const dark = useColorScheme() === "dark";
   const { search, vaultId } = useLocalSearchParams<{ search?: string; vaultId?: string }>();
-  const [sort, setSort] = useState<SortKey>('updated');
-  const [searchText, setSearchText] = useState('');
+  const [sort, setSort] = useState<SortKey>("updated");
+  const [searchText, setSearchText] = useState("");
   const [menuNote, setMenuNote] = useState<NoteMetadata | null>(null);
   // initialVaultId is stable for the lifetime of this screen — store it once in a ref
   const initialVaultId = useRef(vaultId ?? null).current;
   const [filterVaultId, setFilterVaultId] = useState<string | null>(initialVaultId);
 
-  const bg = dark ? '#1a1b1e' : '#ffffff';
-  const bgSubtle = dark ? '#25262b' : '#f8f9fa';
-  const border = dark ? '#373a40' : '#e9ecef';
-  const textColor = dark ? '#c1c2c5' : '#212529';
-  const textMute = '#868e96';
+  const bg = dark ? "#1a1b1e" : "#ffffff";
+  const bgSubtle = dark ? "#25262b" : "#f8f9fa";
+  const border = dark ? "#373a40" : "#e9ecef";
+  const textColor = dark ? "#c1c2c5" : "#212529";
+  const textMute = "#868e96";
 
   const { data: vaults } = useQuery({
-    queryKey: ['vaults'],
-    queryFn: () => api.get<Vault[]>('/vaults'),
+    queryKey: ["vaults"],
+    queryFn: () => api.get<Vault[]>("/vaults"),
   });
 
-  const { data: notes, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['notes', filterVaultId],
+  const {
+    data: notes,
+    isLoading,
+    isError,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: ["notes", filterVaultId],
     queryFn: () =>
-      api.get<NoteMetadata[]>(filterVaultId ? `/notes?vaultId=${filterVaultId}` : '/notes'),
+      api.get<NoteMetadata[]>(filterVaultId ? `/notes?vaultId=${filterVaultId}` : "/notes"),
   });
 
   const activeFilterVault = vaults?.find((v) => v.id === filterVaultId);
@@ -55,29 +62,37 @@ export default function RecentsScreen() {
   }
 
   const sorted = [...(notes ?? [])].sort((a, b) => {
-    if (sort === 'title') return (a.title || '').localeCompare(b.title || '');
-    if (sort === 'created') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (sort === "title") return (a.title || "").localeCompare(b.title || "");
+    if (sort === "created")
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
   const query = searchText.trim().toLowerCase();
   const filtered = query
-    ? sorted.filter((n) => (n.title || 'Untitled').toLowerCase().includes(query))
+    ? sorted.filter((n) => (n.title || "Untitled").toLowerCase().includes(query))
     : sorted;
 
   const sortLabel: Record<SortKey, string> = {
-    updated: 'Date',
-    created: 'Created',
-    title: 'Title',
+    updated: "Date",
+    created: "Created",
+    title: "Title",
   };
 
   function cycleSort() {
-    setSort((s) => (s === 'updated' ? 'created' : s === 'created' ? 'title' : 'updated'));
+    setSort((s) => (s === "updated" ? "created" : s === "created" ? "title" : "updated"));
   }
+
+  // Recoverable error screen instead of a silent empty list when the query fails.
+  if (isError) return <ErrorState onRetry={refetch} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
-      <TopBar title="Recent Notes" onBack={() => router.back()} />
+      <TopBar
+        title="Recent Notes"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+        onSettings={() => router.push("/settings")}
+      />
 
       {/* Search bar */}
       <View
@@ -91,18 +106,18 @@ export default function RecentsScreen() {
       >
         <View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 8,
             paddingHorizontal: 12,
             paddingVertical: 8,
             borderRadius: 8,
             borderWidth: 1,
-            borderColor: searchText ? '#4263eb' : border,
+            borderColor: searchText ? "#4263eb" : border,
             backgroundColor: bgSubtle,
           }}
         >
-          <Feather name="search" size={15} color={searchText ? '#4263eb' : textMute} />
+          <Feather name="search" size={15} color={searchText ? "#4263eb" : textMute} />
           <TextInput
             autoFocus={!!search}
             placeholder="Search notes…"
@@ -114,7 +129,7 @@ export default function RecentsScreen() {
             style={{ flex: 1, fontSize: 14, color: textColor, padding: 0 }}
           />
           {searchText.length > 0 && (
-            <Pressable onPress={() => setSearchText('')} hitSlop={8}>
+            <Pressable onPress={() => setSearchText("")} hitSlop={8}>
               <Feather name="x-circle" size={15} color={textMute} />
             </Pressable>
           )}
@@ -126,8 +141,8 @@ export default function RecentsScreen() {
         style={{
           paddingHorizontal: 16,
           paddingVertical: 10,
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           gap: 10,
           borderBottomWidth: 1,
           borderBottomColor: border,
@@ -143,57 +158,51 @@ export default function RecentsScreen() {
             borderWidth: 1,
             borderColor: border,
             backgroundColor: bg,
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 5,
           }}
         >
-          <Text style={{ fontSize: 12, fontWeight: '500', color: textColor }}>
+          <Text style={{ fontSize: 12, fontWeight: "500", color: textColor }}>
             Sort: {sortLabel[sort]}
           </Text>
           <Feather name="chevron-down" size={11} color={textMute} />
         </Pressable>
         <Pressable
-          onPress={() =>
-            setFilterVaultId((f) => (f ? null : initialVaultId))
-          }
+          onPress={() => setFilterVaultId((f) => (f ? null : initialVaultId))}
           style={{
             paddingHorizontal: 10,
             paddingVertical: 5,
             borderRadius: 6,
             borderWidth: 1,
-            borderColor: filterVaultId ? '#4263eb' : border,
-            backgroundColor: filterVaultId ? '#edf2ff' : bg,
-            flexDirection: 'row',
-            alignItems: 'center',
+            borderColor: filterVaultId ? "#4263eb" : border,
+            backgroundColor: filterVaultId ? "#edf2ff" : bg,
+            flexDirection: "row",
+            alignItems: "center",
             gap: 5,
           }}
         >
-          <Feather
-            name="filter"
-            size={13}
-            color={filterVaultId ? '#4263eb' : textMute}
-          />
+          <Feather name="filter" size={13} color={filterVaultId ? "#4263eb" : textMute} />
           <Text
             style={{
               fontSize: 12,
-              fontWeight: '500',
-              color: filterVaultId ? '#4263eb' : textMute,
+              fontWeight: "500",
+              color: filterVaultId ? "#4263eb" : textMute,
             }}
           >
-            {filterVaultId ? (activeFilterVault?.name ?? 'Vault') : 'All vaults'}
+            {filterVaultId ? (activeFilterVault?.name ?? "Vault") : "All vaults"}
           </Text>
         </Pressable>
         <View style={{ flex: 1 }} />
         <Text style={{ fontSize: 12, color: textMute }}>
           {query
             ? `${filtered.length} of ${sorted.length}`
-            : `${sorted.length} ${sorted.length === 1 ? 'note' : 'notes'}`}
+            : `${sorted.length} ${sorted.length === 1 ? "note" : "notes"}`}
         </Text>
       </View>
 
       {isLoading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color="#4263eb" />
         </View>
       ) : (
@@ -203,7 +212,7 @@ export default function RecentsScreen() {
           refreshing={isRefetching}
           onRefresh={refetch}
           ListEmptyComponent={
-            <View style={{ paddingTop: 48, alignItems: 'center' }}>
+            <View style={{ paddingTop: 48, alignItems: "center" }}>
               <Feather name="search" size={28} color={textMute} />
               <Text style={{ fontSize: 14, color: textMute, marginTop: 12 }}>
                 No notes match &quot;{searchText}&quot;
@@ -212,9 +221,7 @@ export default function RecentsScreen() {
           }
           renderItem={({ item: n }) => (
             <Pressable
-              onPress={() =>
-                router.push(`/note/${n.id}?title=${encodeURIComponent(n.title)}`)
-              }
+              onPress={() => router.push(`/note/${n.id}?title=${encodeURIComponent(n.title)}`)}
               onLongPress={() => setMenuNote(n)}
               delayLongPress={400}
               style={{
@@ -222,20 +229,20 @@ export default function RecentsScreen() {
                 paddingVertical: 14,
                 borderBottomWidth: 1,
                 borderBottomColor: border,
-                backgroundColor: n.pinned ? '#edf2ff' : bg,
+                backgroundColor: n.pinned ? "#edf2ff" : bg,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 }}>
                 <Text
                   style={{
                     fontSize: 15,
-                    fontWeight: '600',
-                    color: n.pinned ? '#4263eb' : textColor,
+                    fontWeight: "600",
+                    color: n.pinned ? "#4263eb" : textColor,
                     flex: 1,
                   }}
                   numberOfLines={1}
                 >
-                  {n.title || 'Untitled'}
+                  {n.title || "Untitled"}
                 </Text>
                 {n.pinned && <Feather name="map-pin" size={14} color="#4263eb" />}
               </View>

@@ -1,8 +1,8 @@
-import type { NoteMetadata } from '@nodeira/shared-types';
-import { Feather } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import type { NoteMetadata } from "@nodeira/shared-types";
+import { Feather } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -11,21 +11,14 @@ import {
   Text,
   View,
   useColorScheme,
-} from 'react-native';
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from 'react-native-gesture-handler';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
-import { Circle, G, Line, Svg, Text as SvgText } from 'react-native-svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { Circle, G, Line, Svg, Text as SvgText } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { api, getNoteLinks } from '@/lib/api';
+import { ErrorState } from "@/components/ErrorState";
+import { api, getNoteLinks } from "@/lib/api";
 
 // ── Force simulation ──────────────────────────────────────────────────────────
 
@@ -106,33 +99,42 @@ function runSimulation(nodes: SimNode[], links: SimLink[]): SimNode[] {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const GRAPH_SIZE = 800; // virtual canvas size centered at 0,0
 
 export default function GraphScreen() {
   const router = useRouter();
-  const dark = useColorScheme() === 'dark';
+  const dark = useColorScheme() === "dark";
   const insets = useSafeAreaInsets();
 
-  const bg = dark ? '#1a1b1e' : '#ffffff';
-  const bgSubtle = dark ? '#25262b' : '#f8f9fa';
-  const border = dark ? '#373a40' : '#e9ecef';
-  const textColor = dark ? '#c1c2c5' : '#212529';
-  const textMute = '#868e96';
-  const nodeColor = dark ? '#4c6ef5' : '#4263eb';
-  const edgeColor = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)';
+  const bg = dark ? "#1a1b1e" : "#ffffff";
+  const bgSubtle = dark ? "#25262b" : "#f8f9fa";
+  const border = dark ? "#373a40" : "#e9ecef";
+  const textColor = dark ? "#c1c2c5" : "#212529";
+  const textMute = "#868e96";
+  const nodeColor = dark ? "#4c6ef5" : "#4263eb";
+  const edgeColor = dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)";
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [simNodes, setSimNodes] = useState<SimNode[]>([]);
   const [simLinks, setSimLinks] = useState<SimLink[]>([]);
 
-  const { data: notes } = useQuery({
-    queryKey: ['notes'],
-    queryFn: () => api.get<NoteMetadata[]>('/notes'),
+  const {
+    data: notes,
+    isError: notesError,
+    refetch: refetchNotes,
+  } = useQuery({
+    queryKey: ["notes"],
+    queryFn: () => api.get<NoteMetadata[]>("/notes"),
   });
 
-  const { data: rawLinks, isLoading } = useQuery({
-    queryKey: ['noteLinks'],
+  const {
+    data: rawLinks,
+    isLoading,
+    isError: linksError,
+    refetch: refetchLinks,
+  } = useQuery({
+    queryKey: ["noteLinks"],
     queryFn: getNoteLinks,
   });
 
@@ -156,7 +158,7 @@ export default function GraphScreen() {
     const spread = GRAPH_SIZE * 0.4;
     const initialNodes: SimNode[] = notes.map((n) => ({
       id: n.id,
-      label: n.title || 'Untitled',
+      label: n.title || "Untitled",
       linkCount: linkCount.get(n.id) ?? 0,
       x: (Math.random() - 0.5) * spread,
       y: (Math.random() - 0.5) * spread,
@@ -223,14 +225,17 @@ export default function GraphScreen() {
     // Map screen coords back to SVG virtual coords
     const svgW = SCREEN_W;
     const svgH = SCREEN_H - insets.top - 48;
-    const cx = ((locationX / svgW) - 0.5) * GRAPH_SIZE;
-    const cy = ((locationY / svgH) - 0.5) * GRAPH_SIZE;
+    const cx = (locationX / svgW - 0.5) * GRAPH_SIZE;
+    const cy = (locationY / svgH - 0.5) * GRAPH_SIZE;
 
     let closest: SimNode | null = null;
     let minDist = Infinity;
     for (const n of simNodes) {
       const d = Math.hypot(n.x - cx, n.y - cy);
-      if (d < minDist) { minDist = d; closest = n; }
+      if (d < minDist) {
+        minDist = d;
+        closest = n;
+      }
     }
     if (closest && minDist < 40) {
       setSelectedId(closest.id === selectedId ? null : closest.id);
@@ -252,6 +257,18 @@ export default function GraphScreen() {
   const headerH = insets.top + 48;
   const svgH = SCREEN_H - headerH;
 
+  if (notesError || linksError) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          void refetchNotes();
+          void refetchLinks();
+        }}
+        title="Failed to load graph"
+      />
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: bg }}>
       {/* Header */}
@@ -259,8 +276,8 @@ export default function GraphScreen() {
         style={{
           paddingTop: insets.top,
           height: headerH,
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           paddingHorizontal: 16,
           gap: 10,
           backgroundColor: bgSubtle,
@@ -271,7 +288,7 @@ export default function GraphScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Feather name="arrow-left" size={18} color="#4263eb" />
         </Pressable>
-        <Text style={{ fontSize: 16, fontWeight: '600', color: textColor, flex: 1 }}>
+        <Text style={{ fontSize: 16, fontWeight: "600", color: textColor, flex: 1 }}>
           Graph View
         </Text>
         <Text style={{ fontSize: 12, color: textMute }}>
@@ -283,10 +300,10 @@ export default function GraphScreen() {
       </View>
 
       {isLoading || simNodes.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color="#4263eb" />
           <Text style={{ fontSize: 13, color: textMute, marginTop: 12 }}>
-            {isLoading ? 'Loading graph…' : 'Running layout…'}
+            {isLoading ? "Loading graph…" : "Running layout…"}
           </Text>
         </View>
       ) : (
@@ -305,8 +322,7 @@ export default function GraphScreen() {
                     const t = simNodes.find((n) => n.id === link.target);
                     if (!s || !t) return null;
                     const isHighlighted =
-                      selectedId &&
-                      (link.source === selectedId || link.target === selectedId);
+                      selectedId && (link.source === selectedId || link.target === selectedId);
                     return (
                       <Line
                         key={i}
@@ -314,7 +330,7 @@ export default function GraphScreen() {
                         y1={s.y}
                         x2={t.x}
                         y2={t.y}
-                        stroke={isHighlighted ? '#4263eb' : edgeColor}
+                        stroke={isHighlighted ? "#4263eb" : edgeColor}
                         strokeWidth={isHighlighted ? 1.5 : 1}
                         opacity={selectedId && !isHighlighted ? 0.2 : 1}
                       />
@@ -335,7 +351,7 @@ export default function GraphScreen() {
                           cx={node.x}
                           cy={node.y}
                           r={r}
-                          fill={isSelected ? '#e03131' : isConnected ? '#2f9e44' : nodeColor}
+                          fill={isSelected ? "#e03131" : isConnected ? "#2f9e44" : nodeColor}
                         />
                         {(isSelected || isConnected || node.linkCount > 2) && (
                           <SvgText
@@ -343,11 +359,9 @@ export default function GraphScreen() {
                             y={node.y + r + 10}
                             textAnchor="middle"
                             fontSize={9}
-                            fill={dark ? '#c1c2c5' : '#495057'}
+                            fill={dark ? "#c1c2c5" : "#495057"}
                           >
-                            {node.label.length > 20
-                              ? node.label.slice(0, 18) + '…'
-                              : node.label}
+                            {node.label.length > 20 ? node.label.slice(0, 18) + "…" : node.label}
                           </SvgText>
                         )}
                       </G>
@@ -364,7 +378,7 @@ export default function GraphScreen() {
       {selectedNode && (
         <View
           style={{
-            position: 'absolute',
+            position: "absolute",
             bottom: insets.bottom + 16,
             left: 16,
             right: 16,
@@ -373,17 +387,17 @@ export default function GraphScreen() {
             borderWidth: 1,
             borderColor: border,
             padding: 16,
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 12,
             elevation: 8,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Feather name="file-text" size={16} color="#4263eb" />
             <Text
-              style={{ fontSize: 15, fontWeight: '600', color: textColor, flex: 1 }}
+              style={{ fontSize: 15, fontWeight: "600", color: textColor, flex: 1 }}
               numberOfLines={1}
             >
               {selectedNode.label}
@@ -393,7 +407,7 @@ export default function GraphScreen() {
             </Pressable>
           </View>
           <Text style={{ fontSize: 12, color: textMute, marginBottom: 12 }}>
-            {selectedNode.linkCount} link{selectedNode.linkCount !== 1 ? 's' : ''}
+            {selectedNode.linkCount} link{selectedNode.linkCount !== 1 ? "s" : ""}
           </Text>
           <Pressable
             onPress={() => {
@@ -408,11 +422,11 @@ export default function GraphScreen() {
             style={{
               paddingVertical: 9,
               borderRadius: 8,
-              backgroundColor: '#4263eb',
-              alignItems: 'center',
+              backgroundColor: "#4263eb",
+              alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>Open note</Text>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>Open note</Text>
           </Pressable>
         </View>
       )}

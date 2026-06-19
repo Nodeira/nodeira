@@ -55,6 +55,19 @@ export async function createReminder(body: CreateReminderBody): Promise<Reminder
   return parseReminder(raw);
 }
 
+/** Partial update of any reminder field (PATCH /reminders/:id). */
+export type UpdateReminderBody = Partial<CreateReminderBody>;
+
+export async function updateReminder(id: string, body: UpdateReminderBody): Promise<Reminder> {
+  const raw = await api.patch<RawReminder>(`/reminders/${id}`, body);
+  return parseReminder(raw);
+}
+
+export async function snoozeReminder(id: string, until: string): Promise<Reminder> {
+  const raw = await api.post<RawReminder>(`/reminders/${id}/snooze`, { until });
+  return parseReminder(raw);
+}
+
 export async function dismissReminder(id: string): Promise<Reminder> {
   const raw = await api.post<RawReminder>(`/reminders/${id}/dismiss`, {});
   return parseReminder(raw);

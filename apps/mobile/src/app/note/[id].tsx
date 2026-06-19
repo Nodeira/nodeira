@@ -1,7 +1,9 @@
-import type * as Y from 'yjs';
-import { Feather } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import type { NoteMetadata } from "@nodeira/shared-types";
+import type * as Y from "yjs";
+import { Feather } from "@expo/vector-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -12,58 +14,63 @@ import {
   TextInput,
   View,
   useColorScheme,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 
-import { FormattingToolbar } from '@/components/FormattingToolbar';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import { api, uploadImage } from '@/lib/api';
-import { getApiUrl } from '@/lib/config';
-import { applyMarkdownToXmlFragment, xmlFragmentToMarkdown } from '@/lib/yjsMarkdown';
-import { getYjsContext } from '@/providers/YjsProvider';
+import { FormattingToolbar } from "@/components/FormattingToolbar";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { api, uploadImage } from "@/lib/api";
+import { getApiUrl } from "@/lib/config";
+import { applyMarkdownToXmlFragment, xmlFragmentToMarkdown } from "@/lib/yjsMarkdown";
+import { getYjsContext } from "@/providers/YjsProvider";
 
 function deriveTitle(text: string): string {
   const words = text.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return 'Untitled';
-  return words.slice(0, 5).join(' ').slice(0, 40);
+  if (!words.length) return "Untitled";
+  return words.slice(0, 5).join(" ").slice(0, 40);
 }
 
 export default function NoteEditorScreen() {
-  const { id, title: titleParam, type } = useLocalSearchParams<{
+  const {
+    id,
+    title: titleParam,
+    type,
+  } = useLocalSearchParams<{
     id: string;
     title?: string;
     type?: string;
   }>();
   const router = useRouter();
-  const dark = useColorScheme() === 'dark';
+  const qc = useQueryClient();
+  const dark = useColorScheme() === "dark";
 
-  const bg = dark ? '#1a1b1e' : '#ffffff';
-  const bgSubtle = dark ? '#25262b' : '#f8f9fa';
-  const border = dark ? '#373a40' : '#e9ecef';
-  const textColor = dark ? '#c1c2c5' : '#212529';
-  const textDim = dark ? '#868e96' : '#495057';
+  const bg = dark ? "#1a1b1e" : "#ffffff";
+  const bgSubtle = dark ? "#25262b" : "#f8f9fa";
+  const border = dark ? "#373a40" : "#e9ecef";
+  const textColor = dark ? "#c1c2c5" : "#212529";
+  const textDim = dark ? "#868e96" : "#495057";
 
   const insets = useSafeAreaInsets();
-  const initialTitle = titleParam ? decodeURIComponent(titleParam) : 'Untitled';
+  const initialTitle = titleParam ? decodeURIComponent(titleParam) : "Untitled";
 
   const [titleValue, setTitleValue] = useState(initialTitle);
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const yFragRef = useRef<Y.XmlFragment | null>(null);
-  const autoTitleDoneRef = useRef(initialTitle !== 'Untitled');
+  const autoTitleDoneRef = useRef(initialTitle !== "Untitled");
   const autoTitleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
 
   useEffect(() => {
     if (!id) return;
     const { doc } = getYjsContext(id);
-    const frag = doc.getXmlFragment('default');
+    const frag = doc.getXmlFragment("default");
     yFragRef.current = frag;
     setContent(xmlFragmentToMarkdown(frag));
 
@@ -71,14 +78,16 @@ export default function NoteEditorScreen() {
       const text = xmlFragmentToMarkdown(frag);
       setContent(text);
 
-      if (type === 'quick' && !autoTitleDoneRef.current) {
+      if (type === "quick" && !autoTitleDoneRef.current) {
         const derived = deriveTitle(text);
-        if (derived !== 'Untitled') {
+        if (derived !== "Untitled") {
           autoTitleDoneRef.current = true;
           setTitleValue(derived);
           if (autoTitleTimerRef.current) clearTimeout(autoTitleTimerRef.current);
           autoTitleTimerRef.current = setTimeout(() => {
-            void api.patch(`/notes/${id}`, { title: derived });
+            void api.patch(`/notes/${id}`, { title: derived }).then(() => {
+              qc.invalidateQueries({ queryKey: ["notes"] });
+            });
           }, 800);
         }
       }
@@ -91,8 +100,8 @@ export default function NoteEditorScreen() {
   }, [id, type]);
 
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+    const show = Keyboard.addListener("keyboardDidShow", () => setIsKeyboardVisible(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setIsKeyboardVisible(false));
     return () => {
       show.remove();
       hide.remove();
@@ -116,20 +125,20 @@ export default function NoteEditorScreen() {
   }
 
   async function handleToolbarAction(actionId: string) {
-    if (actionId === 'photo' || actionId === 'camera') {
+    if (actionId === "photo" || actionId === "camera") {
       let result: ImagePicker.ImagePickerResult;
-      if (actionId === 'camera') {
+      if (actionId === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') return;
+        if (status !== "granted") return;
         result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
+          mediaTypes: ["images"],
           quality: 0.8,
         });
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') return;
+        if (status !== "granted") return;
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
+          mediaTypes: ["images"],
           quality: 0.8,
         });
       }
@@ -137,7 +146,7 @@ export default function NoteEditorScreen() {
       setIsUploading(true);
       try {
         const { url } = await uploadImage(result.assets[0].uri);
-        const fullUrl = url.startsWith('http') ? url : `${getApiUrl()}${url}`;
+        const fullUrl = url.startsWith("http") ? url : `${getApiUrl()}${url}`;
         insertAtCursor(`![image](${fullUrl})\n`);
       } finally {
         setIsUploading(false);
@@ -145,11 +154,28 @@ export default function NoteEditorScreen() {
     }
   }
 
+  const { data: note } = useQuery({
+    queryKey: ["note", id],
+    queryFn: () => api.get<NoteMetadata>(`/notes/${id}`),
+    enabled: !!id,
+  });
+  const pinned = note?.pinned ?? false;
+
+  const togglePin = useMutation({
+    mutationFn: (next: boolean) => api.patch(`/notes/${id}`, { pinned: next }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["note", id] });
+      qc.invalidateQueries({ queryKey: ["notes"] });
+    },
+  });
+
   function saveTitle(val: string) {
-    const trimmed = val.trim() || 'Untitled';
+    const trimmed = val.trim() || "Untitled";
     setTitleValue(trimmed);
-    autoTitleDoneRef.current = trimmed !== 'Untitled';
-    void api.patch(`/notes/${id}`, { title: trimmed });
+    autoTitleDoneRef.current = trimmed !== "Untitled";
+    void api.patch(`/notes/${id}`, { title: trimmed }).then(() => {
+      qc.invalidateQueries({ queryKey: ["notes"] });
+    });
   }
 
   return (
@@ -159,8 +185,8 @@ export default function NoteEditorScreen() {
         style={{
           paddingHorizontal: 6,
           paddingTop: insets.top + 8,
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           backgroundColor: bgSubtle,
           borderBottomWidth: 1,
@@ -172,8 +198,8 @@ export default function NoteEditorScreen() {
           style={{
             width: 32,
             height: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
+            alignItems: "center",
+            justifyContent: "center",
             marginBottom: 4,
           }}
           hitSlop={8}
@@ -187,8 +213,8 @@ export default function NoteEditorScreen() {
             paddingHorizontal: 10,
             paddingTop: 6,
             paddingBottom: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 8,
             backgroundColor: bg,
             borderTopLeftRadius: 6,
@@ -198,12 +224,12 @@ export default function NoteEditorScreen() {
             borderTopWidth: 2,
             borderLeftColor: border,
             borderRightColor: border,
-            borderTopColor: '#4263eb',
+            borderTopColor: "#4263eb",
             marginBottom: -1,
           }}
         >
-          <Feather name={type === 'quick' ? 'zap' : 'file-text'} size={13} color="#4263eb" />
-          <Text style={{ fontSize: 13, fontWeight: '500', color: '#4263eb' }} numberOfLines={1}>
+          <Feather name={type === "quick" ? "zap" : "file-text"} size={13} color="#4263eb" />
+          <Text style={{ fontSize: 13, fontWeight: "500", color: "#4263eb" }} numberOfLines={1}>
             {titleValue}
           </Text>
           <Pressable onPress={() => router.back()} hitSlop={6}>
@@ -215,26 +241,33 @@ export default function NoteEditorScreen() {
 
         <Pressable
           onPress={() => {
-            if (isEditing) Keyboard.dismiss();
+            if (isEditing) {
+              Keyboard.dismiss();
+              saveTitle(titleValue);
+            }
             setIsEditing((v) => !v);
           }}
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 4,
             paddingHorizontal: 10,
             paddingVertical: 5,
             borderRadius: 6,
-            backgroundColor: isEditing ? '#4263eb' : bgSubtle,
+            backgroundColor: isEditing ? "#4263eb" : bgSubtle,
             borderWidth: 1,
-            borderColor: isEditing ? '#4263eb' : border,
+            borderColor: isEditing ? "#4263eb" : border,
             marginBottom: 4,
           }}
           hitSlop={8}
         >
-          <Feather name={isEditing ? 'check' : 'edit-2'} size={13} color={isEditing ? '#fff' : textDim} />
-          <Text style={{ fontSize: 12, fontWeight: '500', color: isEditing ? '#fff' : textDim }}>
-            {isEditing ? 'Done' : 'Edit'}
+          <Feather
+            name={isEditing ? "check" : "edit-2"}
+            size={13}
+            color={isEditing ? "#fff" : textDim}
+          />
+          <Text style={{ fontSize: 12, fontWeight: "500", color: isEditing ? "#fff" : textDim }}>
+            {isEditing ? "Done" : "Edit"}
           </Text>
         </Pressable>
       </View>
@@ -248,7 +281,7 @@ export default function NoteEditorScreen() {
           <Text
             style={{
               fontSize: 26,
-              fontWeight: '700',
+              fontWeight: "700",
               letterSpacing: -0.4,
               color: textColor,
               marginBottom: 16,
@@ -264,7 +297,7 @@ export default function NoteEditorScreen() {
       {isEditing && (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <ScrollView
             style={{ flex: 1 }}
@@ -284,13 +317,13 @@ export default function NoteEditorScreen() {
               placeholderTextColor={textDim}
               style={{
                 fontSize: 26,
-                fontWeight: '700',
+                fontWeight: "700",
                 letterSpacing: -0.4,
                 color: textColor,
                 marginBottom: isTitleFocused ? 8 : 20,
                 padding: 0,
                 borderBottomWidth: isTitleFocused ? 1 : 0,
-                borderBottomColor: '#4263eb',
+                borderBottomColor: "#4263eb",
               }}
             />
             <TextInput
@@ -317,52 +350,30 @@ export default function NoteEditorScreen() {
         </KeyboardAvoidingView>
       )}
 
-      {/* Floating actions — view mode only */}
+      {/* Floating pin toggle — view mode only */}
       {!isEditing && !isKeyboardVisible && (
-        <>
-          <Pressable
-            style={{
-              position: 'absolute',
-              right: 16,
-              bottom: 90,
-              width: 52,
-              height: 52,
-              borderRadius: 26,
-              backgroundColor: '#4263eb',
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#4263eb',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
-              elevation: 8,
-            }}
-          >
-            <Feather name="star" size={22} color="#fff" />
-          </Pressable>
-          <View
-            style={{
-              position: 'absolute',
-              right: 14,
-              bottom: 30,
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: '#36b67a',
-              borderWidth: 2,
-              borderColor: bg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <Text style={{ fontSize: 18 }}>🏝️</Text>
-          </View>
-        </>
+        <Pressable
+          onPress={() => togglePin.mutate(!pinned)}
+          disabled={togglePin.isPending}
+          style={{
+            position: "absolute",
+            right: 16,
+            bottom: 30,
+            width: 52,
+            height: 52,
+            borderRadius: 26,
+            backgroundColor: pinned ? "#fab005" : "#4263eb",
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: pinned ? "#fab005" : "#4263eb",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.4,
+            shadowRadius: 12,
+            elevation: 8,
+          }}
+        >
+          <Feather name="star" size={22} color="#fff" />
+        </Pressable>
       )}
     </View>
   );

@@ -1,8 +1,8 @@
-import type { NoteMetadata } from '@nodeira/shared-types';
-import { Feather } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import type { NoteMetadata } from "@nodeira/shared-types";
+import { Feather } from "@expo/vector-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,10 +12,11 @@ import {
   TextInput,
   View,
   useColorScheme,
-} from 'react-native';
+} from "react-native";
 
-import { TopBar } from '@/components/TopBar';
-import { api } from '@/lib/api';
+import { ErrorState } from "@/components/ErrorState";
+import { TopBar } from "@/components/TopBar";
+import { api } from "@/lib/api";
 
 const CARD_GAP = 6;
 const GRID_PADDING = 16;
@@ -23,34 +24,40 @@ const GRID_PADDING = 16;
 export default function QuickNotesScreen() {
   const router = useRouter();
   const qc = useQueryClient();
-  const dark = useColorScheme() === 'dark';
+  const dark = useColorScheme() === "dark";
   const { vaultId, search } = useLocalSearchParams<{ vaultId?: string; search?: string }>();
   const stableVaultId = useRef(vaultId ?? null).current;
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
 
-  const bg = dark ? '#1a1b1e' : '#ffffff';
-  const bgSubtle = dark ? '#25262b' : '#f8f9fa';
-  const border = dark ? '#373a40' : '#e9ecef';
-  const textColor = dark ? '#c1c2c5' : '#212529';
-  const textMute = '#868e96';
-  const cardBg = dark ? '#25262b' : '#f8f9fa';
-  const pinnedCardBg = dark ? '#1e2340' : '#edf2ff';
+  const bg = dark ? "#1a1b1e" : "#ffffff";
+  const bgSubtle = dark ? "#25262b" : "#f8f9fa";
+  const border = dark ? "#373a40" : "#e9ecef";
+  const textColor = dark ? "#c1c2c5" : "#212529";
+  const textMute = "#868e96";
+  const cardBg = dark ? "#25262b" : "#f8f9fa";
+  const pinnedCardBg = dark ? "#1e2340" : "#edf2ff";
 
-  const { data: notes, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['notes', stableVaultId],
+  const {
+    data: notes,
+    isLoading,
+    isError,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: ["notes", stableVaultId],
     queryFn: () =>
-      api.get<NoteMetadata[]>(stableVaultId ? `/notes?vaultId=${stableVaultId}` : '/notes'),
+      api.get<NoteMetadata[]>(stableVaultId ? `/notes?vaultId=${stableVaultId}` : "/notes"),
   });
 
   const createNote = useMutation({
     mutationFn: () =>
-      api.post<NoteMetadata>('/notes', {
-        title: 'Untitled',
-        type: 'quick',
+      api.post<NoteMetadata>("/notes", {
+        title: "Untitled",
+        type: "quick",
         ...(stableVaultId ? { vaultId: stableVaultId } : {}),
       }),
     onSuccess: (note) => {
-      qc.invalidateQueries({ queryKey: ['notes'] });
+      qc.invalidateQueries({ queryKey: ["notes"] });
       router.push(`/note/${note.id}?title=${encodeURIComponent(note.title)}&type=quick`);
     },
   });
@@ -59,10 +66,14 @@ export default function QuickNotesScreen() {
     return new Date(d).toLocaleDateString();
   }
 
-  const quickNotes = (notes ?? []).filter((n) => n.type === 'quick');
+  // If the notes query fails (e.g. expired session or unreachable server) show a
+  // recoverable error screen rather than a silent empty state with no way out.
+  if (isError) return <ErrorState onRetry={refetch} />;
+
+  const quickNotes = (notes ?? []).filter((n) => n.type === "quick");
   const query = searchText.trim().toLowerCase();
   const matched = query
-    ? quickNotes.filter((n) => (n.title || 'Untitled').toLowerCase().includes(query))
+    ? quickNotes.filter((n) => (n.title || "Untitled").toLowerCase().includes(query))
     : quickNotes;
 
   const pinned = matched.filter((n) => n.pinned);
@@ -73,27 +84,27 @@ export default function QuickNotesScreen() {
       <Pressable
         key={n.id}
         onPress={() => router.push(`/note/${n.id}?title=${encodeURIComponent(n.title)}`)}
-        style={{ width: '50%', padding: CARD_GAP / 2 }}
+        style={{ width: "50%", padding: CARD_GAP / 2 }}
       >
         <View
           style={{
             backgroundColor: n.pinned ? pinnedCardBg : cardBg,
             borderRadius: 10,
             borderWidth: 1,
-            borderColor: n.pinned ? '#4263eb' : border,
+            borderColor: n.pinned ? "#4263eb" : border,
             padding: 12,
           }}
         >
           <Text
             style={{
               fontSize: 13,
-              fontWeight: '600',
-              color: n.pinned ? '#4263eb' : textColor,
+              fontWeight: "600",
+              color: n.pinned ? "#4263eb" : textColor,
               marginBottom: n.preview ? 5 : 0,
             }}
             numberOfLines={2}
           >
-            {n.title || 'Untitled'}
+            {n.title || "Untitled"}
           </Text>
 
           {!!n.preview && (
@@ -105,7 +116,7 @@ export default function QuickNotesScreen() {
             </Text>
           )}
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 4 }}>
             <Text style={{ fontSize: 10, color: textMute, flex: 1 }}>
               {formatDate(n.updatedAt)}
             </Text>
@@ -120,8 +131,8 @@ export default function QuickNotesScreen() {
     return (
       <View
         style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
+          flexDirection: "row",
+          flexWrap: "wrap",
           paddingHorizontal: GRID_PADDING - CARD_GAP / 2,
         }}
       >
@@ -132,7 +143,11 @@ export default function QuickNotesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
-      <TopBar title="Quick Notes" onBack={() => router.back()} />
+      <TopBar
+        title="Quick Notes"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+        onSettings={() => router.push("/settings")}
+      />
 
       {/* Search bar */}
       <View
@@ -146,18 +161,18 @@ export default function QuickNotesScreen() {
       >
         <View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 8,
             paddingHorizontal: 12,
             paddingVertical: 8,
             borderRadius: 8,
             borderWidth: 1,
-            borderColor: searchText ? '#4263eb' : border,
+            borderColor: searchText ? "#4263eb" : border,
             backgroundColor: bgSubtle,
           }}
         >
-          <Feather name="search" size={15} color={searchText ? '#4263eb' : textMute} />
+          <Feather name="search" size={15} color={searchText ? "#4263eb" : textMute} />
           <TextInput
             autoFocus={!!search}
             placeholder="Search quick notes…"
@@ -169,7 +184,7 @@ export default function QuickNotesScreen() {
             style={{ flex: 1, fontSize: 14, color: textColor, padding: 0 }}
           />
           {searchText.length > 0 && (
-            <Pressable onPress={() => setSearchText('')} hitSlop={8}>
+            <Pressable onPress={() => setSearchText("")} hitSlop={8}>
               <Feather name="x-circle" size={15} color={textMute} />
             </Pressable>
           )}
@@ -181,8 +196,8 @@ export default function QuickNotesScreen() {
         style={{
           paddingHorizontal: 16,
           paddingVertical: 10,
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           borderBottomWidth: 1,
           borderBottomColor: border,
           backgroundColor: bgSubtle,
@@ -191,32 +206,32 @@ export default function QuickNotesScreen() {
         <Text style={{ fontSize: 12, color: textMute, flex: 1 }}>
           {query
             ? `${matched.length} of ${quickNotes.length}`
-            : `${quickNotes.length} ${quickNotes.length === 1 ? 'note' : 'notes'}`}
+            : `${quickNotes.length} ${quickNotes.length === 1 ? "note" : "notes"}`}
         </Text>
         <Pressable
           onPress={() => createNote.mutate()}
           disabled={createNote.isPending}
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 5,
             paddingHorizontal: 10,
             paddingVertical: 5,
             borderRadius: 6,
-            backgroundColor: '#4263eb',
+            backgroundColor: "#4263eb",
           }}
         >
           <Feather name="plus" size={13} color="#fff" />
-          <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>New</Text>
+          <Text style={{ fontSize: 12, fontWeight: "600", color: "#fff" }}>New</Text>
         </Pressable>
       </View>
 
       {isLoading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color="#4263eb" />
         </View>
       ) : matched.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 12 }}>
           {query ? (
             <>
               <Feather name="search" size={28} color={textMute} />
@@ -234,10 +249,10 @@ export default function QuickNotesScreen() {
                   paddingHorizontal: 16,
                   paddingVertical: 8,
                   borderRadius: 8,
-                  backgroundColor: '#4263eb',
+                  backgroundColor: "#4263eb",
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
                   Create your first
                 </Text>
               </Pressable>
@@ -254,7 +269,7 @@ export default function QuickNotesScreen() {
               refreshing={isRefetching}
               onRefresh={refetch}
               tintColor="#4263eb"
-              colors={['#4263eb']}
+              colors={["#4263eb"]}
             />
           }
         >
@@ -266,9 +281,9 @@ export default function QuickNotesScreen() {
                   paddingBottom: 8,
                   fontSize: 11,
                   color: textMute,
-                  textTransform: 'uppercase',
+                  textTransform: "uppercase",
                   letterSpacing: 0.7,
-                  fontWeight: '600',
+                  fontWeight: "600",
                 }}
               >
                 Pinned
@@ -297,9 +312,9 @@ export default function QuickNotesScreen() {
                     paddingBottom: 8,
                     fontSize: 11,
                     color: textMute,
-                    textTransform: 'uppercase',
+                    textTransform: "uppercase",
                     letterSpacing: 0.7,
-                    fontWeight: '600',
+                    fontWeight: "600",
                   }}
                 >
                   Notes
