@@ -6,12 +6,11 @@ editor, which avoids reimplementing Yjs + the Hocuspocus protocol in Kotlin. Eve
 else is being rebuilt as native screens. See the plan in
 `~/.claude/plans/okay-fdroid-publish-works-parsed-stardust.md`.
 
-> Status: **Feature-complete for cutover.** WebView editor + canvas sync proven (live +
-> offline). Native Compose login, notes browsing, graph, canvases, reminders (time +
-> location/geofence), and settings are in place. Next: the cutover (move to apps/mobile,
-> delete RN, tag a release).
+> Status: **Cutover done.** This native Kotlin app replaced the Expo/React Native app.
+> WebView editor + canvas sync proven (live + offline). Native Compose login, notes browsing,
+> graph, canvases, reminders (time + location/geofence), and settings are in place.
 >
-> Implemented so far:
+> Implemented:
 >
 > - `MainActivity` — Compose host + Navigation drawer (Home / Recents / Quick notes /
 >   Canvases / Graph / Reminders / Settings / Log out); startup screen is configurable.
@@ -32,13 +31,8 @@ else is being rebuilt as native screens. See the plan in
 > - `data/*` — `AuthStorage`, `SettingsStorage`, Retrofit `NodeiraApi`, `NetworkModule`
 >   (dynamic base URL + bearer interceptor; `encodeDefaults` so required enum fields are
 >   sent), `NodeiraRepository`. Manual DI via `NodeiraApp.container`.
->
-> Known follow-ups:
->
-> - Reminders are rescheduled when the list loads but do **not** yet survive a reboot
->   (needs a `BootReceiver` + local cache).
-> - LOCATION/geofence reminders not implemented yet (geofencing API + background-location
->   permission).
+
+(Remaining follow-ups are listed under "Known limitations / follow-ups" below.)
 
 ## Prerequisites
 
@@ -113,19 +107,14 @@ Debug the WebView from Chrome: `chrome://inspect` → remote target
 This app has no large native libraries, so it ships as a **single universal signed APK**
 (no per-ABI splits — that was only needed for the RN app's Hermes/native code).
 
-`.github/workflows/android-kotlin-release.yml` (manual trigger for now) builds the web app,
+`.github/workflows/android-release.yml` is **tag-triggered** (`v*`): it builds the web app,
 copies it into assets, runs `:app:assembleRelease`, and uploads `nodeira-<version>.apk` to
 the GitHub Release that `deranjer/fdroid` polls. Signing uses the existing
-`ANDROID_KEYSTORE_*` secrets (same key as the RN app → clean upgrade of
+`ANDROID_KEYSTORE_*` secrets (same key as the old RN app → clean upgrade of
 `com.deranjer.nodeira`). Version name/code come from the release tag via `VERSION_NAME` /
 `VERSION_CODE` env (read in `app/build.gradle.kts`).
 
-## Releasing
-
-The cutover from the Expo/React Native app is done — this Kotlin app _is_ `apps/mobile`, and
-`.github/workflows/android-release.yml` is tag-triggered. To ship a release: bump the version
-above the last RN release (1.7.0) and push a `v*` tag; CI builds + signs + uploads the APK,
-and `deranjer/fdroid` serves it.
+To ship: push a `v*` tag higher than the previous release (CI does the rest).
 
 ## Known limitations / follow-ups
 
