@@ -8,14 +8,24 @@ name: Android Release APK
 # The web app is built and copied into the APK's assets (the note/canvas editor WebView).
 # Signing uses the SAME release keystore as the old RN app (ANDROID_KEYSTORE_* secrets) so
 # the app id `com.deranjer.nodeira` upgrades cleanly.
+#
+# This is a reusable workflow. release.yml calls it (workflow_call) right after semantic-release
+# cuts a tag, so every release produces an APK automatically. It is NOT triggered by `push: tags`
+# because semantic-release pushes the tag with the default GITHUB_TOKEN, which by design does not
+# trigger downstream workflows. workflow_dispatch is kept for rebuilding an arbitrary tag on demand.
 on:
-  push:
-    tags: ["v*"]
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to build (e.g. v1.9.0)
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag to build (e.g. v1.8.0; blank = latest v*)
+        description: Release tag to build (e.g. v1.9.0; blank = latest v*)
         required: false
+        type: string
 
 permissions:
   contents: write
@@ -31,22 +41,34 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      # Full history + tags so the dispatch fallback can pick the latest tag by semver.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve target tag
         id: tag
         run: |
           TAG='${{ inputs.tag }}'
+          # No explicit tag (manual dispatch with blank input): take the highest v* tag.
+          # Resolve from git tags, not `gh release list` — a tag may exist before its
+          # GitHub Release does, and tag order is semver-correct.
           if [ -z "$TAG" ]; then
-            TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
-              --json tagName,isDraft \
-              -q '[.[] | select(.isDraft | not) | .tagName | select(startswith("v"))][0]')
+            TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1)
           fi
           if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
-            echo "::error::No v* release tag found to build" && exit 1
+            echo "::error::No v* tag found to build" && exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Target tag: $TAG"
+
+      # Build the exact tagged commit (mirrors the cli/desktop jobs in release.yml),
+      # not whatever ref this workflow happened to be invoked against.
+      - name: Checkout target tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
 
       - name: Derive versionName / versionCode from tag
         id: ver

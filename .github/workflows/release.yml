@@ -344,3 +344,18 @@ jobs:
         with:
           tag_name: v${{ needs.release.outputs.version }}
           files: apps/desktop/out/make/**/*
+
+  # Signed Android APK for the self-hosted F-Droid repo. Built on every release (the web
+  # editor bundle is embedded in the APK, so it changes even when only apps/web changed).
+  # Delegated to the reusable workflow so the heavy Gradle/SDK setup lives in one place.
+  android:
+    needs: [release]
+    if: |
+      needs.release.result == 'success' &&
+      needs.release.outputs.version != ''
+    permissions:
+      contents: write
+    uses: ./.github/workflows/android-release.yml
+    with:
+      tag: v${{ needs.release.outputs.version }}
+    secrets: inherit
