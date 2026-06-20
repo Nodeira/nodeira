@@ -2,12 +2,8 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# NOTE: do NOT add a global react/react-dom override here. Web (Mantine v9) needs
-# React >= 19.2 for `useEffectEvent`; mobile (react-native 0.81.5) hard-asserts
-# exactly 19.1.0. A single shared copy cannot satisfy both, so each app pins its own
-# version (web 19.2.x, mobile 19.1.0) and its own bundler resolves it — Vite for web,
-# Metro for mobile (see apps/mobile/metro.config.js, which forces react to the
-# mobile-nested 19.1.0 copy).
+# Note: apps/mobile is now a native Android (Kotlin/Gradle) project — not a pnpm package —
+# so it's ignored by the workspace despite the apps/* glob (no package.json).
 
 onlyBuiltDependencies:
   - "@nestjs/core"

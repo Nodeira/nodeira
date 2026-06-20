@@ -2,6 +2,7 @@ import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { authStorage } from "../lib/authStorage.js";
+import { getSyncWsUrl } from "../lib/serverConfig.js";
 import "../lib/electronAPI.js";
 
 export interface YjsContext {
@@ -26,12 +27,6 @@ const docCache = new Map<string, YjsContext>();
 // - Rapid back-and-forth navigation between two notes reuses the same provider
 const pendingDestroys = new Map<string, ReturnType<typeof setTimeout>>();
 const DESTROY_GRACE_MS = 250;
-
-function getWsUrl(): string {
-  if (window.electronAPI?.wsBaseUrl) return `${window.electronAPI.wsBaseUrl}/sync`;
-  const proto = window.location.protocol === "https:" ? "wss" : "ws";
-  return import.meta.env["VITE_SYNC_WS_URL"] ?? `${proto}://${window.location.host}/sync`;
-}
 
 export function getOrCreateYjsContext(noteId: string): YjsContext {
   const pending = pendingDestroys.get(noteId);
@@ -69,7 +64,7 @@ export function getOrCreateYjsContext(noteId: string): YjsContext {
   }
 
   const wsProvider = new HocuspocusProvider({
-    url: getWsUrl(),
+    url: getSyncWsUrl(),
     name: noteId,
     document: doc,
     token: authStorage.getToken() ?? null,

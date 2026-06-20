@@ -20,6 +20,8 @@ import { Route as AuthenticatedRemindersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedQuickNotesRouteImport } from './routes/_authenticated/quick-notes'
 import { Route as AuthenticatedGraphRouteImport } from './routes/_authenticated/graph'
 import { Route as AuthenticatedCanvasesRouteImport } from './routes/_authenticated/canvases'
+import { Route as EmbedNoteNoteIdRouteImport } from './routes/embed/note.$noteId'
+import { Route as EmbedCanvasCanvasIdRouteImport } from './routes/embed/canvas.$canvasId'
 import { Route as AuthenticatedPluginsPluginIdRouteImport } from './routes/_authenticated/plugins/$pluginId'
 import { Route as AuthenticatedNotesNoteIdRouteImport } from './routes/_authenticated/notes/$noteId'
 import { Route as AuthenticatedCanvasCanvasIdRouteImport } from './routes/_authenticated/canvas.$canvasId'
@@ -78,6 +80,16 @@ const AuthenticatedCanvasesRoute = AuthenticatedCanvasesRouteImport.update({
   path: '/canvases',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const EmbedNoteNoteIdRoute = EmbedNoteNoteIdRouteImport.update({
+  id: '/embed/note/$noteId',
+  path: '/embed/note/$noteId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbedCanvasCanvasIdRoute = EmbedCanvasCanvasIdRouteImport.update({
+  id: '/embed/canvas/$canvasId',
+  path: '/embed/canvas/$canvasId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPluginsPluginIdRoute =
   AuthenticatedPluginsPluginIdRouteImport.update({
     id: '/plugins/$pluginId',
@@ -111,6 +123,8 @@ export interface FileRoutesByFullPath {
   '/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
   '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
+  '/embed/canvas/$canvasId': typeof EmbedCanvasCanvasIdRoute
+  '/embed/note/$noteId': typeof EmbedNoteNoteIdRoute
 }
 export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
@@ -126,6 +140,8 @@ export interface FileRoutesByTo {
   '/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
   '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
+  '/embed/canvas/$canvasId': typeof EmbedCanvasCanvasIdRoute
+  '/embed/note/$noteId': typeof EmbedNoteNoteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +159,8 @@ export interface FileRoutesById {
   '/_authenticated/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/_authenticated/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
   '/_authenticated/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
+  '/embed/canvas/$canvasId': typeof EmbedCanvasCanvasIdRoute
+  '/embed/note/$noteId': typeof EmbedNoteNoteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +178,8 @@ export interface FileRouteTypes {
     | '/canvas/$canvasId'
     | '/notes/$noteId'
     | '/plugins/$pluginId'
+    | '/embed/canvas/$canvasId'
+    | '/embed/note/$noteId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/connect'
@@ -175,6 +195,8 @@ export interface FileRouteTypes {
     | '/canvas/$canvasId'
     | '/notes/$noteId'
     | '/plugins/$pluginId'
+    | '/embed/canvas/$canvasId'
+    | '/embed/note/$noteId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -191,6 +213,8 @@ export interface FileRouteTypes {
     | '/_authenticated/canvas/$canvasId'
     | '/_authenticated/notes/$noteId'
     | '/_authenticated/plugins/$pluginId'
+    | '/embed/canvas/$canvasId'
+    | '/embed/note/$noteId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -198,6 +222,8 @@ export interface RootRouteChildren {
   ConnectRoute: typeof ConnectRoute
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
+  EmbedCanvasCanvasIdRoute: typeof EmbedCanvasCanvasIdRoute
+  EmbedNoteNoteIdRoute: typeof EmbedNoteNoteIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -279,6 +305,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCanvasesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/embed/note/$noteId': {
+      id: '/embed/note/$noteId'
+      path: '/embed/note/$noteId'
+      fullPath: '/embed/note/$noteId'
+      preLoaderRoute: typeof EmbedNoteNoteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embed/canvas/$canvasId': {
+      id: '/embed/canvas/$canvasId'
+      path: '/embed/canvas/$canvasId'
+      fullPath: '/embed/canvas/$canvasId'
+      preLoaderRoute: typeof EmbedCanvasCanvasIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/plugins/$pluginId': {
       id: '/_authenticated/plugins/$pluginId'
       path: '/plugins/$pluginId'
@@ -338,6 +378,8 @@ const rootRouteChildren: RootRouteChildren = {
   ConnectRoute: ConnectRoute,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
+  EmbedCanvasCanvasIdRoute: EmbedCanvasCanvasIdRoute,
+  EmbedNoteNoteIdRoute: EmbedNoteNoteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

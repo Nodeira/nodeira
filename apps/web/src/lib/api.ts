@@ -11,6 +11,7 @@ import type {
   Vault,
 } from "@nodeira/shared-types";
 import { authStorage } from "./authStorage.js";
+import { getApiBaseUrl } from "./serverConfig.js";
 import "./electronAPI.js";
 
 // ── Raw API shapes (dates come back as strings) ───────────────────────────────
@@ -43,7 +44,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...(init.headers as Record<string, string> | undefined),
   };
 
-  const apiBase = window.electronAPI?.apiBaseUrl ?? "";
+  const apiBase = getApiBaseUrl();
   const res = await fetch(`${apiBase}/api/v1${path}`, { ...init, headers });
 
   if (res.status === 401) {
@@ -83,7 +84,7 @@ export async function login(
   password: string,
   rememberMe: boolean,
 ): Promise<AuthResponse> {
-  const apiBase = window.electronAPI?.apiBaseUrl ?? "";
+  const apiBase = getApiBaseUrl();
   const res = await fetch(`${apiBase}/api/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -94,7 +95,7 @@ export async function login(
 }
 
 export async function getSetupStatus(): Promise<{ setupRequired: boolean }> {
-  const apiBase = window.electronAPI?.apiBaseUrl ?? "";
+  const apiBase = getApiBaseUrl();
   const res = await fetch(`${apiBase}/api/v1/setup/status`);
   if (!res.ok) throw new Error("Failed to fetch setup status");
   return res.json() as Promise<{ setupRequired: boolean }>;
@@ -105,7 +106,7 @@ export async function createAdmin(data: {
   password: string;
   name?: string;
 }): Promise<AuthResponse> {
-  const apiBase = window.electronAPI?.apiBaseUrl ?? "";
+  const apiBase = getApiBaseUrl();
   const res = await fetch(`${apiBase}/api/v1/setup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
