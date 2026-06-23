@@ -32,6 +32,27 @@ class NodeiraRepository(
     suspend fun getNotes(): List<NoteDto> =
         requireApi().getNotes().sortedByDescending { it.updatedAt ?: "" }
 
+    suspend fun getVaults(): List<com.deranjer.nodeira.data.net.VaultDto> =
+        requireApi().getVaults().sortedBy { it.name.lowercase() }
+
+    suspend fun getFolders(vaultId: String? = null): List<com.deranjer.nodeira.data.net.FolderDto> =
+        requireApi().getFolders(vaultId).sortedBy { it.name.lowercase() }
+
+    suspend fun createNote(
+        type: String,
+        vaultId: String?,
+        folderId: String? = null,
+    ): NoteDto = requireApi().createNote(
+        com.deranjer.nodeira.data.net.CreateNoteBody(type = type, vaultId = vaultId, folderId = folderId),
+    )
+
+    suspend fun createFolder(
+        name: String,
+        vaultId: String?,
+    ): com.deranjer.nodeira.data.net.FolderDto = requireApi().createFolder(
+        com.deranjer.nodeira.data.net.CreateFolderBody(name = name, vaultId = vaultId),
+    )
+
     suspend fun getReminders(): List<ReminderDto> = requireApi().getReminders()
 
     suspend fun createReminder(body: CreateReminderBody): ReminderDto =

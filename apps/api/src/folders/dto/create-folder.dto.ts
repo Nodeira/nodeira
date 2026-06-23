@@ -8,4 +8,8 @@ export class CreateFolderDto {
   @IsUUID()
   @IsOptional()
   vaultId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  parentId?: string;
 }

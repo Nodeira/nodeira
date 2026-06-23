@@ -7,7 +7,9 @@ export class FoldersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateFolderDto) {
-    return this.prisma.folder.create({ data: { name: dto.name, vaultId: dto.vaultId ?? null } });
+    return this.prisma.folder.create({
+      data: { name: dto.name, vaultId: dto.vaultId ?? null, parentId: dto.parentId ?? null },
+    });
   }
 
   async findAll(vaultId?: string, vaultScope?: string | null) {

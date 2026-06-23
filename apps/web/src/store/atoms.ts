@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import { authStorage, type StoredUser } from "../lib/authStorage.js";
 
 // ID of the currently open note (null = none)
@@ -18,6 +19,10 @@ export const viewsFolderAtom = atom<string | null>(null);
 
 // The currently active vault ID (null until loaded)
 export const currentVaultAtom = atom<string | null>(null);
+
+// Persisted widths (px) for the left navbar and right aside; drag handles update these.
+export const navbarWidthAtom = atomWithStorage("nodeira:navbar-width", 240);
+export const asideWidthAtom = atomWithStorage("nodeira:aside-width", 240);
 
 // Active view in the Browse Pane ("recent" | "pinned" | "kanban" | plugin ids)
 export const browsePaneViewAtom = atom<string>("recent");

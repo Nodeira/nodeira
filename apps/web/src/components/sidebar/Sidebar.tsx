@@ -58,7 +58,7 @@ interface SidebarProps {
   onDragStart: (event: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
   onCreateNote: (type: "note" | "quick", folderId?: string) => void;
-  onOpenNewFolder: () => void;
+  onOpenNewFolder: (parentId?: string) => void;
   onOpenNewVault: () => void;
   onDeleteNote: (id: string, name: string) => void;
   onDeleteFolder: (id: string, name: string) => void;
@@ -255,7 +255,7 @@ export function Sidebar({
           <Menu.Item onClick={() => onCreateNote("note")}>New Note</Menu.Item>
           <Menu.Item onClick={() => onCreateNote("quick")}>New Quick Note</Menu.Item>
           <Menu.Divider />
-          <Menu.Item onClick={onOpenNewFolder}>New Folder</Menu.Item>
+          <Menu.Item onClick={() => onOpenNewFolder()}>New Folder</Menu.Item>
         </Menu.Dropdown>
       </Menu>
 
@@ -432,16 +432,17 @@ export function Sidebar({
               </Text>
             )}
 
-            {folders.map((folder) => {
-              // Exclude pinned notes — they already appear in the Pinned section above
-              const folderNotes = regularNotes.filter((n) => n.folderId === folder.id && !n.pinned);
-              return (
+            {folders
+              .filter((folder) => !folder.parentId)
+              .map((folder) => (
                 <FolderNavItem
                   key={folder.id}
                   folder={folder}
-                  notes={folderNotes}
+                  allFolders={folders}
+                  notes={regularNotes}
                   search={search}
                   onCreateNote={(folderId) => onCreateNote("note", folderId)}
+                  onCreateFolder={onOpenNewFolder}
                   onDelete={onDeleteFolder}
                   onDeleteNote={onDeleteNote}
                   onTogglePin={onTogglePin}
@@ -450,8 +451,7 @@ export function Sidebar({
                   onNoteKindChange={onKindChange}
                   onMoveNote={onMoveNote}
                 />
-              );
-            })}
+              ))}
 
             {/* Unfoldered notes */}
             <SortableContext

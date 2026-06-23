@@ -28,9 +28,25 @@ function MoveNoteContent({ note, onClose, onMove }: MoveNoteContentProps) {
   const filteredFolders = selectedVaultId
     ? allFolders.filter((f) => f.vaultId === selectedVaultId)
     : allFolders.filter((f) => !f.vaultId);
+
+  // Show the full "Parent / Child" path so nested folders are distinguishable.
+  function folderPath(folder: (typeof filteredFolders)[number]): string {
+    const parts = [folder.name];
+    const seen = new Set([folder.id]);
+    let parentId = folder.parentId;
+    while (parentId && !seen.has(parentId)) {
+      seen.add(parentId);
+      const parent = allFolders.find((f) => f.id === parentId);
+      if (!parent) break;
+      parts.unshift(parent.name);
+      parentId = parent.parentId;
+    }
+    return parts.join(" / ");
+  }
+
   const folderOptions = [
     { value: "", label: "No folder" },
-    ...filteredFolders.map((f) => ({ value: f.id, label: f.name })),
+    ...filteredFolders.map((f) => ({ value: f.id, label: folderPath(f) })),
   ];
 
   function handleVaultChange(val: string | null) {

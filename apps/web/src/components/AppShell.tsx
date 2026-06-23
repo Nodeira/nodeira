@@ -28,8 +28,10 @@ import "../lib/electronAPI.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   asidePanelOpenAtom,
+  asideWidthAtom,
   currentVaultAtom,
   fullscreenPaneAtom,
+  navbarWidthAtom,
   viewsPaneOpenAtom,
 } from "../store/atoms.js";
 import {
@@ -60,6 +62,7 @@ import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
 import { noteKindRegistry } from "../lib/noteKindRegistry.js";
 import { Sidebar } from "./sidebar/Sidebar.js";
+import { ResizeHandle } from "./ResizeHandle.js";
 import { ServerIndicator } from "./ServerIndicator.js";
 import { NoteAsidePanel } from "./aside/NoteAsidePanel.js";
 import { CreateVaultModal } from "./modals/CreateVaultModal.js";
@@ -78,11 +81,14 @@ export function AppShell({ children }: AppShellProps) {
   const [asideOpen] = useAtom(asidePanelOpenAtom);
   const [fullscreenPane, setFullscreenPane] = useAtom(fullscreenPaneAtom);
   const [viewsPaneOpen] = useAtom(viewsPaneOpenAtom);
+  const [navbarWidth, setNavbarWidth] = useAtom(navbarWidthAtom);
+  const [asideWidth, setAsideWidth] = useAtom(asideWidthAtom);
   const [currentVaultId, setCurrentVaultId] = useAtom(currentVaultAtom);
   const networkStatus = useAtomValue(networkStatusAtom);
   const setNetworkStatus = useSetAtom(networkStatusAtom);
   const [search, setSearch] = useState("");
   const [newFolderOpen, { open: openNewFolder, close: closeNewFolder }] = useDisclosure(false);
+  const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
   const [newVaultOpen, { open: openNewVault, close: closeNewVault }] = useDisclosure(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [moveTarget, setMoveTarget] = useState<NoteMetadata | null>(null);
@@ -222,8 +228,15 @@ export function AppShell({ children }: AppShellProps) {
     onError: () => notifications.show({ message: "Couldn't create note", color: "red" }),
   });
   const createFolderMutation = useMutation({
-    mutationFn: ({ name, vaultId }: { name: string; vaultId?: string }) =>
-      createFolder(name, vaultId),
+    mutationFn: ({
+      name,
+      vaultId,
+      parentId,
+    }: {
+      name: string;
+      vaultId?: string;
+      parentId?: string;
+    }) => createFolder(name, vaultId, parentId),
     onSuccess: () => qc.invalidateQueries({ queryKey: foldersQueryKey }),
     onError: () => notifications.show({ message: "Couldn't create folder", color: "red" }),
   });
@@ -316,10 +329,16 @@ export function AppShell({ children }: AppShellProps) {
     }
   }
 
+  function handleOpenNewFolder(parentId?: string) {
+    setNewFolderParentId(parentId ?? null);
+    openNewFolder();
+  }
+
   async function handleCreateFolder(name: string) {
     await createFolderMutation.mutateAsync({
       name,
       ...(currentVaultId ? { vaultId: currentVaultId } : {}),
+      ...(newFolderParentId ? { parentId: newFolderParentId } : {}),
     });
     closeNewFolder();
   }
@@ -426,12 +445,12 @@ export function AppShell({ children }: AppShellProps) {
       <MantineAppShell
         header={{ height: 48 }}
         navbar={{
-          width: 240,
+          width: navbarWidth,
           breakpoint: "sm",
           collapsed: { mobile: !navOpen, desktop: !navOpen },
         }}
         aside={{
-          width: 240,
+          width: asideWidth,
           breakpoint: "md",
           collapsed: { desktop: !asideOpen, mobile: true },
         }}
@@ -481,7 +500,7 @@ export function AppShell({ children }: AppShellProps) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onCreateNote={handleCreateNote}
-            onOpenNewFolder={openNewFolder}
+            onOpenNewFolder={handleOpenNewFolder}
             onOpenNewVault={openNewVault}
             onDeleteNote={(id, name) => setDeleteTarget({ type: "note", id, name })}
             onDeleteFolder={(id, name) => setDeleteTarget({ type: "folder", id, name })}
@@ -530,6 +549,12 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </MantineAppShell.Main>
       </MantineAppShell>
+
+      {/* Drag handles to resize the side panels (hidden when their panel is collapsed) */}
+      {navOpen && <ResizeHandle panel="navbar" width={navbarWidth} setWidth={setNavbarWidth} />}
+      {asideOpen && fullscreenPane !== "right" && (
+        <ResizeHandle panel="aside" width={asideWidth} setWidth={setAsideWidth} />
+      )}
 
       {/* Right aside fullscreen overlay */}
       <Drawer

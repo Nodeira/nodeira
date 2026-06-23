@@ -10,9 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,11 +25,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.deranjer.nodeira.ui.components.BrandSearchBar
 import com.deranjer.nodeira.ui.nav.AppDestination
 import com.deranjer.nodeira.ui.nav.AppScaffold
-import com.deranjer.nodeira.ui.notes.NoteRow
+import com.deranjer.nodeira.ui.notes.NoteListItem
 import com.deranjer.nodeira.ui.notes.NotesStateBox
 import com.deranjer.nodeira.ui.notes.NotesUiState
+import com.deranjer.nodeira.ui.notes.formatTimestamp
 
 private enum class SortOrder(val label: String) {
     UPDATED("Updated"),
@@ -39,23 +45,27 @@ fun RecentsScreen(
     onOpenNote: (String) -> Unit,
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit,
+    onCreateNote: (onCreated: (String) -> Unit) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var sort by remember { mutableStateOf(SortOrder.UPDATED) }
 
     AppScaffold(
-        title = "Recents",
+        title = "Recent notes",
         currentRoute = AppDestination.RECENTS.route,
         onNavigate = onNavigate,
         onLogout = onLogout,
+        floatingActionButton = {
+            FloatingActionButton(onClick = { onCreateNote(onOpenNote) }) {
+                Icon(Icons.Filled.Add, contentDescription = "New note")
+            }
+        },
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text("Search") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            BrandSearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
             )
             Row(
                 modifier = Modifier
@@ -65,10 +75,15 @@ fun RecentsScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 SortOrder.entries.forEach { order ->
+                    val selected = sort == order
                     FilterChip(
-                        selected = sort == order,
+                        selected = selected,
                         onClick = { sort = order },
                         label = { Text(order.label) },
+                        leadingIcon = if (selected) {
+                            { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.padding(0.dp)) }
+                        } else null,
+                        colors = FilterChipDefaults.filterChipColors(),
                     )
                 }
             }
@@ -92,8 +107,12 @@ fun RecentsScreen(
             ) {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(visible, key = { it.id }) { note ->
-                        NoteRow(note) { onOpenNote(note.id) }
-                        HorizontalDivider()
+                        NoteListItem(
+                            note = note,
+                            onClick = { onOpenNote(note.id) },
+                            supporting = note.updatedAt?.let { formatTimestamp(it) },
+                            showPinTrailing = true,
+                        )
                     }
                 }
             }
