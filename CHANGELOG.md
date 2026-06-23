@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/Nodeira/nodeira/compare/v1.10.0...v1.11.0) (2026-06-23)
+
+
+### Features
+
+* nested folders, resizable web panels, and mobile M3 polish ([cf53319](https://github.com/Nodeira/nodeira/commit/cf5331951f929d4848292235e7a589d65a255a0a))
+
 ## [1.8.1](https://github.com/Nodeira/nodeira/compare/v1.8.0...v1.8.1) (2026-06-19)
 
 
