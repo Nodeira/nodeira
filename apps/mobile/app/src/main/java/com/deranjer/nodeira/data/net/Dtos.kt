@@ -45,3 +45,33 @@ data class NoteDto(
     val vaultId: String? = null,
     val folderId: String? = null,
 )
+
+@Serializable
+data class VaultDto(
+    val id: String,
+    val name: String = "",
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+)
+
+@Serializable
+data class FolderDto(
+    val id: String,
+    val name: String = "",
+    val vaultId: String? = null,
+    val parentId: String? = null,
+)
+
+@Serializable
+data class CreateNoteBody(
+    val type: String = "note",
+    val vaultId: String? = null,
+    val folderId: String? = null,
+    val title: String? = null,
+)
+
+@Serializable
+data class CreateFolderBody(
+    val name: String,
+    val vaultId: String? = null,
+)

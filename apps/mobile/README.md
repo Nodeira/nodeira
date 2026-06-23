@@ -67,18 +67,32 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`.
 ## Run it
 
 1. Start the backend + Postgres and the web app (`pnpm run dev` from repo root).
-2. Install + launch. `adb` ships with the SDK platform-tools; if it isn't on PATH, use the
+2. With an emulator/device running, build + install + launch in one step from the repo root:
+
+   ```bash
+   pnpm run mobile:run
+   ```
+
+   (Resolves `adb` from `ANDROID_HOME`/`LOCALAPPDATA`, builds the debug APK, installs, and
+   launches the app — see `scripts/mobile-run.mjs`.)
+
+   Or do it manually. `adb` ships with the SDK platform-tools; if it isn't on PATH, use the
    full path (PowerShell):
+
    ```powershell
    $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
    & $adb install -r apps/mobile/app/build/outputs/apk/debug/app-debug.apk
    ```
+
    To put `adb` on PATH permanently (new terminals only):
+
    ```powershell
    [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:LOCALAPPDATA\Android\Sdk\platform-tools", "User")
    ```
+
    (If you get `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, the old RN build's signature differs —
    uninstall it first: `& $adb uninstall com.deranjer.nodeira`.)
+
 3. On the **Sign in** screen enter:
    - **Server URL**: `http://10.0.2.2:3001` (emulator → host) or your LAN IP / https URL.
    - your **email** + **password**.

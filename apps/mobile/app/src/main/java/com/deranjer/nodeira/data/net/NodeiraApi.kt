@@ -23,6 +23,18 @@ interface NodeiraApi {
     @GET("notes")
     suspend fun getNotes(@Query("vaultId") vaultId: String? = null): List<NoteDto>
 
+    @POST("notes")
+    suspend fun createNote(@Body body: CreateNoteBody): NoteDto
+
+    @GET("vaults")
+    suspend fun getVaults(): List<VaultDto>
+
+    @GET("folders")
+    suspend fun getFolders(@Query("vaultId") vaultId: String? = null): List<FolderDto>
+
+    @POST("folders")
+    suspend fun createFolder(@Body body: CreateFolderBody): FolderDto
+
     @GET("reminders")
     suspend fun getReminders(): List<ReminderDto>
 

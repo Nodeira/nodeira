@@ -303,10 +303,14 @@ export async function getFolders(vaultId?: string): Promise<Folder[]> {
   return raw.map(parseFolder);
 }
 
-export async function createFolder(name: string, vaultId?: string): Promise<Folder> {
+export async function createFolder(
+  name: string,
+  vaultId?: string,
+  parentId?: string,
+): Promise<Folder> {
   const raw = await request<RawFolder>("/folders", {
     method: "POST",
-    body: JSON.stringify({ name, vaultId }),
+    body: JSON.stringify({ name, vaultId, parentId }),
   });
   return parseFolder(raw);
 }

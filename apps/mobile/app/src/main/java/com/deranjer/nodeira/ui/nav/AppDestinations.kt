@@ -26,6 +26,12 @@ enum class AppDestination(
 
     companion object {
         fun fromRoute(route: String?): AppDestination? = entries.firstOrNull { it.route == route }
+
+        /** Primary destinations shown in the Material 3 bottom navigation bar. */
+        val bottomNav = listOf(HOME, RECENTS, QUICK_NOTES, REMINDERS)
+
+        /** Secondary destinations reached from the navigation drawer (menu icon). */
+        val drawerOnly = listOf(CANVASES, GRAPH, SETTINGS)
     }
 }
 

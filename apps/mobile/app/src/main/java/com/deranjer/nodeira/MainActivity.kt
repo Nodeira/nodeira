@@ -113,10 +113,13 @@ private fun NavGraphBuilder.authenticatedGraph(
             val state by vm.state.collectAsStateWithLifecycle()
             HomeScreen(
                 state = state,
+                userInitial = container.authStorage.userEmail?.firstOrNull()?.uppercase() ?: "N",
                 onOpenNote = { openNote(navController, container, it) },
                 onNavigate = { navController.navigateTopLevel(it) },
                 onLogout = { logout(navController, container) },
                 onRefresh = vm::refresh,
+                onCreateNote = { type, vaultId, onCreated -> vm.createNote(type, vaultId, onCreated) },
+                onCreateFolder = { name, vaultId -> vm.createFolder(name, vaultId) },
             )
         }
 
@@ -128,6 +131,7 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onOpenNote = { openNote(navController, container, it) },
                 onNavigate = { navController.navigateTopLevel(it) },
                 onLogout = { logout(navController, container) },
+                onCreateNote = { onCreated -> vm.createNote("note", null, onCreated) },
             )
         }
 
@@ -139,6 +143,7 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onOpenNote = { openNote(navController, container, it) },
                 onNavigate = { navController.navigateTopLevel(it) },
                 onLogout = { logout(navController, container) },
+                onCreateNote = { onCreated -> vm.createNote("quick", null, onCreated) },
             )
         }
 

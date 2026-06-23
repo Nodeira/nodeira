@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -61,10 +62,10 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingRow(label: String, value: String) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
-    }
+    ListItem(
+        overlineContent = { Text(label) },
+        headlineContent = { Text(value) },
+    )
 }
 
 @Composable

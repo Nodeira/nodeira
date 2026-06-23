@@ -15,6 +15,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,9 +30,10 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * Shared chrome for top-level screens: a navigation drawer (the destinations in
- * [AppDestination]) + a top app bar with a menu button. `content` receives the inner
- * padding to apply itself (so lists can draw edge-to-edge under the bar).
+ * Shared chrome for top-level screens: a Material 3 bottom navigation bar (the four
+ * primary [AppDestination.bottomNav] destinations) plus a navigation drawer for the
+ * secondary [AppDestination.drawerOnly] destinations + log out. `content` receives the
+ * inner padding via the outer Box so lists draw edge-to-edge between the bars.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +42,7 @@ fun AppScaffold(
     currentRoute: String,
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit,
+    titleContent: @Composable () -> Unit = { Text(title) },
     actions: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -55,7 +60,7 @@ fun AppScaffold(
                     modifier = Modifier.padding(16.dp),
                 )
                 HorizontalDivider()
-                AppDestination.entries.forEach { dest ->
+                AppDestination.drawerOnly.forEach { dest ->
                     NavigationDrawerItem(
                         label = { Text(dest.label) },
                         icon = { Icon(dest.icon, contentDescription = null) },
@@ -84,7 +89,7 @@ fun AppScaffold(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(title) },
+                    title = titleContent,
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, contentDescription = "Menu")
@@ -92,6 +97,21 @@ fun AppScaffold(
                     },
                     actions = { actions() },
                 )
+            },
+            bottomBar = {
+                NavigationBar {
+                    AppDestination.bottomNav.forEach { dest ->
+                        NavigationBarItem(
+                            selected = dest.route == currentRoute,
+                            onClick = { if (dest.route != currentRoute) onNavigate(dest.route) },
+                            icon = { Icon(dest.icon, contentDescription = dest.label) },
+                            label = { Text(dest.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                            ),
+                        )
+                    }
+                }
             },
             floatingActionButton = floatingActionButton,
         ) { padding ->
