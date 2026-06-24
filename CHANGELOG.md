@@ -1,3 +1,11 @@
+# [1.12.0](https://github.com/Nodeira/nodeira/compare/v1.11.1...v1.12.0) (2026-06-24)
+
+
+### Features
+
+* **api:** add migration for reminders, devices, and folder nesting ([cd229c4](https://github.com/Nodeira/nodeira/commit/cd229c428c9a850c09f486ccc89d4b44b3f19b89))
+* **mobile:** add app icon, fix editor status-bar overlap, login logo ([ff36121](https://github.com/Nodeira/nodeira/commit/ff361217275275475765fa5aaeec47a16e167263))
+
 ## [1.11.1](https://github.com/Nodeira/nodeira/compare/v1.11.0...v1.11.1) (2026-06-24)
 
 
