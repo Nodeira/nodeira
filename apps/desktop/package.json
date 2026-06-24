@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "AI-enhanced note-taking desktop application",
+  "author": "Nodeira",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
