@@ -1,0 +1,47 @@
+<!--
+  Nodeira launcher foreground: the node-graph brand mark (see apps/web/public/logo.svg),
+  scaled into the adaptive-icon safe zone. The blue fill is supplied by the background layer
+  (@color/ic_launcher_background), so the mark is drawn in light tones for contrast.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:scaleX="0.825"
+        android:scaleY="0.825"
+        android:translateX="21"
+        android:translateY="21">
+
+        <!-- Connector lines from the central node to the satellites. -->
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L13,21" />
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L67,24" />
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L18,63" />
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L67,58" />
+
+        <!-- Satellite nodes. -->
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M7.5,21 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M61.5,24 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M12.5,63 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M61.5,58 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+
+        <!-- Central node. -->
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M21,40 a19,19 0 1,0 38,0 a19,19 0 1,0 -38,0 z" />
+
+        <!-- Note lines inside the central node. -->
+        <path android:fillColor="#4263EB" android:pathData="M31,33 h18 v2.5 h-18 z" />
+        <path android:fillColor="#4263EB" android:pathData="M31,39 h18 v2.5 h-18 z" />
+        <path android:fillColor="#4263EB" android:pathData="M31,45 h12 v2.5 h-12 z" />
+    </group>
+</vector>

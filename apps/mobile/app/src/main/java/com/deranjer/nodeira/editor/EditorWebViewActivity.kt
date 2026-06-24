@@ -3,6 +3,8 @@ package com.deranjer.nodeira.editor
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.webkit.ConsoleMessage
@@ -11,6 +13,10 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
+import androidx.core.graphics.ColorUtils
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewClientCompat
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -41,6 +47,20 @@ class EditorWebViewActivity : Activity() {
         private const val EXTRA_TOKEN = "token"
         private const val EXTRA_PATH = "path"
 
+        // Brand surface tokens (see ui/theme/Color.kt) used to seed the system-bar chrome
+        // before the page reports its real background.
+        private val EDITOR_BG_LIGHT = 0xFFFBF8FF.toInt()
+        private val EDITOR_BG_DARK = 0xFF121318.toInt()
+
+        // Reads the editor's effective background color (body, falling back to <html>) as a
+        // CSS color string, so the native chrome can match whatever theme the web app renders.
+        private const val READ_BG_JS =
+            "(function(){var t='rgba(0, 0, 0, 0)';" +
+                "var c=getComputedStyle(document.body).backgroundColor;" +
+                "if(!c||c===t||c==='transparent'){" +
+                "c=getComputedStyle(document.documentElement).backgroundColor;}" +
+                "return c;})()"
+
         /** Opens an embedded web surface at [path], e.g. `/embed/note/<id>` or `/embed/canvas/<id>`. */
         fun intent(ctx: Context, server: String, token: String, path: String): Intent =
             Intent(ctx, EditorWebViewActivity::class.java).apply {
@@ -66,6 +86,23 @@ class EditorWebViewActivity : Activity() {
 
         webView = WebView(this)
         setContentView(webView)
+
+        // Seed the system-bar strips + icon contrast from the system night mode so they match
+        // the editor immediately (the web app's color scheme is "auto" → follows the system).
+        // Refined precisely from the page's real background in onPageFinished below.
+        val nightMode = resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        applyChromeForBackground(if (nightMode) EDITOR_BG_DARK else EDITOR_BG_LIGHT)
+
+        // targetSdk 36 forces edge-to-edge, so without this the WebView (and the editor's
+        // note title) would draw under the status bar. Pad by the system bars + IME instead.
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime(),
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
 
         webView.settings.apply {
             javaScriptEnabled = true
@@ -99,6 +136,18 @@ class EditorWebViewActivity : Activity() {
         private val wsBaseUrl: String,
         private val token: String,
     ) : WebViewClientCompat() {
+
+        override fun onPageFinished(view: WebView, url: String) {
+            // Mantine applies its theme after hydration, so re-read shortly after load too.
+            syncChromeToPage(view)
+            view.postDelayed({ syncChromeToPage(view) }, 400)
+        }
+
+        private fun syncChromeToPage(view: WebView) {
+            view.evaluateJavascript(READ_BG_JS) { result ->
+                parseCssColor(result)?.let(::applyChromeForBackground)
+            }
+        }
 
         override fun shouldInterceptRequest(
             view: WebView,
@@ -166,6 +215,33 @@ class EditorWebViewActivity : Activity() {
                 inject + html
             }
         }
+    }
+
+    /**
+     * Paints the system-bar strips (the inset padding around the WebView) the same color as the
+     * editor and flips the status/nav bar icons to dark or light for legibility against it.
+     */
+    private fun applyChromeForBackground(color: Int) {
+        webView.setBackgroundColor(color)
+        val light = ColorUtils.calculateLuminance(color) > 0.5
+        WindowCompat.getInsetsController(window, webView).apply {
+            isAppearanceLightStatusBars = light
+            isAppearanceLightNavigationBars = light
+        }
+    }
+
+    /** Parses a CSS `rgb(...)`/`rgba(...)` color (as returned by getComputedStyle) to an int. */
+    private fun parseCssColor(jsResult: String?): Int? {
+        val raw = jsResult?.trim()?.trim('"') ?: return null
+        val nums = Regex("[\\d.]+").findAll(raw).map { it.value }.toList()
+        if (nums.size < 3) return null
+        val r = nums[0].toFloat().toInt().coerceIn(0, 255)
+        val g = nums[1].toFloat().toInt().coerceIn(0, 255)
+        val b = nums[2].toFloat().toInt().coerceIn(0, 255)
+        // A fully transparent body bg tells us nothing about the theme — ignore it.
+        val a = nums.getOrNull(3)?.toFloatOrNull() ?: 1f
+        if (a == 0f) return null
+        return Color.rgb(r, g, b)
     }
 
     private fun toWsUrl(httpUrl: String): String = when {
