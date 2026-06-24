@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/Nodeira/nodeira/compare/v1.11.0...v1.11.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **desktop:** add author field so Squirrel maker can build ([fa741ed](https://github.com/Nodeira/nodeira/commit/fa741eda264ed372673a021b0936109358a617a2))
+
 # [1.11.0](https://github.com/Nodeira/nodeira/compare/v1.10.0...v1.11.0) (2026-06-23)
 
 
