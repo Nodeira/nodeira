@@ -1,0 +1,39 @@
+<!--
+  Nodeira brand mark (node graph), ported from apps/web/public/logo.svg. Transparent
+  background so it sits on any surface (e.g. the login screen).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+
+    <!-- Connector lines from the central node to the satellites. -->
+    <path android:strokeColor="#7B9AF5" android:strokeWidth="2"
+        android:strokeLineCap="round" android:pathData="M40,40 L13,21" />
+    <path android:strokeColor="#7B9AF5" android:strokeWidth="2"
+        android:strokeLineCap="round" android:pathData="M40,40 L67,24" />
+    <path android:strokeColor="#7B9AF5" android:strokeWidth="2"
+        android:strokeLineCap="round" android:pathData="M40,40 L18,63" />
+    <path android:strokeColor="#7B9AF5" android:strokeWidth="2"
+        android:strokeLineCap="round" android:pathData="M40,40 L67,58" />
+
+    <!-- Satellite nodes. -->
+    <path android:fillColor="#7B9AF5"
+        android:pathData="M7.5,21 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+    <path android:fillColor="#7B9AF5"
+        android:pathData="M61.5,24 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+    <path android:fillColor="#7B9AF5"
+        android:pathData="M12.5,63 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+    <path android:fillColor="#7B9AF5"
+        android:pathData="M61.5,58 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+
+    <!-- Central node. -->
+    <path android:fillColor="#4F72F5"
+        android:pathData="M21,40 a19,19 0 1,0 38,0 a19,19 0 1,0 -38,0 z" />
+
+    <!-- Note lines inside the central node. -->
+    <path android:fillColor="#FFFFFF" android:pathData="M31,33 h18 v2.5 h-18 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M31,39 h18 v2.5 h-18 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M31,45 h12 v2.5 h-12 z" />
+</vector>

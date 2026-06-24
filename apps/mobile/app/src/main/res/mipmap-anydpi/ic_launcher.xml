@@ -1,0 +1,46 @@
+<!--
+  Legacy launcher icon for API 24-25 (pre adaptive-icon). Full-bleed brand-blue background
+  with the node-graph mark. API 26+ uses mipmap-anydpi-v26/ic_launcher.xml instead.
+  Vector drawables are natively supported from API 21, so no raster PNGs are required.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Brand-blue background. -->
+    <path android:fillColor="#4263EB" android:pathData="M0,0 h108 v108 h-108 z" />
+
+    <group
+        android:scaleX="0.825"
+        android:scaleY="0.825"
+        android:translateX="21"
+        android:translateY="21">
+
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L13,21" />
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L67,24" />
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L18,63" />
+        <path android:strokeColor="#DBE4FF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:pathData="M40,40 L67,58" />
+
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M7.5,21 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M61.5,24 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M12.5,63 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+        <path android:fillColor="#DBE4FF"
+            android:pathData="M61.5,58 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 z" />
+
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M21,40 a19,19 0 1,0 38,0 a19,19 0 1,0 -38,0 z" />
+
+        <path android:fillColor="#4263EB" android:pathData="M31,33 h18 v2.5 h-18 z" />
+        <path android:fillColor="#4263EB" android:pathData="M31,39 h18 v2.5 h-18 z" />
+        <path android:fillColor="#4263EB" android:pathData="M31,45 h12 v2.5 h-12 z" />
+    </group>
+</vector>
