@@ -68,14 +68,16 @@ openssl rand -hex 32
 
 The default `DATABASE_URL` points to `postgresql://postgres:postgres@localhost:5432/nodeira` which matches the dev Compose file. Edit it if your credentials differ.
 
-### 4. Push the database schema
+### 4. Apply the database migrations
 
 ```bash
-cd apps/api && pnpm exec prisma db push
+cd apps/api && pnpm exec prisma migrate dev
 cd ../..
 ```
 
-This applies the Prisma schema directly (suitable for development — no migration file generated).
+This applies the committed migrations to your dev database. When you change `schema.prisma`, run
+`pnpm exec prisma migrate dev --name <description>` to generate and apply a new migration, then commit
+the generated file under `apps/api/prisma/migrations/`.
 
 ### 5. Start the dev servers
 

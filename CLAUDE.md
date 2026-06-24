@@ -36,8 +36,14 @@ docker run -d --name nodeira-postgres \
   -e POSTGRES_DB=nodeira -e POSTGRES_PASSWORD=postgres \
   -p 5432:5432 postgres:17-alpine
 cp apps/api/.env.example apps/api/.env
-cd apps/api && pnpm exec prisma db push    # push schema to DB (dev mode, no migration file)
+cd apps/api && pnpm exec prisma migrate dev    # apply migrations to the dev DB
 ```
+
+**Schema changes use migrations** — `schema.prisma` is not applied directly. After editing it, run
+`cd apps/api && pnpm exec prisma migrate dev --name <description>` to generate and apply a migration,
+and commit the generated file under `apps/api/prisma/migrations/`. The server runs `prisma migrate deploy`
+on startup (see `prisma.service.ts`), so committed migrations apply automatically in every environment.
+Do **not** use `prisma db push` (it drifts the DB from the migration history).
 
 ## Architecture
 
