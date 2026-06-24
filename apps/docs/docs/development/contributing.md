@@ -27,11 +27,11 @@ docker run -d --name nodeira-postgres \
   -p 5432:5432 postgres:17-alpine
 ```
 
-Configure the server and push the schema:
+Configure the server and apply the database migrations:
 
 ```bash
 cp apps/api/.env.example apps/api/.env
-cd apps/api && pnpm exec prisma db push && cd ../..
+cd apps/api && pnpm exec prisma migrate dev && cd ../..
 ```
 
 Start all dev servers:

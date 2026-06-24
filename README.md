@@ -74,7 +74,7 @@ pnpm install
 # Configure the server
 cp apps/api/.env.example apps/api/.env
 # Edit apps/api/.env — set JWT_SECRET (openssl rand -hex 32)
-cd apps/api && pnpm exec prisma db push && cd ../..
+cd apps/api && pnpm exec prisma migrate dev && cd ../..
 
 # Start all dev servers (web :5173, server :3001, docs :3002)
 pnpm run dev

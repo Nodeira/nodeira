@@ -49,8 +49,10 @@ Run the stack:
 
 ```bash
 docker compose up -d
-docker compose exec server pnpm exec prisma db push
 ```
+
+The server applies committed migrations automatically on startup (`prisma migrate deploy`). To run them
+manually, use `docker compose exec server pnpm exec prisma migrate deploy`.
 
 ## Environment variables
 
@@ -94,19 +96,31 @@ location /uploads/ {
 
 ## Database migrations
 
-Nodeira uses Prisma. In development `pnpm exec prisma db push` applies the schema directly. In production, generate and apply migration files:
+Nodeira uses Prisma with migration files as the source of truth. When you change `schema.prisma`,
+generate a migration in development:
+
+```bash
+cd apps/api && pnpm exec prisma migrate dev --name <description>
+```
+
+Commit the generated file under `apps/api/prisma/migrations/`. In production the committed migrations
+are applied with:
 
 ```bash
 pnpm exec prisma migrate deploy
 ```
 
+The server also runs `migrate deploy` automatically on startup, so pulling a new image and restarting
+applies any pending migrations.
+
 :::caution
-Never run `prisma db push` against a production database — it can drop columns without a migration history.
+Never run `prisma db push` against a database with real data — it can drop columns without a migration
+history. Always go through `prisma migrate dev`.
 :::
 
 ## Upgrading
 
-Pull the new image tag and restart. Prisma will apply any pending migrations on startup if you run `prisma migrate deploy` before bringing the server up.
+Pull the new image tag and restart. The server applies any pending migrations automatically on startup (`prisma migrate deploy`), so no manual migration step is needed.
 
 ```bash
 docker compose pull
