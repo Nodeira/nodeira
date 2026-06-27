@@ -156,32 +156,85 @@ function createTray(): void {
 
 // ── Global shortcuts ──────────────────────────────────────────────────────────
 
-function registerGlobalShortcuts(): void {
-  globalShortcut.register("Ctrl+Shift+Space", () => {
-    if (!mainWindow) {
-      createWindow();
-      return;
-    }
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
-  });
+type KeybindAction = "newNote" | "newQuickNote";
+type Keybinds = Record<KeybindAction, string>;
 
-  globalShortcut.register("Ctrl+Shift+N", () => {
-    if (!mainWindow) {
-      createWindow();
-      // mainWindow is set by createWindow(); capture before the async boundary
-      const win = mainWindow as BrowserWindow | null;
-      win?.webContents.once("did-finish-load", () => {
-        win?.webContents.send("new-note");
-      });
-      return;
+const DEFAULT_KEYBINDS: Keybinds = {
+  newNote: "CommandOrControl+Shift+N",
+  newQuickNote: "CommandOrControl+Shift+Q",
+};
+
+// Maps each rebindable action to the renderer channel its handler fires.
+const KEYBIND_CHANNELS: Record<KeybindAction, string> = {
+  newNote: "new-note",
+  newQuickNote: "new-quick-note",
+};
+
+let keybinds: Keybinds = { ...DEFAULT_KEYBINDS };
+
+function loadKeybinds(): Keybinds {
+  return {
+    newNote: getSetting("keybind.newNote") ?? DEFAULT_KEYBINDS.newNote,
+    newQuickNote: getSetting("keybind.newQuickNote") ?? DEFAULT_KEYBINDS.newQuickNote,
+  };
+}
+
+/** Bring the window forward, creating it if it was closed. */
+function showMainWindow(): void {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+/** Focus the window, then notify the renderer over `channel`. */
+function focusAndSend(channel: string): void {
+  if (!mainWindow) {
+    createWindow();
+    // mainWindow is set synchronously by createWindow(); the page is not yet
+    // loaded, so defer the send until the renderer is ready to receive it.
+    const win = mainWindow as BrowserWindow | null;
+    win?.webContents.once("did-finish-load", () => {
+      win?.webContents.send(channel);
+    });
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+  mainWindow.webContents.send(channel);
+}
+
+/**
+ * Re-register all global shortcuts from the current `keybinds`. Returns which
+ * actions registered successfully — `false` means the OS rejected the
+ * accelerator (most often because another app already owns it).
+ */
+function registerGlobalShortcuts(): Record<KeybindAction, boolean> {
+  globalShortcut.unregisterAll();
+
+  // Fixed "show app" shortcut — not user-rebindable.
+  globalShortcut.register("CommandOrControl+Shift+Space", showMainWindow);
+
+  const result: Record<KeybindAction, boolean> = { newNote: true, newQuickNote: true };
+  for (const action of Object.keys(KEYBIND_CHANNELS) as KeybindAction[]) {
+    const accelerator = keybinds[action]?.trim();
+    if (!accelerator) {
+      result[action] = false;
+      continue;
     }
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
-    mainWindow.webContents.send("new-note");
-  });
+    const channel = KEYBIND_CHANNELS[action];
+    try {
+      result[action] = globalShortcut.register(accelerator, () => focusAndSend(channel));
+    } catch {
+      // register() throws on a malformed accelerator string
+      result[action] = false;
+    }
+  }
+  return result;
 }
 
 // ── IPC handlers ──────────────────────────────────────────────────────────────
@@ -200,6 +253,21 @@ function registerIpcHandlers(): void {
     wsUrl = trimmed.replace(/^http/, "ws");
     // Defer reload so the IPC response is sent before the renderer tears down
     setImmediate(() => mainWindow?.reload());
+  });
+
+  // Keybinds — read synchronously so preload can expose them at startup
+  ipcMain.on("settings:getKeybinds", (event) => {
+    event.returnValue = keybinds;
+  });
+
+  ipcMain.handle("settings:setKeybinds", (_, next: Partial<Keybinds>) => {
+    keybinds = {
+      newNote: (next.newNote ?? "").trim(),
+      newQuickNote: (next.newQuickNote ?? "").trim(),
+    };
+    setSetting("keybind.newNote", keybinds.newNote);
+    setSetting("keybind.newQuickNote", keybinds.newQuickNote);
+    return registerGlobalShortcuts();
   });
 
   // SQLite — Yjs state
@@ -270,6 +338,7 @@ app.whenReady().then(() => {
   openDatabase(app.getPath("userData"));
   serverUrl = getSetting("serverUrl") ?? process.env["NODEIRA_SERVER_URL"] ?? "";
   wsUrl = serverUrl.replace(/^http/, "ws");
+  keybinds = loadKeybinds();
   registerIpcHandlers();
   createWindow();
   Menu.setApplicationMenu(null);

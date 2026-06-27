@@ -12,6 +12,7 @@ import type {
 } from "@nodeira/shared-types";
 import { authStorage } from "./authStorage.js";
 import { getApiBaseUrl } from "./serverConfig.js";
+import { router } from "../router.js";
 import "./electronAPI.js";
 
 // ── Raw API shapes (dates come back as strings) ───────────────────────────────
@@ -49,8 +50,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (res.status === 401) {
     authStorage.clear();
-    if (window.location.pathname !== "/login") {
-      window.location.href = "/login";
+    // Navigate via the router, not window.location: under Electron the app runs
+    // on memory history from a file:// origin, so window.location.pathname is the
+    // disk path (never "/login") and assigning window.location.href would try to
+    // load file:///<drive>/login. router.navigate works for both histories.
+    if (router.state.location.pathname !== "/login") {
+      void router.navigate({ to: "/login" });
     }
     throw new Error("Unauthorized");
   }

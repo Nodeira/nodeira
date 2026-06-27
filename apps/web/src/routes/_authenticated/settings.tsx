@@ -28,6 +28,7 @@ import {
 } from "../../lib/api.js";
 import { loadPlugin } from "../../lib/pluginLoader.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
+import type { Keybinds } from "../../lib/electronAPI.js";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -42,6 +43,7 @@ function SettingsPage() {
         <Tabs.List>
           <Tabs.Tab value="general">General</Tabs.Tab>
           {isElectron && <Tabs.Tab value="connection">Connection</Tabs.Tab>}
+          {isElectron && <Tabs.Tab value="keybinds">Keybinds</Tabs.Tab>}
           <Tabs.Tab value="plugins">Plugins</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="general" pt="md">
@@ -50,6 +52,11 @@ function SettingsPage() {
         {isElectron && (
           <Tabs.Panel value="connection" pt="md">
             <ConnectionTab />
+          </Tabs.Panel>
+        )}
+        {isElectron && (
+          <Tabs.Panel value="keybinds" pt="md">
+            <KeybindsTab />
           </Tabs.Panel>
         )}
         <Tabs.Panel value="plugins" pt="md">
@@ -138,6 +145,157 @@ function ConnectionTab() {
         style={{ alignSelf: "flex-start" }}
       >
         Save &amp; Reconnect
+      </Button>
+    </Stack>
+  );
+}
+
+// ── Keybinds ──────────────────────────────────────────────────────────────────
+
+const isMac =
+  typeof navigator !== "undefined" && /mac/i.test(navigator.platform || navigator.userAgent);
+
+const KEYBIND_FIELDS: { action: keyof Keybinds; label: string; description: string }[] = [
+  {
+    action: "newNote",
+    label: "New note",
+    description: "Create a new note and bring Nodeira to the front.",
+  },
+  {
+    action: "newQuickNote",
+    label: "New quick note",
+    description: "Create a quick note from anywhere and focus the window.",
+  },
+];
+
+// Translates a browser keydown into an Electron accelerator string, e.g.
+// "CommandOrControl+Shift+N". Returns null until a non-modifier key is pressed
+// alongside at least one modifier (global shortcuts need a modifier).
+function eventToAccelerator(e: React.KeyboardEvent): string | null {
+  const key = e.key;
+  if (key === "Control" || key === "Shift" || key === "Alt" || key === "Meta") return null;
+
+  const parts: string[] = [];
+  if (e.ctrlKey || e.metaKey) parts.push("CommandOrControl");
+  if (e.altKey) parts.push("Alt");
+  if (e.shiftKey) parts.push("Shift");
+  if (parts.length === 0) return null; // require a modifier
+
+  const ARROWS: Record<string, string> = {
+    ArrowUp: "Up",
+    ArrowDown: "Down",
+    ArrowLeft: "Left",
+    ArrowRight: "Right",
+  };
+  let main: string;
+  if (key === " ") main = "Space";
+  else if (/^f\d{1,2}$/i.test(key)) main = key.toUpperCase();
+  else if (key.length === 1) main = key.toUpperCase();
+  else if (ARROWS[key]) main = ARROWS[key];
+  else if (key === "Enter") main = "Return";
+  else if (key === "Backspace" || key === "Delete" || key === "Tab" || key === "Escape") main = key;
+  else return null;
+
+  parts.push(main);
+  return parts.join("+");
+}
+
+// Human-readable rendering of an accelerator for the input field.
+function acceleratorToLabel(accelerator: string): string {
+  if (!accelerator) return "";
+  return accelerator
+    .split("+")
+    .map((part) => (part === "CommandOrControl" ? (isMac ? "⌘" : "Ctrl") : part))
+    .join(" + ");
+}
+
+function KeybindInput({
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  value: string;
+  onChange: (accelerator: string) => void;
+}) {
+  const [capturing, setCapturing] = useState(false);
+
+  return (
+    <TextInput
+      label={label}
+      description={description}
+      readOnly
+      placeholder="Click, then press a shortcut"
+      value={capturing ? "Press a shortcut…" : acceleratorToLabel(value)}
+      onFocus={() => setCapturing(true)}
+      onBlur={() => setCapturing(false)}
+      onKeyDown={(e) => {
+        e.preventDefault();
+        if (e.key === "Escape") {
+          e.currentTarget.blur();
+          return;
+        }
+        const accelerator = eventToAccelerator(e);
+        if (accelerator) {
+          onChange(accelerator);
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
+function KeybindsTab() {
+  const [keybinds, setKeybinds] = useState<Keybinds>(() =>
+    window.electronAPI!.settings.getKeybinds(),
+  );
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    const result = await window.electronAPI!.settings.setKeybinds(keybinds);
+    setSaving(false);
+    setDirty(false);
+
+    const failed = KEYBIND_FIELDS.filter((f) => !result[f.action]).map((f) => f.label);
+    if (failed.length > 0) {
+      notifications.show({
+        color: "red",
+        message: `Couldn't register: ${failed.join(", ")}. The combination may already be in use by another app.`,
+      });
+    } else {
+      notifications.show({ color: "green", message: "Shortcuts updated." });
+    }
+  }
+
+  return (
+    <Stack gap="md" style={{ maxWidth: 500 }}>
+      <Text size="sm" c="dimmed">
+        Global shortcuts work even when Nodeira is in the background. Click a field and press the
+        keys you want.
+      </Text>
+      {KEYBIND_FIELDS.map((field) => (
+        <KeybindInput
+          key={field.action}
+          label={field.label}
+          description={field.description}
+          value={keybinds[field.action]}
+          onChange={(accelerator) => {
+            setKeybinds((prev) => ({ ...prev, [field.action]: accelerator }));
+            setDirty(true);
+          }}
+        />
+      ))}
+      <Button
+        loading={saving}
+        disabled={!dirty}
+        onClick={() => void handleSave()}
+        style={{ alignSelf: "flex-start" }}
+      >
+        Save Shortcuts
       </Button>
     </Stack>
   );
