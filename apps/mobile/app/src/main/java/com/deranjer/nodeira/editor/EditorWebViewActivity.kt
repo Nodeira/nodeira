@@ -13,6 +13,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.FrameLayout
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -85,7 +86,9 @@ class EditorWebViewActivity : Activity() {
         val wsBase = toWsUrl(server)
 
         webView = WebView(this)
-        setContentView(webView)
+        val root = FrameLayout(this)
+        root.addView(webView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        setContentView(root)
 
         // Seed the system-bar strips + icon contrast from the system night mode so they match
         // the editor immediately (the web app's color scheme is "auto" → follows the system).
@@ -95,12 +98,17 @@ class EditorWebViewActivity : Activity() {
         applyChromeForBackground(if (nightMode) EDITOR_BG_DARK else EDITOR_BG_LIGHT)
 
         // targetSdk 36 forces edge-to-edge, so without this the WebView (and the editor's
-        // note title) would draw under the status bar. Pad by the system bars + IME instead.
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+        // note title) would draw under the status bar. WebView.setPadding() only offsets
+        // scrolling — Chromium sizes its CSS viewport (100vh/100dvh) from the View's measured
+        // bounds, ignoring padding — so the inset has to shrink the WebView itself via margins
+        // on its LayoutParams, not padding.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime(),
             )
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            val lp = webView.layoutParams as FrameLayout.LayoutParams
+            lp.setMargins(bars.left, bars.top, bars.right, bars.bottom)
+            webView.layoutParams = lp
             insets
         }
 

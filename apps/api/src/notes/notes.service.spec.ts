@@ -147,19 +147,18 @@ describe("NotesService", () => {
     });
   });
 
-  describe("upsertYjsState", () => {
-    it("creates a note with yjsState when note does not exist", async () => {
+  describe("updateYjsState", () => {
+    it("does not resurrect a note that does not exist", async () => {
       const id = "00000000-0000-0000-0000-000000000001";
       const state = new Uint8Array([1, 2, 3, 4]);
-      await service.upsertYjsState(id, state);
-      const note = await service.findOne(id);
-      expect(note.yjsState).toEqual(state);
+      await service.updateYjsState(id, state);
+      await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
     });
 
     it("updates yjsState on an existing note", async () => {
       const note = await service.create({ title: "My note" });
       const state = new Uint8Array([5, 6, 7, 8]);
-      await service.upsertYjsState(note.id, state);
+      await service.updateYjsState(note.id, state);
       const updated = await service.findOne(note.id);
       expect(updated.yjsState).toEqual(state);
     });

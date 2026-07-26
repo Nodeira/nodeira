@@ -1,10 +1,30 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import ForceGraph2D, { type ForceGraphMethods, type NodeObject } from "react-force-graph-2d";
 import { useNavigate } from "@tanstack/react-router";
-import { useMantineColorScheme, Box, Center, Loader, Paper, Select, Stack, Text } from "@mantine/core";
+import {
+  useMantineColorScheme,
+  Box,
+  Center,
+  Loader,
+  Paper,
+  Select,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useResizeObserver } from "@mantine/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { getAllLinks, getFolders, getNotes, getVaults, graphKeys, notesKeys, foldersKeys, vaultsKeys } from "../lib/api.js";
+import { useAtomValue } from "jotai";
+import {
+  getAllLinks,
+  getFolders,
+  getNotes,
+  getVaults,
+  graphKeys,
+  notesKeys,
+  foldersKeys,
+  vaultsKeys,
+} from "../lib/api.js";
+import { currentVaultAtom } from "../store/atoms.js";
 
 interface LocalNode {
   id: string;
@@ -23,7 +43,8 @@ export function GraphView() {
   const [containerRef, containerRect] = useResizeObserver<HTMLDivElement>();
   const fgRef = useRef<ForceGraphMethods<GraphNode>>(undefined);
 
-  const [vaultFilter, setVaultFilter] = useState<string | null>(null);
+  const currentVaultId = useAtomValue(currentVaultAtom);
+  const [vaultFilter, setVaultFilter] = useState<string | null>(currentVaultId);
   const [sectionFilter, setSectionFilter] = useState<string | null>(null);
   const [folderFilter, setFolderFilter] = useState<string | null>(null);
 
@@ -49,15 +70,19 @@ export function GraphView() {
 
   const isLoading = notesLoading || linksLoading;
 
-  const vaultOptions = useMemo(() => [
-    { value: "__none__", label: "No vault" },
-    ...vaults.map((v) => ({ value: v.id, label: v.name })),
-  ], [vaults]);
+  const vaultOptions = useMemo(
+    () => [
+      { value: "__none__", label: "No vault" },
+      ...vaults.map((v) => ({ value: v.id, label: v.name })),
+    ],
+    [vaults],
+  );
 
   const folderOptions = useMemo(() => {
-    const filtered = vaultFilter && vaultFilter !== "__none__"
-      ? folders.filter((f) => f.vaultId === vaultFilter)
-      : folders;
+    const filtered =
+      vaultFilter && vaultFilter !== "__none__"
+        ? folders.filter((f) => f.vaultId === vaultFilter)
+        : folders;
     return [
       { value: "__none__", label: "No folder" },
       ...filtered.map((f) => ({ value: f.id, label: f.name })),
@@ -199,7 +224,11 @@ export function GraphView() {
   }
 
   return (
-    <Box ref={containerRef} onClick={handleContainerClick} style={{ width: "100%", height: "100%", overflow: "hidden", position: "relative" }}>
+    <Box
+      ref={containerRef}
+      onClick={handleContainerClick}
+      style={{ width: "100%", height: "100%", overflow: "hidden", position: "relative" }}
+    >
       {containerRect.width > 0 && containerRect.height > 0 && (
         <ForceGraph2D
           ref={fgRef}
@@ -235,7 +264,9 @@ export function GraphView() {
         }}
       >
         <Stack gap={6}>
-          <Text size="xs" fw={600} c="dimmed">Filters</Text>
+          <Text size="xs" fw={600} c="dimmed">
+            Filters
+          </Text>
           <Select
             placeholder="All sections"
             size="xs"

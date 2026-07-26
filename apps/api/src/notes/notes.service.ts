@@ -128,12 +128,11 @@ export class NotesService {
     }
   }
 
-  async upsertYjsState(id: string, yjsState: Uint8Array<ArrayBuffer>) {
-    await this.prisma.note.upsert({
-      where: { id },
-      update: { yjsState },
-      create: { id, yjsState, title: "Untitled", type: "note", position: 0 },
-    });
+  async updateYjsState(id: string, yjsState: Uint8Array<ArrayBuffer>) {
+    // updateMany affects 0 rows (no throw) when the note was deleted, so a still-open
+    // editor connection can never resurrect a deleted note as an orphaned ghost.
+    // Real notes are always created via POST /notes (with a vaultId) before sync runs.
+    await this.prisma.note.updateMany({ where: { id }, data: { yjsState } });
   }
 
   async syncLinks(sourceId: string, targetIds: string[]) {

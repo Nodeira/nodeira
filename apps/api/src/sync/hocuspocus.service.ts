@@ -97,7 +97,7 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
 
       async onStoreDocument({ document, documentName }) {
         const state = encodeStateAsUpdate(document as Doc);
-        await notesService.upsertYjsState(documentName, new Uint8Array(state));
+        await notesService.updateYjsState(documentName, new Uint8Array(state));
 
         try {
           const json = yDocToProsemirrorJSON(document as Doc, "default") as PmNode;
