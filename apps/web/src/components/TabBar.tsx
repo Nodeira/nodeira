@@ -24,6 +24,7 @@ import {
   getAppState,
   patchAppState,
 } from "../lib/api.js";
+import { queryClient } from "../lib/queryClient.js";
 
 type ContextMenuState = { tabId: string; x: number; y: number } | null;
 
@@ -66,19 +67,33 @@ export function TabBar() {
     }
   }
 
-  // Load persisted state on mount; restore active note if opening at root
+  // Load persisted state on mount; restore active note if opening at root.
+  // Prune tabs/active-note ids that no longer resolve to a real note/canvas, so a
+  // deleted-but-persisted id doesn't re-trigger a 404 on every load. Validate against
+  // freshly-loaded lists (ensureQueryData), not possibly-empty cache. Mount-only, so
+  // notes created later this session are never pruned.
   useEffect(() => {
-    getAppState()
-      .then(({ openTabs, activeNoteId }) => {
-        if (openTabs.length > 0) setTabs(openTabs);
-        if (activeNoteId && routerState.location.pathname === "/") {
+    void (async () => {
+      try {
+        const [{ openTabs, activeNoteId }, validNotes, validCanvases] = await Promise.all([
+          getAppState(),
+          queryClient.ensureQueryData({ queryKey: notesKeys.all, queryFn: () => getNotes() }),
+          queryClient.ensureQueryData({ queryKey: canvasKeys.all, queryFn: () => getCanvases() }),
+        ]);
+        const noteIds = new Set(validNotes.map((n) => n.id));
+        const canvasIds = new Set(validCanvases.map((c) => c.id));
+        const tabExists = (id: string) =>
+          isCanvasTab(id) ? canvasIds.has(canvasIdOf(id)) : noteIds.has(id);
+
+        const liveTabs = openTabs.filter(tabExists);
+        setTabs(liveTabs);
+        if (activeNoteId && noteIds.has(activeNoteId) && routerState.location.pathname === "/") {
           void navigate({ to: "/notes/$noteId", params: { noteId: activeNoteId } });
         }
+      } finally {
         initializedRef.current = true;
-      })
-      .catch(() => {
-        initializedRef.current = true;
-      });
+      }
+    })();
   }, []);
 
   // Sync current route into open tabs

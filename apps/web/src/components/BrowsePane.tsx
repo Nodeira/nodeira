@@ -267,7 +267,7 @@ const BUILT_IN_IDS = new Set(["recent", "pinned", "kanban"]);
 export function BrowsePane() {
   const [currentVaultId] = useAtom(currentVaultAtom);
   const [view, setView] = useAtom(browsePaneViewAtom);
-  const [recentScope, setRecentScope] = useState<"all" | "vault">("all");
+  const [recentScope, setRecentScope] = useState<"all" | "vault">("vault");
   useAtomValue(pluginRegistryVersionAtom);
 
   const { data: notes = [] } = useQuery({
