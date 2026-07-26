@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/Nodeira/nodeira/compare/v1.12.0...v1.12.1) (2026-07-26)
+
+
+### Bug Fixes
+
+* **sync:** stop deleted notes from being resurrected as ghosts, harden UI against stale note ids ([c243b20](https://github.com/Nodeira/nodeira/commit/c243b20a469d561ca26b59fadcec272de4f298f0))
+
 # [1.12.0](https://github.com/Nodeira/nodeira/compare/v1.11.1...v1.12.0) (2026-06-24)
 
 
