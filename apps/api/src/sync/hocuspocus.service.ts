@@ -15,6 +15,7 @@ import { yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import { ApiTokenService } from "../auth/api-token.service.js";
 import type { AuthenticatedUser } from "../auth/jwt.strategy.js";
 import { NotesService } from "../notes/notes.service.js";
+import { DocumentBridge } from "./document-bridge.service.js";
 
 type PmNode = { type: string; content?: PmNode[]; attrs?: Record<string, unknown> };
 
@@ -53,6 +54,7 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
     private readonly notesService: NotesService,
     private readonly jwtService: JwtService,
     private readonly apiTokenService: ApiTokenService,
+    private readonly documentBridge: DocumentBridge,
   ) {}
 
   onModuleInit() {
@@ -125,6 +127,10 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
         }
       },
     });
+
+    // Let REST handlers (PUT /notes/:id/content) mutate live documents through the sync
+    // server rather than overwriting yjs_state behind its back.
+    this.documentBridge.register((documentName) => this.server.openDirectConnection(documentName));
   }
 
   onModuleDestroy() {

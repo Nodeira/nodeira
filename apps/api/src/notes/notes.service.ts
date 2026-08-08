@@ -5,12 +5,14 @@ import type { CreateNoteDto } from "./dto/create-note.dto.js";
 import type { UpdateNoteDto } from "./dto/update-note.dto.js";
 import type { ReorderNoteItemDto } from "./dto/reorder-notes.dto.js";
 import { MarkdownConverterService } from "./markdown-converter.service.js";
+import { DocumentBridge } from "../sync/document-bridge.service.js";
 
 @Injectable()
 export class NotesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly markdownConverter: MarkdownConverterService,
+    private readonly documentBridge: DocumentBridge,
   ) {}
 
   async create(dto: CreateNoteDto, vaultScope?: string | null) {
@@ -96,7 +98,10 @@ export class NotesService {
           ...(dto.kindMeta !== undefined && { kindMeta: dto.kindMeta as Prisma.InputJsonValue }),
           ...(dto.folderId !== undefined && { folderId: dto.folderId ?? null }),
           ...(dto.vaultId !== undefined && { vaultId: dto.vaultId ?? null }),
-          ...(dto.tags !== undefined && { tags: dto.tags }),
+          // `tags` is deliberately not writable here. Tags are derived from hashTag nodes
+          // in the document by syncTags() on every sync flush, so anything written through
+          // REST was silently wiped moments later. The document is the single source of
+          // truth; UpdateNoteDto no longer accepts the field.
         },
       });
     } catch {
@@ -138,21 +143,33 @@ export class NotesService {
   }
 
   async syncLinks(sourceId: string, targetIds: string[]) {
+    // Drop self-links: a note linking to itself adds nothing to the graph and shows up as
+    // its own backlink.
+    const wanted = [...new Set(targetIds)].filter((id) => id !== sourceId);
+
     const validNotes =
-      targetIds.length > 0
+      wanted.length > 0
         ? await this.prisma.note.findMany({
-            where: { id: { in: targetIds } },
+            where: { id: { in: wanted } },
             select: { id: true },
           })
         : [];
     const validIds = validNotes.map((n) => n.id);
 
-    await this.prisma.noteLink.deleteMany({ where: { sourceId } });
-    if (validIds.length > 0) {
-      await this.prisma.noteLink.createMany({
-        data: validIds.map((targetId) => ({ sourceId, targetId })),
-      });
-    }
+    // One transaction: delete-then-recreate left the note with zero backlinks for anyone
+    // reading in between, and left them deleted permanently if the process died between
+    // the two statements.
+    await this.prisma.$transaction([
+      this.prisma.noteLink.deleteMany({ where: { sourceId } }),
+      ...(validIds.length > 0
+        ? [
+            this.prisma.noteLink.createMany({
+              data: validIds.map((targetId) => ({ sourceId, targetId })),
+              skipDuplicates: true,
+            }),
+          ]
+        : []),
+    ]);
   }
 
   async syncTags(id: string, tags: string[]) {
@@ -243,6 +260,25 @@ export class NotesService {
 
   async setContent(id: string, markdown: string, vaultScope?: string | null): Promise<void> {
     await this.findOne(id, vaultScope);
+
+    // Built before the transaction because the callback is synchronous. Detached Yjs
+    // elements can be inserted into any fragment, so this is safe.
+    const elements = await this.markdownConverter.markdownToXmlElements(markdown);
+
+    // Route through the sync server so the change lands as an update on the document
+    // everyone is already sharing. Overwriting yjs_state directly (as this used to do)
+    // is lost the moment a connected editor flushes, and the diverged state vectors can
+    // never reconcile. The bridge persists via onStoreDocument, so there is no separate
+    // write on this path.
+    const applied = await this.documentBridge.transact(id, (doc) => {
+      const fragment = doc.getXmlFragment("default");
+      fragment.delete(0, fragment.length);
+      if (elements.length > 0) fragment.insert(0, elements);
+    });
+
+    if (applied) return;
+
+    // Sync server unavailable (e.g. a unit test constructing the service directly).
     const yjsState = await this.markdownConverter.markdownToYjsState(markdown);
     await this.prisma.note.update({ where: { id }, data: { yjsState: Buffer.from(yjsState) } });
   }

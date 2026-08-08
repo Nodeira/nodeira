@@ -39,7 +39,6 @@ import {
   createNote,
   createVault,
   deleteFolder,
-  deleteNote,
   deleteVault,
   foldersKeys,
   getFolders,
@@ -57,6 +56,7 @@ import {
   vaultsKeys,
 } from "../lib/api.js";
 import { loadAllPlugins } from "../lib/pluginLoader.js";
+import { useDeleteNote } from "../lib/useDeleteNote.js";
 import { useReminderSocket } from "../lib/useReminderSocket.js";
 import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
@@ -275,11 +275,7 @@ export function AppShell({ children }: AppShellProps) {
     onSuccess: () => qc.invalidateQueries({ queryKey: vaultsKeys.all }),
     onError: () => notifications.show({ message: "Couldn't delete vault", color: "red" }),
   });
-  const deleteNoteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
-    onError: () => notifications.show({ message: "Couldn't delete note", color: "red" }),
-  });
+  const deleteNoteMutation = useDeleteNote();
   const deleteFolderMutation = useMutation({
     mutationFn: deleteFolder,
     onSuccess: () => {

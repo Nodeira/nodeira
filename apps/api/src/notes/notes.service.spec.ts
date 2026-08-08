@@ -4,6 +4,7 @@ import { beforeAll, afterAll, beforeEach, describe, it, expect } from "vitest";
 import { asPrismaService, cleanDatabase, createTestPrisma } from "../test/prisma-test-client.js";
 import { MarkdownConverterService } from "./markdown-converter.service.js";
 import { NotesService } from "./notes.service.js";
+import { DocumentBridge } from "../sync/document-bridge.service.js";
 
 let prisma: PrismaClient;
 let service: NotesService;
@@ -11,7 +12,13 @@ let service: NotesService;
 beforeAll(async () => {
   prisma = createTestPrisma();
   await prisma.$connect();
-  service = new NotesService(asPrismaService(prisma), new MarkdownConverterService());
+  // An unregistered bridge reports "no sync server", which is what a standalone service
+  // should see — setContent then falls back to writing the row directly.
+  service = new NotesService(
+    asPrismaService(prisma),
+    new MarkdownConverterService(),
+    new DocumentBridge(),
+  );
 });
 
 afterAll(async () => {

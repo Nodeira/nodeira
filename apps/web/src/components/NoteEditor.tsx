@@ -19,11 +19,36 @@ import { TaskList, TaskItem } from "@tiptap/extension-list";
 import Image from "@tiptap/extension-image";
 import { Link, RichTextEditor } from "@mantine/tiptap";
 import { createLowlight, common } from "lowlight";
-import { ActionIcon, Badge, Box, Button, Group, Menu, Modal, Paper, Select, Stack, Text, TextInput } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Group,
+  Menu,
+  Modal,
+  Paper,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
-import { destroyYjsContext, getOrCreateYjsContext } from "../providers/YjsProvider.js";
-import { deleteNote, getNote, getNotes, getTags, canvasKeys, getCanvases, notesKeys, tagsKeys, updateNoteTitle, uploadPdf } from "../lib/api.js";
+import { useYjsContext } from "../providers/useYjsContext.js";
+import { useDeleteNote } from "../lib/useDeleteNote.js";
+import { DeleteConfirmModal } from "./modals/DeleteConfirmModal.js";
+import {
+  getNote,
+  getNotes,
+  getTags,
+  canvasKeys,
+  getCanvases,
+  notesKeys,
+  tagsKeys,
+  updateNoteTitle,
+  uploadPdf,
+} from "../lib/api.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 import { PdfEmbed } from "./PdfEmbed.js";
 import { WikiLink } from "./WikiLink.js";
@@ -137,7 +162,9 @@ function TagPicker({
             }}
           >
             #{tag}
-            <span style={{ color: "var(--mantine-color-dimmed)", fontSize: "0.75em", marginLeft: 4 }}>
+            <span
+              style={{ color: "var(--mantine-color-dimmed)", fontSize: "0.75em", marginLeft: 4 }}
+            >
               {count}
             </span>
           </button>
@@ -201,11 +228,12 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
-  const { doc } = getOrCreateYjsContext(noteId);
+  const { doc } = useYjsContext(noteId);
   const [titleValue, setTitleValue] = useState(initialTitle ?? "");
   const hasAutoSelected = useRef(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
-  const [canvasPickerOpen, { open: openCanvasPicker, close: closeCanvasPicker }] = useDisclosure(false);
+  const [canvasPickerOpen, { open: openCanvasPicker, close: closeCanvasPicker }] =
+    useDisclosure(false);
   const [deleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -240,13 +268,6 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
   useAtomValue(pluginRegistryVersionAtom);
   const editorHeaders = pluginRegistry.getEditorHeaders();
 
-  // Tear down the Yjs doc + WebSocket + IndexedDB providers when this editor
-  // unmounts. The route uses key={noteId}, so switching notes destroys this
-  // instance and its cached entry in YjsProvider's docCache.
-  useEffect(() => {
-    return () => destroyYjsContext(noteId);
-  }, [noteId]);
-
   // Close wiki picker on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -259,21 +280,18 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const selectWikiLink = useCallback(
-    (note: NoteMetadata) => {
-      if (!editorRef.current || !wikiSearchRef.current) return;
-      const editor = editorRef.current;
-      const { from } = editor.state.selection;
-      editor
-        .chain()
-        .focus()
-        .deleteRange({ from: wikiSearchRef.current.from, to: from })
-        .insertContent({ type: "wikiLink", attrs: { noteId: note.id, title: note.title } })
-        .run();
-      setWikiSearch(null);
-    },
-    [],
-  );
+  const selectWikiLink = useCallback((note: NoteMetadata) => {
+    if (!editorRef.current || !wikiSearchRef.current) return;
+    const editor = editorRef.current;
+    const { from } = editor.state.selection;
+    editor
+      .chain()
+      .focus()
+      .deleteRange({ from: wikiSearchRef.current.from, to: from })
+      .insertContent({ type: "wikiLink", attrs: { noteId: note.id, title: note.title } })
+      .run();
+    setWikiSearch(null);
+  }, []);
 
   const selectTag = useCallback((tag: string) => {
     if (!editorRef.current || !tagSearchRef.current) return;
@@ -319,7 +337,11 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
         try {
           const triggerStart = from - wikiMatch[0].length;
           const coords = editor.view.coordsAtPos(triggerStart);
-          setWikiSearch({ query: wikiMatch[1] ?? "", from: triggerStart, coords: { top: coords.bottom, left: coords.left } });
+          setWikiSearch({
+            query: wikiMatch[1] ?? "",
+            from: triggerStart,
+            coords: { top: coords.bottom, left: coords.left },
+          });
         } catch {
           setWikiSearch(null);
         }
@@ -328,7 +350,11 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
         try {
           const triggerStart = from - tagMatch[0].length;
           const coords = editor.view.coordsAtPos(triggerStart);
-          setTagSearch({ query: tagMatch[1] ?? "", from: triggerStart, coords: { top: coords.bottom, left: coords.left } });
+          setTagSearch({
+            query: tagMatch[1] ?? "",
+            from: triggerStart,
+            coords: { top: coords.bottom, left: coords.left },
+          });
         } catch {
           setTagSearch(null);
         }
@@ -338,7 +364,10 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
         setTagSearch(null);
       }
     },
-    onBlur: () => { setWikiSearch(null); setTagSearch(null); },
+    onBlur: () => {
+      setWikiSearch(null);
+      setTagSearch(null);
+    },
   });
 
   // Keep editorRef in sync
@@ -347,10 +376,14 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
   const uploadPdfMutation = useMutation({
     mutationFn: uploadPdf,
     onSuccess: ({ url }, file) => {
-      editor?.chain().focus().insertContent({
-        type: "pdfEmbed",
-        attrs: { src: url, title: file.name },
-      }).run();
+      editor
+        ?.chain()
+        .focus()
+        .insertContent({
+          type: "pdfEmbed",
+          attrs: { src: url, title: file.name },
+        })
+        .run();
     },
   });
 
@@ -359,14 +392,13 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   });
 
-  const deleteNoteMutation = useMutation({
-    mutationFn: () => deleteNote(noteId),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: notesKeys.all });
-      closeDelete();
-      await navigate({ to: "/" });
-    },
-  });
+  const deleteNoteMutation = useDeleteNote();
+
+  async function handleDelete() {
+    await deleteNoteMutation.mutateAsync(noteId);
+    closeDelete();
+    await navigate({ to: "/" });
+  }
 
   const inTable = editor?.isActive("table") ?? false;
   const inCodeBlock = editor?.isActive("codeBlock") ?? false;
@@ -619,46 +651,50 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
       <Modal opened={canvasPickerOpen} onClose={closeCanvasPicker} title="Embed Canvas" size="md">
         <Stack gap="xs">
           {allCanvases.length === 0 ? (
-            <Text size="sm" c="dimmed">No canvases found. Create one in the Canvases section first.</Text>
+            <Text size="sm" c="dimmed">
+              No canvases found. Create one in the Canvases section first.
+            </Text>
           ) : (
             allCanvases.map((canvas) => (
               <Box
                 key={canvas.id}
                 p="xs"
-                style={{ cursor: "pointer", borderRadius: 4, border: "1px solid var(--mantine-color-default-border)" }}
+                style={{
+                  cursor: "pointer",
+                  borderRadius: 4,
+                  border: "1px solid var(--mantine-color-default-border)",
+                }}
                 onClick={() => {
-                  editor?.chain().focus().insertContent({ type: "canvasEmbed", attrs: { canvasId: canvas.id } }).run();
+                  editor
+                    ?.chain()
+                    .focus()
+                    .insertContent({ type: "canvasEmbed", attrs: { canvasId: canvas.id } })
+                    .run();
                   closeCanvasPicker();
                 }}
               >
-                <Text size="sm" fw={500}>{canvas.title}</Text>
-                <Text size="xs" c="dimmed">{canvas.data.nodes.length} nodes</Text>
+                <Text size="sm" fw={500}>
+                  {canvas.title}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {canvas.data.nodes.length} nodes
+                </Text>
               </Box>
             ))
           )}
           <Group justify="flex-end">
-            <Button variant="subtle" onClick={closeCanvasPicker}>Cancel</Button>
+            <Button variant="subtle" onClick={closeCanvasPicker}>
+              Cancel
+            </Button>
           </Group>
         </Stack>
       </Modal>
 
-      {/* Delete confirmation modal */}
-      <Modal opened={deleteOpen} onClose={closeDelete} title="Delete note?" size="sm">
-        <Stack>
-          <Text size="sm">
-            Are you sure you want to delete &ldquo;{titleValue || "Untitled"}&rdquo;? This cannot be
-            undone.
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={closeDelete}>
-              Cancel
-            </Button>
-            <Button color="red" onClick={() => deleteNoteMutation.mutate()}>
-              Delete
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      <DeleteConfirmModal
+        target={deleteOpen ? { type: "note", id: noteId, name: titleValue || "Untitled" } : null}
+        onClose={closeDelete}
+        onConfirm={handleDelete}
+      />
     </Box>
   );
 }

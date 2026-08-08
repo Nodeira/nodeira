@@ -9,6 +9,7 @@ import { DatabaseModule } from "./database/database.module.js";
 import { FoldersModule } from "./folders/folders.module.js";
 import { NotesModule } from "./notes/notes.module.js";
 import { SetupModule } from "./setup/setup.module.js";
+import { DocumentBridgeModule } from "./sync/document-bridge.module.js";
 import { SyncModule } from "./sync/sync.module.js";
 import { UploadModule } from "./upload/upload.module.js";
 import { VaultsModule } from "./vaults/vaults.module.js";
@@ -36,6 +37,7 @@ const webDistPath = join(process.cwd(), "public");
     SetupModule,
     AppStateModule,
     DatabaseModule,
+    DocumentBridgeModule,
     FoldersModule,
     NotesModule,
     SyncModule,
