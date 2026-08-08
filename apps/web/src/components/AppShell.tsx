@@ -222,6 +222,11 @@ export function AppShell({ children }: AppShellProps) {
     };
   }, []);
 
+  // Read key for THIS component. Never invalidate with it: TanStack matches query keys by
+  // prefix, so invalidating notesKeys.all (["notes"]) also refreshes every byVault entry,
+  // but invalidating byVault (["notes","vault",id]) leaves ["notes"] stale — and TabBar,
+  // BrowsePane, GraphView and NoteEditor all read ["notes"]. Mutations below use
+  // notesKeys.all for that reason.
   const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
   const foldersQueryKey = currentVaultId ? foldersKeys.byVault(currentVaultId) : foldersKeys.all;
 
@@ -272,25 +277,25 @@ export function AppShell({ children }: AppShellProps) {
   });
   const deleteNoteMutation = useMutation({
     mutationFn: deleteNote,
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
     onError: () => notifications.show({ message: "Couldn't delete note", color: "red" }),
   });
   const deleteFolderMutation = useMutation({
     mutationFn: deleteFolder,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: foldersQueryKey });
-      qc.invalidateQueries({ queryKey: notesQueryKey });
+      qc.invalidateQueries({ queryKey: notesKeys.all });
     },
     onError: () => notifications.show({ message: "Couldn't delete folder", color: "red" }),
   });
   const reorderMutation = useMutation({ mutationFn: reorderNotes });
   const pinMutation = useMutation({
     mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => updateNotePin(id, pinned),
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   });
   const noteIconMutation = useMutation({
     mutationFn: ({ id, icon }: { id: string; icon: string | null }) => updateNoteIcon(id, icon),
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   });
   const folderIconMutation = useMutation({
     mutationFn: ({ id, icon }: { id: string; icon: string | null }) => updateFolderIcon(id, icon),
@@ -306,10 +311,7 @@ export function AppShell({ children }: AppShellProps) {
       vaultId: string | null;
       folderId: string | null;
     }) => moveNote(id, { vaultId, folderId }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: notesKeys.all });
-      qc.invalidateQueries({ queryKey: notesQueryKey });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   });
   const kindMutation = useMutation({
     mutationFn: ({ id, kind }: { id: string; kind: string | null }) => {
@@ -317,6 +319,21 @@ export function AppShell({ children }: AppShellProps) {
       return updateNoteKind(id, kind, def?.defaultMeta ?? null);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+  });
+  // Distinct from kindMutation: changing a task's status must PRESERVE the rest of
+  // kindMeta, whereas changing the kind resets it to that kind's defaults.
+  const kindMetaMutation = useMutation({
+    mutationFn: ({
+      id,
+      kind,
+      kindMeta,
+    }: {
+      id: string;
+      kind: string | null;
+      kindMeta: Record<string, unknown> | null;
+    }) => updateNoteKind(id, kind, kindMeta),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't update status", color: "red" }),
   });
 
   const sensors = useSensors(
@@ -328,6 +345,16 @@ export function AppShell({ children }: AppShellProps) {
   const activeNoteId = noteRouteMatch?.[1] ?? null;
   const activeNote = notes.find((n) => n.id === activeNoteId) ?? null;
   const activeDragNote = notes.find((n) => n.id === activeDragId) ?? null;
+
+  function handleStatusChange(id: string, status: string) {
+    const note = notes.find((n) => n.id === id);
+    if (!note) return;
+    kindMetaMutation.mutate({
+      id,
+      kind: "task",
+      kindMeta: { ...(note.kindMeta ?? {}), status },
+    });
+  }
 
   async function handleCreateNote(type: "note" | "quick", folderId?: string) {
     const now = new Date();
@@ -453,7 +480,11 @@ export function AppShell({ children }: AppShellProps) {
       updated = [...unaffected, ...newContainerNotes, ...sourceContainerReordered];
     }
 
+    // setQueryData writes to one exact key (no prefix matching), so the vault-scoped entry
+    // this component actually renders from has to be written separately — otherwise the
+    // sidebar snaps back to the old order until the next refetch.
     qc.setQueryData(notesKeys.all, updated);
+    if (currentVaultId) qc.setQueryData(notesKeys.byVault(currentVaultId), updated);
     reorderMutation.mutate(
       updated.map((n) => ({ id: n.id, position: n.position, folderId: n.folderId ?? null })),
       { onError: () => qc.invalidateQueries({ queryKey: notesKeys.all }) },
@@ -543,6 +574,7 @@ export function AppShell({ children }: AppShellProps) {
             note={activeNote}
             folders={folders}
             onKindChange={(id, kind) => kindMutation.mutate({ id, kind })}
+            onStatusChange={handleStatusChange}
             onFullscreen={() => setFullscreenPane(fullscreenPane === "right" ? null : "right")}
             isFullscreen={fullscreenPane === "right"}
           />
@@ -597,6 +629,7 @@ export function AppShell({ children }: AppShellProps) {
           note={activeNote}
           folders={folders}
           onKindChange={(id, kind) => kindMutation.mutate({ id, kind })}
+          onStatusChange={handleStatusChange}
           onFullscreen={() => setFullscreenPane(null)}
           isFullscreen={true}
         />

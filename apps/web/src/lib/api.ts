@@ -33,7 +33,6 @@ type RawVault = Omit<Vault, "createdAt" | "updatedAt"> & {
 };
 
 // ── Base client ───────────────────────────────────────────────────────────────
-// Auth headers will be injected here when authentication is added.
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = authStorage.getToken();

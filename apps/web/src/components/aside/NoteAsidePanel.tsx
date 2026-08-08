@@ -33,12 +33,14 @@ export function NoteAsidePanel({
   note,
   folders,
   onKindChange,
+  onStatusChange,
   onFullscreen,
   isFullscreen,
 }: {
   note: NoteMetadata | null;
   folders: Folder[];
   onKindChange: (id: string, kind: string | null) => void;
+  onStatusChange: (id: string, status: string) => void;
   onFullscreen: () => void;
   isFullscreen: boolean;
 }) {
@@ -262,7 +264,7 @@ export function NoteAsidePanel({
                     value={taskStatus}
                     data={TASK_STATUSES.map((s) => ({ value: s.id, label: s.label }))}
                     onChange={(v) => {
-                      if (v) onKindChange(note.id, "task");
+                      if (v) onStatusChange(note.id, v);
                     }}
                     styles={{ input: { fontSize: 11 }, wrapper: { flex: 1 } }}
                     allowDeselect={false}
