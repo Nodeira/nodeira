@@ -10,7 +10,9 @@
     "build": "electron-forge package",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.preload.json",
+    "lint": "eslint src"
   },
   "dependencies": {
     "@nodeira/shared-types": "workspace:*",
@@ -24,9 +26,11 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.7.0",
     "@electron-forge/plugin-vite": "^7.7.0",
     "@electron/rebuild": "^3.7.0",
+    "@nodeira/eslint-config": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.9.0",
     "electron": "^33.2.0",
+    "eslint": "^9.0.0",
     "typescript": "^5.8.0",
     "vite": "^6.0.0"
   }

@@ -1,3 +1,4 @@
+import { Throttle } from "@nestjs/throttler";
 import { Body, Controller, Get, Post } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { CreateAdminDto } from "./dto/create-admin.dto.js";
@@ -13,6 +14,8 @@ export class SetupController {
     return { setupRequired: await this.setupService.isSetupRequired() };
   }
 
+  // Unauthenticated by necessity (it creates the first account), so it needs its own limit.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post()
   createAdmin(@Body() dto: CreateAdminDto) {
     return this.setupService.createAdmin(dto);

@@ -38,6 +38,7 @@ import type { SensorDescriptor, SensorOptions } from "@dnd-kit/core";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { authUserAtom, currentVaultAtom, viewsPaneOpenAtom } from "../../store/atoms.js";
+import { destroyAllYjsContexts } from "../../providers/YjsProvider.js";
 import { authStorage } from "../../lib/authStorage.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 import { DynamicIcon } from "../DynamicIcon.js";
@@ -102,6 +103,10 @@ export function Sidebar({
   const navigate = useNavigate();
 
   function handleLogout() {
+    // Hocuspocus providers capture the auth token once at construction and never refresh
+    // it, so without this every cached socket stays open authenticated as the user who
+    // just logged out, until a full page reload.
+    destroyAllYjsContexts();
     authStorage.clear();
     setAuthUser(null);
     void navigate({ to: "/login" });

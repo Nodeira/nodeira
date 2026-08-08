@@ -5,7 +5,11 @@ sidebar_position: 1
 
 # REST API
 
-The NestJS server exposes a JSON REST API at `http://localhost:3001/api` (proxied from the Vite dev server at `/api`).
+The NestJS server exposes a JSON REST API at `http://localhost:3001/api/v1` (proxied from the Vite dev
+server at `/api`).
+
+The `/v1` segment is required: `main.ts` sets a global `api` prefix with URI versioning and
+`defaultVersion: "1"`, so a request to `/api/notes` returns 404.
 
 All endpoints except `/api/setup/*` and `/api/auth/login` require a JWT bearer token in the `Authorization` header:
 
@@ -17,7 +21,7 @@ Authorization: Bearer <token>
 
 ## Authentication
 
-### `GET /api/setup/status`
+### `GET /api/v1/setup/status`
 
 Returns whether first-time setup is still required.
 
@@ -27,11 +31,11 @@ Returns whether first-time setup is still required.
 { "setupRequired": true }
 ```
 
-Once an admin account exists this returns `{ "setupRequired": false }` and `POST /api/setup` is locked.
+Once an admin account exists this returns `{ "setupRequired": false }` and `POST /api/v1/setup` is locked.
 
 ---
 
-### `POST /api/setup`
+### `POST /api/v1/setup`
 
 Creates the initial admin account. **Only works when no users exist.** Subsequent calls return `403 Forbidden`.
 
@@ -58,7 +62,7 @@ Creates the initial admin account. **Only works when no users exist.** Subsequen
 
 ---
 
-### `POST /api/auth/login`
+### `POST /api/v1/auth/login`
 
 Authenticates an existing user and returns a JWT.
 
@@ -87,7 +91,7 @@ Store `access_token` and attach it to subsequent requests as `Authorization: Bea
 
 ---
 
-### `GET /api/auth/profile`
+### `GET /api/v1/auth/profile`
 
 Returns the currently authenticated user.
 
@@ -101,7 +105,7 @@ Returns the currently authenticated user.
 
 ## Vaults
 
-### `GET /api/vaults`
+### `GET /api/v1/vaults`
 
 Returns all vaults.
 
@@ -111,7 +115,7 @@ Returns all vaults.
 [{ "id": "clv...", "name": "Personal", "createdAt": "...", "updatedAt": "..." }]
 ```
 
-### `POST /api/vaults`
+### `POST /api/v1/vaults`
 
 Creates a new vault.
 
@@ -121,7 +125,7 @@ Creates a new vault.
 { "name": "Work" }
 ```
 
-### `DELETE /api/vaults/:id`
+### `DELETE /api/v1/vaults/:id`
 
 Deletes a vault and all its contents.
 
@@ -129,11 +133,11 @@ Deletes a vault and all its contents.
 
 ## Folders
 
-### `GET /api/folders?vaultId=<id>`
+### `GET /api/v1/folders?vaultId=<id>`
 
 Returns all folders in a vault.
 
-### `POST /api/folders`
+### `POST /api/v1/folders`
 
 Creates a folder.
 
@@ -143,7 +147,7 @@ Creates a folder.
 { "name": "Projects", "vaultId": "clv..." }
 ```
 
-### `PATCH /api/folders/:id`
+### `PATCH /api/v1/folders/:id`
 
 Updates a folder's icon.
 
@@ -155,7 +159,7 @@ Updates a folder's icon.
 
 Pass `null` to clear the icon.
 
-### `DELETE /api/folders/:id`
+### `DELETE /api/v1/folders/:id`
 
 Deletes the folder (notes are not deleted).
 
@@ -163,15 +167,15 @@ Deletes the folder (notes are not deleted).
 
 ## Notes
 
-### `GET /api/notes?vaultId=<id>`
+### `GET /api/v1/notes?vaultId=<id>`
 
 Returns all notes in a vault, ordered by the `order` field.
 
-### `GET /api/notes/:id`
+### `GET /api/v1/notes/:id`
 
 Returns a single note (metadata only; document content is delivered via the Yjs WebSocket).
 
-### `POST /api/notes`
+### `POST /api/v1/notes`
 
 Creates a note.
 
@@ -187,9 +191,9 @@ Creates a note.
 
 `vaultId` and `folderId` are optional.
 
-### `PATCH /api/notes/reorder`
+### `PATCH /api/v1/notes/reorder`
 
-Bulk-updates note ordering. Must be called **before** `PATCH /api/notes/:id` to avoid the route conflict.
+Bulk-updates note ordering. Must be called **before** `PATCH /api/v1/notes/:id` to avoid the route conflict.
 
 **Body**
 
@@ -202,11 +206,11 @@ Bulk-updates note ordering. Must be called **before** `PATCH /api/notes/:id` to 
 }
 ```
 
-### `PATCH /api/notes/:id`
+### `PATCH /api/v1/notes/:id`
 
 Updates a note's metadata (title, folderId, etc.).
 
-### `DELETE /api/notes/:id`
+### `DELETE /api/v1/notes/:id`
 
 Deletes a note.
 
@@ -214,7 +218,7 @@ Deletes a note.
 
 ## Canvases
 
-### `GET /api/canvases?vaultId=<id>&q=<search>`
+### `GET /api/v1/canvases?vaultId=<id>&q=<search>`
 
 Returns all canvases, ordered by `position` then `createdAt`. Both query params are optional.
 
@@ -237,7 +241,7 @@ Returns all canvases, ordered by `position` then `createdAt`. Both query params 
 ]
 ```
 
-### `POST /api/canvases`
+### `POST /api/v1/canvases`
 
 Creates a new canvas.
 
@@ -249,11 +253,11 @@ Creates a new canvas.
 
 All fields are optional. `title` defaults to `"Untitled Canvas"`. Position is auto-assigned.
 
-### `GET /api/canvases/:id`
+### `GET /api/v1/canvases/:id`
 
 Returns a single canvas including full `data` (nodes + edges).
 
-### `PATCH /api/canvases/:id`
+### `PATCH /api/v1/canvases/:id`
 
 Updates canvas metadata or data.
 
@@ -269,11 +273,11 @@ Updates canvas metadata or data.
 }
 ```
 
-### `DELETE /api/canvases/:id`
+### `DELETE /api/v1/canvases/:id`
 
 Deletes the canvas. Returns `204 No Content`.
 
-### `POST /api/canvases/preview`
+### `POST /api/v1/canvases/preview`
 
 Fetches Open Graph metadata for a URL (used for Link nodes).
 
@@ -301,7 +305,7 @@ Returns `422 Unprocessable Entity` if the URL cannot be fetched.
 
 ## Upload
 
-### `POST /api/upload`
+### `POST /api/v1/upload`
 
 Uploads an image file.
 
@@ -326,3 +330,31 @@ ws://localhost:3001/sync/<noteId>
 ```
 
 In development this is proxied from `ws://localhost:5173/sync/<noteId>` by Vite. See [Real-time Sync](../architecture/sync) for details.
+
+## Endpoints not yet documented here
+
+These exist and are guarded by the same JWT / API-token auth as everything above. They are listed so the
+reference is not silently incomplete; full request and response shapes are still to be written.
+
+| Route                                        | Purpose                                                |
+| -------------------------------------------- | ------------------------------------------------------ |
+| `GET/POST/DELETE /api/v1/vaults/:id/members` | Vault sharing. Owner-only for writes                   |
+| `GET/POST /api/v1/users`                     | User directory; `POST` is admin-only                   |
+| `GET/PATCH /api/v1/users/me/preferences`     | Per-user preferences                                   |
+| `GET /api/v1/notes/graph`                    | Every link edge the caller can see, for the graph view |
+| `GET /api/v1/notes/tags`                     | Tag counts across accessible vaults                    |
+| `GET/PUT /api/v1/notes/:id/content`          | Note body as Markdown. This is what the CLI uses       |
+| `GET/POST/PATCH/DELETE /api/v1/reminders`    | Reminders                                              |
+| `GET/POST/DELETE /api/v1/devices`            | Connected clients                                      |
+| `GET/POST/PATCH/DELETE /api/v1/plugins`      | Plugin registry                                        |
+| `GET/PATCH /api/v1/app-state`                | Per-user open tabs and active note                     |
+
+## Authorization
+
+Access is decided by **vault membership**, not per-object ownership: a note, folder or canvas is reachable
+exactly when you are a member of its vault.
+
+- A caller who is not a member receives **404, not 403** — whether a given vault or note exists is itself
+  information.
+- Vault roles are `OWNER`, `EDITOR` and `VIEWER`. Writes need `EDITOR`; sharing and deletion need `OWNER`.
+- An API token scoped to a vault can only ever **narrow** what its user can reach.

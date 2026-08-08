@@ -45,4 +45,4 @@ The `YjsProvider` module (`src/providers/YjsProvider.ts`) keeps a `Map<noteId, Y
 
 ## TipTap + Yjs
 
-TipTap's `StarterKit` must always be configured with `{ history: false }` when Yjs is in use. Yjs owns undo/redo history via its own undo manager; allowing TipTap's history plugin to run alongside it would produce conflicts.
+TipTap's `StarterKit` must always be configured with `{ undoRedo: false }` when Yjs is in use. Yjs owns undo/redo history via its own undo manager; allowing TipTap's history plugin to run alongside it would produce conflicts.

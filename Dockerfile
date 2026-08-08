@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 RUN npm install -g pnpm
@@ -32,7 +32,7 @@ RUN cd apps/api && pnpm exec prisma generate
 RUN pnpm exec turbo run build --filter=@nodeira/api... --filter=@nodeira/web...
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 

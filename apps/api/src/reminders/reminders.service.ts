@@ -152,21 +152,9 @@ export class RemindersService {
 
   // --- Devices ---
 
-  async registerDevice(userId: string, dto: RegisterDeviceDto) {
-    // A push token uniquely identifies a physical device — upsert so re-registering
-    // (e.g. token refresh on app launch) updates rather than duplicates.
-    if (dto.pushToken) {
-      return this.prisma.device.upsert({
-        where: { userId_pushToken: { userId, pushToken: dto.pushToken } },
-        update: { platform: dto.platform, name: dto.name ?? null, lastSeenAt: new Date() },
-        create: {
-          userId,
-          platform: dto.platform,
-          pushToken: dto.pushToken,
-          name: dto.name ?? null,
-        },
-      });
-    }
+  registerDevice(userId: string, dto: RegisterDeviceDto) {
+    // Push tokens are gone: the Expo path they existed for was orphaned when the React
+    // Native app was replaced. A device row is now just a record that a client connected.
     return this.prisma.device.create({
       data: { userId, platform: dto.platform, name: dto.name ?? null },
     });

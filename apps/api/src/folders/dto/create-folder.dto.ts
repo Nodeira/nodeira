@@ -5,9 +5,9 @@ export class CreateFolderDto {
   @MinLength(1)
   name!: string;
 
+  // Required now: a folder with no vault is a folder no membership can authorize.
   @IsUUID()
-  @IsOptional()
-  vaultId?: string;
+  vaultId!: string;
 
   @IsUUID()
   @IsOptional()

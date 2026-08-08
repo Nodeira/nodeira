@@ -33,14 +33,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import {
   createNote,
-  deleteNote,
   getNotes,
   notesKeys,
   updateNotePin,
   updateNoteTitle,
   uploadImage,
 } from "../../lib/api.js";
-import { getOrCreateYjsContext } from "../../providers/YjsProvider.js";
+import { useYjsContext } from "../../providers/useYjsContext.js";
+import { useDeleteNote } from "../../lib/useDeleteNote.js";
+import { useActiveVaultId } from "../../lib/useActiveVaultId.js";
+import {
+  DeleteConfirmModal,
+  type DeleteTarget,
+} from "../../components/modals/DeleteConfirmModal.js";
 import { currentVaultAtom } from "../../store/atoms.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 import "../../components/editor.css";
@@ -82,7 +87,7 @@ function QuickNoteCard({
   // Collapse when clicking outside the card
   const cardRef = useClickOutside<HTMLDivElement>(() => setExpanded(false));
 
-  const { doc } = getOrCreateYjsContext(note.id);
+  const { doc } = useYjsContext(note.id);
 
   const saveTitleMutation = useMutation({
     mutationFn: (t: string) => updateNoteTitle(note.id, t.trim() || "Untitled"),
@@ -302,7 +307,9 @@ function QuickNoteCard({
 function QuickNotesPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const currentVaultId = useAtomValue(currentVaultAtom);
+  const activeVaultId = useActiveVaultId();
   const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
   const { data: notes = [] } = useQuery({
     queryKey: notesQueryKey,
@@ -318,22 +325,23 @@ function QuickNotesPage() {
   const pinned = filtered.filter((n) => n.pinned);
   const unpinned = filtered.filter((n) => !n.pinned);
 
+  // Invalidate with notesKeys.all, not notesQueryKey: keys match by prefix, so this
+  // refreshes the vault-scoped entries too, while the reverse leaves ["notes"] stale.
   const createNoteMutation = useMutation({
-    mutationFn: () =>
-      createNote({ type: "quick", ...(currentVaultId ? { vaultId: currentVaultId } : {}) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    mutationFn: () => {
+      if (!activeVaultId) throw new Error("No vault available");
+      return createNote({ type: "quick", vaultId: activeVaultId });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
     onError: () => notifications.show({ message: "Couldn't create note", color: "red" }),
   });
 
-  const deleteNoteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
-    onError: () => notifications.show({ message: "Couldn't delete note", color: "red" }),
-  });
+  const deleteNoteMutation = useDeleteNote();
 
   const pinMutation = useMutation({
     mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => updateNotePin(id, pinned),
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesQueryKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't update note", color: "red" }),
   });
 
   function renderGrid(noteList: NoteMetadata[]) {
@@ -343,7 +351,7 @@ function QuickNotesPage() {
           <QuickNoteCard
             key={note.id}
             note={note}
-            onDelete={(id) => deleteNoteMutation.mutate(id)}
+            onDelete={(id) => setDeleteTarget({ type: "note", id, name: note.title || "Untitled" })}
             onTogglePin={(id, p) => pinMutation.mutate({ id, pinned: p })}
           />
         ))}
@@ -403,6 +411,15 @@ function QuickNotesPage() {
           {unpinned.length > 0 && renderGrid(unpinned)}
         </Stack>
       )}
+
+      <DeleteConfirmModal
+        target={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) deleteNoteMutation.mutate(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
     </Stack>
   );
 }

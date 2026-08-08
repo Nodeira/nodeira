@@ -12,8 +12,9 @@ async function typeIntoEditor(page: Page, lines: string[]) {
   const editor = page.locator(".ProseMirror, .tiptap").first();
   await editor.click();
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i] !== "") {
-      await page.keyboard.type(lines[i]);
+    const line = lines[i] ?? "";
+    if (line !== "") {
+      await page.keyboard.type(line);
     }
     if (i < lines.length - 1) {
       await page.keyboard.press("Enter");
@@ -52,7 +53,7 @@ test.describe("Documentation screenshots", () => {
       const card = cards.nth(i);
       await card.click();
       await card.locator(".ProseMirror").waitFor({ timeout: 4_000 });
-      await page.keyboard.type(QUICK_NOTE_CONTENT[i]);
+      await page.keyboard.type(QUICK_NOTE_CONTENT[i] ?? "");
       await page.waitForTimeout(200);
       // Collapse by clicking outside the card grid
       await page.locator("h3").first().click();

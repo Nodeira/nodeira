@@ -8,6 +8,7 @@ import { useRef, useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { canvasKeys, createCanvas, deleteCanvas, getCanvases } from "../../lib/api.js";
+import { useActiveVaultId } from "../../lib/useActiveVaultId.js";
 import { currentVaultAtom } from "../../store/atoms.js";
 import { CanvasView } from "../../components/canvas/CanvasView.js";
 import type { Canvas, CanvasData } from "@nodeira/shared-types";
@@ -119,6 +120,7 @@ function CanvasesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const currentVault = useAtomValue(currentVaultAtom);
+  const activeVaultId = useActiveVaultId();
 
   const { data: canvases = [], isLoading } = useQuery({
     queryKey: canvasKeys.all,
@@ -126,7 +128,10 @@ function CanvasesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => createCanvas(currentVault ? { vaultId: currentVault } : {}),
+    mutationFn: () => {
+      if (!activeVaultId) throw new Error("No vault available");
+      return createCanvas({ vaultId: activeVaultId });
+    },
     onSuccess: (canvas) => {
       void queryClient.invalidateQueries({ queryKey: canvasKeys.all });
       void navigate({ to: "/canvas/$canvasId", params: { canvasId: canvas.id } });

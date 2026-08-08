@@ -13,14 +13,11 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
-import type { AuthenticatedUser } from "../auth/jwt.strategy.js";
+import type { RequestWithUser } from "../auth/request-with-user.js";
 import { CanvasService } from "./canvas.service.js";
 import { CreateCanvasDto } from "./dto/create-canvas.dto.js";
 import { UpdateCanvasDto } from "./dto/update-canvas.dto.js";
-
-interface RequestWithUser extends Request {
-  user: AuthenticatedUser;
-}
+import { PreviewUrlDto } from "./dto/preview-url.dto.js";
 
 @ApiTags("canvases")
 @ApiBearerAuth()
@@ -35,38 +32,34 @@ export class CanvasController {
     @Query("vaultId") vaultId?: string,
     @Query("q") q?: string,
   ) {
-    return this.canvasService.findAll(vaultId, req.user.vaultScope, q);
+    return this.canvasService.findAll(req.user.id, vaultId, req.user.vaultScope, q);
   }
 
   @Post()
   create(@Request() req: RequestWithUser, @Body() dto: CreateCanvasDto) {
-    return this.canvasService.create(dto, req.user.vaultScope);
+    return this.canvasService.create(req.user.id, dto, req.user.vaultScope);
   }
 
   // Must be before :id to avoid "preview" being matched as an id
   @Post("preview")
   @HttpCode(200)
-  fetchPreview(@Body("url") url: string) {
-    return this.canvasService.fetchUrlPreview(url);
+  fetchPreview(@Body() dto: PreviewUrlDto) {
+    return this.canvasService.fetchUrlPreview(dto.url);
   }
 
   @Get(":id")
   findOne(@Request() req: RequestWithUser, @Param("id") id: string) {
-    return this.canvasService.findOne(id, req.user.vaultScope);
+    return this.canvasService.findOne(req.user.id, id, req.user.vaultScope);
   }
 
   @Patch(":id")
-  update(
-    @Request() req: RequestWithUser,
-    @Param("id") id: string,
-    @Body() dto: UpdateCanvasDto,
-  ) {
-    return this.canvasService.update(id, dto, req.user.vaultScope);
+  update(@Request() req: RequestWithUser, @Param("id") id: string, @Body() dto: UpdateCanvasDto) {
+    return this.canvasService.update(req.user.id, id, dto, req.user.vaultScope);
   }
 
   @Delete(":id")
   @HttpCode(204)
   remove(@Request() req: RequestWithUser, @Param("id") id: string) {
-    return this.canvasService.remove(id, req.user.vaultScope);
+    return this.canvasService.remove(req.user.id, id, req.user.vaultScope);
   }
 }

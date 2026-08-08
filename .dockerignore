@@ -11,7 +11,7 @@ node_modules
 .turbo
 
 # Built output (rebuilt from source during Docker build)
-apps/server/dist
+apps/api/dist
 apps/web/dist
 apps/docs/build
 apps/docs/.docusaurus
@@ -19,7 +19,7 @@ apps/docs/.docusaurus
 # Environment files (mounted at runtime, never baked in)
 .env
 .env.*
-!apps/server/.env.example
+!apps/api/.env.example
 
 # Logs and test artefacts
 *.log

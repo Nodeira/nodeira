@@ -16,6 +16,13 @@ enum Role {
   ADMIN
 }
 
+/// Access level within a single vault. Distinct from Role, which is instance-wide.
+enum VaultRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
 enum ReminderTargetType {
   NONE
   NOTE
@@ -45,9 +52,12 @@ model User {
   preferences Json?
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
-  apiTokens   ApiToken[]
-  reminders   Reminder[]
-  devices     Device[]
+  apiTokens    ApiToken[]
+  reminders    Reminder[]
+  devices      Device[]
+  ownedVaults  Vault[]
+  memberships  VaultMember[]
+  appState     AppState?
 
   @@map("users")
 }
@@ -59,39 +69,62 @@ model ApiToken {
   userId     String    @map("user_id")
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   vaultId    String?   @map("vault_id")
+  vault      Vault?    @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   createdAt  DateTime  @default(now()) @map("created_at")
   lastUsedAt DateTime? @map("last_used_at")
   expiresAt  DateTime? @map("expires_at")
 
+  @@index([userId])
   @@map("api_tokens")
 }
 
 model Vault {
-  id        String   @id @default(uuid())
+  id        String        @id @default(uuid())
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  ownerId   String        @map("owner_id")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members   VaultMember[]
   notes     Note[]
   folders   Folder[]
   canvases  Canvas[]
+  apiTokens ApiToken[]
 
+  @@index([ownerId])
   @@map("vaults")
+}
+
+/// The single authorization primitive. Everything inside a vault (notes, folders,
+/// canvases) is reachable exactly by the users listed here, at the level given.
+model VaultMember {
+  vaultId   String    @map("vault_id")
+  userId    String    @map("user_id")
+  role      VaultRole @default(EDITOR)
+  createdAt DateTime  @default(now()) @map("created_at")
+  vault     Vault     @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([vaultId, userId])
+  @@index([userId])
+  @@map("vault_members")
 }
 
 model Folder {
   id        String   @id @default(uuid())
   name      String
-  vaultId   String?  @map("vault_id")
+  vaultId   String   @map("vault_id")
   parentId  String?  @map("parent_id")
   icon      String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
+  vault     Vault    @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   parent    Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
   children  Folder[] @relation("FolderTree")
   notes     Note[]
   canvases  Canvas[]
 
+  @@index([vaultId])
   @@map("folders")
 }
 
@@ -99,7 +132,7 @@ model Note {
   id        String     @id @default(uuid())
   title     String     @default("Untitled")
   type      NoteType   @default(note)
-  vaultId   String?    @map("vault_id")
+  vaultId   String     @map("vault_id")
   folderId  String?    @map("folder_id")
   pinned    Boolean    @default(false)
   icon      String?
@@ -110,11 +143,13 @@ model Note {
   tags      String[]   @default([])
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
-  vault     Vault?     @relation(fields: [vaultId], references: [id], onDelete: SetNull)
+  vault     Vault      @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   folder    Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
   linksOut  NoteLink[] @relation("NoteLinksOut")
   linksIn   NoteLink[] @relation("NoteLinksIn")
 
+  @@index([vaultId])
+  @@index([folderId])
   @@map("notes")
 }
 
@@ -128,10 +163,13 @@ model NoteLink {
   @@map("note_links")
 }
 
+/// One row per user. This used to be a single global row (id = "default"), so every
+/// user shared -- and overwrote -- the same set of open tabs.
 model AppState {
-  id           String  @id @default("default")
+  userId       String   @id @map("user_id")
   openTabs     String[]
-  activeNoteId String? @map("active_note_id")
+  activeNoteId String?  @map("active_note_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("app_state")
 }
@@ -139,7 +177,7 @@ model AppState {
 model Canvas {
   id        String   @id @default(uuid())
   title     String   @default("Untitled Canvas")
-  vaultId   String?  @map("vault_id")
+  vaultId   String   @map("vault_id")
   folderId  String?  @map("folder_id")
   data      Json     @default("{\"nodes\":[],\"edges\":[]}")
   pinned    Boolean  @default(false)
@@ -147,9 +185,10 @@ model Canvas {
   position  Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  vault     Vault?   @relation(fields: [vaultId], references: [id], onDelete: SetNull)
+  vault     Vault    @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
+  @@index([vaultId])
   @@map("canvases")
 }
 
@@ -208,11 +247,10 @@ model Device {
   userId     String   @map("user_id")
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   platform   String // ios | android | desktop | web
-  pushToken  String?  @map("push_token") // Expo push token (mobile); null for WS-only clients
   name       String?
   lastSeenAt DateTime @default(now()) @map("last_seen_at")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@unique([userId, pushToken])
+  @@index([userId])
   @@map("devices")
 }

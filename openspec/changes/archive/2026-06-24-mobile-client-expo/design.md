@@ -7,6 +7,7 @@ The mobile client must replicate the same offline-first CRDT model using React N
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Expo (React Native) app that runs on iOS and Android
 - Same offline-first note editing experience as web, powered by the same Yjs/Hocuspocus backend
 - Shared business logic and types; no duplication of API contracts
@@ -15,6 +16,7 @@ The mobile client must replicate the same offline-first CRDT model using React N
 - EAS Build for CI distribution
 
 **Non-Goals:**
+
 - Sharing UI components with `packages/ui` — Mantine is web-only; mobile gets its own UI
 - Feature parity at launch: plugin architecture, graph view, canvas are deferred
 - React Native Web (keep the web bundle separate from the Expo bundle)
@@ -97,5 +99,5 @@ The existing `/auth` REST endpoints are reused. JWT tokens are stored in `expo-s
 - **Editor library**: Confirm TipTap React Native (`@tiptap/react-native`) is stable enough for production use, or decide on a fallback (Lexical RN? Plain TextInput with markdown rendering?)
 - **Expo Go vs Dev Client**: Should developers use Expo Go (faster setup) or a custom dev client (needed if any native modules are added)? Start with Expo Go; create dev client if native deps are added. (Lets use Expo Go for now, may need to switch later)
 - **EAS project slug**: Needs to be registered under the Nodeira Expo account before CI runs.
-New project created (nodeira), instructions: npm install --global eas-cli
-eas init --id fe9e1801-f8f9-4ee0-95f0-cd2f14bf6e37
+  New project created (nodeira), instructions: npm install --global eas-cli
+  eas init --id fe9e1801-f8f9-4ee0-95f0-cd2f14bf6e37

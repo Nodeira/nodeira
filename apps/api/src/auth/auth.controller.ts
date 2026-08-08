@@ -1,3 +1,4 @@
+import { Throttle } from "@nestjs/throttler";
 import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { ApiTokenService } from "./api-token.service.js";
@@ -19,6 +20,9 @@ export class AuthController {
     private readonly apiTokenService: ApiTokenService,
   ) {}
 
+  // Brute-force gate: five attempts a minute per IP. LocalAuthGuard runs the password
+  // check, so without this every request here is a free guess.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post("login")
   @UseGuards(LocalAuthGuard)
   @ApiBody({

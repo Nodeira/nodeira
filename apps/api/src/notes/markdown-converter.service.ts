@@ -32,19 +32,28 @@ export class MarkdownConverterService {
     return this.processor;
   }
 
-  async markdownToYjsState(markdown: string): Promise<Uint8Array> {
-    const ydoc = new Y.Doc();
-    if (!markdown.trim()) return Y.encodeStateAsUpdate(ydoc);
+  /**
+   * Builds the Yjs elements for a Markdown string without binding them to a document.
+   *
+   * Detached elements can be inserted into any fragment, which is what lets the same
+   * conversion feed both a fresh document (markdownToYjsState) and a live one being
+   * edited over the sync protocol (NotesService.setContent).
+   */
+  async markdownToXmlElements(markdown: string): Promise<Y.XmlElement[]> {
+    if (!markdown.trim()) return [];
 
     const processor = await this.getProcessor();
     const tree = processor.parse(markdown) as Root;
-    const frag = ydoc.getXmlFragment("default");
 
-    const elements = tree.children
+    return tree.children
       .map((node) => this.blockToYxml(node))
       .filter((el): el is Y.XmlElement => el !== null);
+  }
 
-    if (elements.length > 0) frag.insert(0, elements);
+  async markdownToYjsState(markdown: string): Promise<Uint8Array> {
+    const ydoc = new Y.Doc();
+    const elements = await this.markdownToXmlElements(markdown);
+    if (elements.length > 0) ydoc.getXmlFragment("default").insert(0, elements);
     return Y.encodeStateAsUpdate(ydoc);
   }
 

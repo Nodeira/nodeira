@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { IconBell, IconMaximize, IconMinimize } from "@tabler/icons-react";
 import {
   ActionIcon,
@@ -26,7 +26,8 @@ import {
   type CreateReminderBody,
 } from "../../lib/api.js";
 import type { Folder, NoteMetadata } from "@nodeira/shared-types";
-import { LocalGraph } from "./LocalGraph.js";
+// Same force-graph stack as the /graph route; only mounted when the panel is open.
+const LocalGraph = lazy(() => import("./LocalGraph.js").then((m) => ({ default: m.LocalGraph })));
 import { ReminderModal } from "../modals/ReminderModal.js";
 
 export function NoteAsidePanel({
@@ -137,7 +138,9 @@ export function NoteAsidePanel({
         <Collapse expanded={graphOpen}>
           <Box ref={graphRef} style={{ overflow: "hidden" }}>
             {note && graphRect.width > 0 ? (
-              <LocalGraph note={note} width={graphRect.width} />
+              <Suspense fallback={null}>
+                <LocalGraph note={note} width={graphRect.width} />
+              </Suspense>
             ) : (
               <Box
                 h={220}

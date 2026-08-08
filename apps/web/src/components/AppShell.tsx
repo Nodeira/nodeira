@@ -39,7 +39,6 @@ import {
   createNote,
   createVault,
   deleteFolder,
-  deleteNote,
   deleteVault,
   foldersKeys,
   getFolders,
@@ -57,6 +56,8 @@ import {
   vaultsKeys,
 } from "../lib/api.js";
 import { loadAllPlugins } from "../lib/pluginLoader.js";
+import { useDeleteNote } from "../lib/useDeleteNote.js";
+import { useActiveVaultId } from "../lib/useActiveVaultId.js";
 import { useReminderSocket } from "../lib/useReminderSocket.js";
 import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
@@ -65,8 +66,7 @@ import { Sidebar } from "./sidebar/Sidebar.js";
 import { ResizeHandle } from "./ResizeHandle.js";
 import { ServerIndicator } from "./ServerIndicator.js";
 import { NoteAsidePanel } from "./aside/NoteAsidePanel.js";
-import { CreateVaultModal } from "./modals/CreateVaultModal.js";
-import { CreateFolderModal } from "./modals/CreateFolderModal.js";
+import { CreateNamedItemModal } from "./modals/CreateNamedItemModal.js";
 import { DeleteConfirmModal, type DeleteTarget } from "./modals/DeleteConfirmModal.js";
 import { MoveNoteModal } from "./modals/MoveNoteModal.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
@@ -96,6 +96,7 @@ export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const qc = useQueryClient();
+  const activeVaultId = useActiveVaultId();
 
   // Subscribe to fired reminders (toast) and register this client as a device.
   useReminderSocket();
@@ -259,7 +260,7 @@ export function AppShell({ children }: AppShellProps) {
       parentId,
     }: {
       name: string;
-      vaultId?: string;
+      vaultId: string;
       parentId?: string;
     }) => createFolder(name, vaultId, parentId),
     onSuccess: () => qc.invalidateQueries({ queryKey: foldersQueryKey }),
@@ -275,11 +276,7 @@ export function AppShell({ children }: AppShellProps) {
     onSuccess: () => qc.invalidateQueries({ queryKey: vaultsKeys.all }),
     onError: () => notifications.show({ message: "Couldn't delete vault", color: "red" }),
   });
-  const deleteNoteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
-    onError: () => notifications.show({ message: "Couldn't delete note", color: "red" }),
-  });
+  const deleteNoteMutation = useDeleteNote();
   const deleteFolderMutation = useMutation({
     mutationFn: deleteFolder,
     onSuccess: () => {
@@ -357,6 +354,15 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   async function handleCreateNote(type: "note" | "quick", folderId?: string) {
+    // A note with no vault is rejected by the server: access is decided by vault
+    // membership, so there is nothing to authorize against.
+    if (!activeVaultId) {
+      notifications.show({
+        message: "No vault available yet — try again in a moment",
+        color: "red",
+      });
+      return;
+    }
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", {
       month: "long",
@@ -365,7 +371,7 @@ export function AppShell({ children }: AppShellProps) {
     });
     const note = await createNoteMutation.mutateAsync({
       type,
-      ...(currentVaultId ? { vaultId: currentVaultId } : {}),
+      vaultId: activeVaultId,
       ...(folderId ? { folderId } : {}),
       ...(type === "note" ? { title: `note - ${dateStr}` } : {}),
     });
@@ -382,9 +388,16 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   async function handleCreateFolder(name: string) {
+    if (!activeVaultId) {
+      notifications.show({
+        message: "No vault available yet — try again in a moment",
+        color: "red",
+      });
+      return;
+    }
     await createFolderMutation.mutateAsync({
       name,
-      ...(currentVaultId ? { vaultId: currentVaultId } : {}),
+      vaultId: activeVaultId,
       ...(newFolderParentId ? { parentId: newFolderParentId } : {}),
     });
     closeNewFolder();
@@ -635,12 +648,18 @@ export function AppShell({ children }: AppShellProps) {
         />
       </Drawer>
 
-      <CreateVaultModal
+      <CreateNamedItemModal
+        title="New Vault"
+        label="Vault name"
+        placeholder="Work"
         opened={newVaultOpen}
         onClose={closeNewVault}
         onCreate={handleCreateVault}
       />
-      <CreateFolderModal
+      <CreateNamedItemModal
+        title="New Folder"
+        label="Folder name"
+        placeholder="My Notes"
         opened={newFolderOpen}
         onClose={closeNewFolder}
         onCreate={handleCreateFolder}

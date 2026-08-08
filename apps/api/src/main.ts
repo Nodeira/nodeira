@@ -41,24 +41,35 @@ async function bootstrap() {
     }),
   );
 
-  // Self-hosted app: frontend and API are same-origin in production.
-  // Open CORS allows tools and local integrations to hit the API without config.
-  app.enableCors();
-  // CSP disabled — Swagger UI uses inline scripts; add a proper policy later if needed.
-  app.use(helmet({ contentSecurityPolicy: false }));
+  // CORS_ORIGIN was documented as "Required" in deployment.md and present in .env.example,
+  // yet nothing read it — every instance ran fully open while operators believed otherwise.
+  // Honour it when set; fall back to open, which is what a same-origin self-hosted install
+  // wants and what local CLI tooling relies on.
+  const corsOrigin = process.env["CORS_ORIGIN"];
+  app.enableCors(
+    corsOrigin ? { origin: corsOrigin.split(",").map((o) => o.trim()), credentials: true } : {},
+  );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle("Nodeira API")
-    .setDescription("REST API for Nodeira note management")
-    .setVersion("0.1")
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup("docs", app, document);
+  // Swagger serves the full API surface, unauthenticated, and its UI needs inline scripts —
+  // which is why CSP was disabled globally. Neither belongs in production.
+  const exposeSwagger = process.env["NODE_ENV"] !== "production";
+  app.use(exposeSwagger ? helmet({ contentSecurityPolicy: false }) : helmet());
+
+  if (exposeSwagger) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle("Nodeira API")
+      .setDescription("REST API for Nodeira note management")
+      .setVersion(process.env["npm_package_version"] ?? "dev")
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup("docs", app, document);
+  }
 
   const port = parseInt(process.env["PORT"] ?? "3001", 10);
   await app.listen(port, "0.0.0.0");
   console.log(`Nodeira server running on http://localhost:${port}`);
-  console.log(`Swagger docs:          http://localhost:${port}/docs`);
+  if (exposeSwagger) console.log(`Swagger docs:          http://localhost:${port}/docs`);
 }
 
 bootstrap();

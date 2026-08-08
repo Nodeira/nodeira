@@ -17,11 +17,13 @@ Nodeira's web app and desktop client (planned) need a mobile counterpart so user
 ## Capabilities
 
 ### New Capabilities
+
 - `mobile-app-shell`: Expo Router app scaffold, workspace integration, navigation structure (note list → editor), and Turborepo pipeline entry
 - `mobile-yjs-persistence`: AsyncStorage-backed Yjs persistence provider for React Native, equivalent to y-indexeddb on web
 - `mobile-offline-sync`: Mobile-specific network awareness (NetInfo), offline editing, and reconnection behaviour using the existing Hocuspocus WebSocket endpoint
 
 ### Modified Capabilities
+
 - `shared-ui-package`: Add explicit note that `packages/ui` is web/desktop only; mobile uses its own UI layer. No behavior change — documentation delta only.
 
 ## Impact

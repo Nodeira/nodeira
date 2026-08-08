@@ -201,7 +201,8 @@ export async function getNoteContent(id: string): Promise<string> {
 
 export async function createNote(body: {
   type: NoteType;
-  vaultId?: string;
+  /** Required: the server rejects a note with no vault, since access is by vault membership. */
+  vaultId: string;
   folderId?: string;
   title?: string;
   kind?: string;
@@ -309,7 +310,8 @@ export async function getFolders(vaultId?: string): Promise<Folder[]> {
 
 export async function createFolder(
   name: string,
-  vaultId?: string,
+  /** Required: the server rejects a folder with no vault. */
+  vaultId: string,
   parentId?: string,
 ): Promise<Folder> {
   const raw = await request<RawFolder>("/folders", {
@@ -352,10 +354,6 @@ export interface AppState {
   openTabs: string[];
   activeNoteId: string | null;
 }
-
-export const appStateKeys = {
-  all: ["appState"] as const,
-};
 
 export async function getAppState(): Promise<AppState> {
   return request<AppState>("/app-state");
@@ -480,7 +478,8 @@ export async function getCanvas(id: string): Promise<Canvas> {
 
 export async function createCanvas(body: {
   title?: string;
-  vaultId?: string;
+  /** Required: the server rejects a canvas with no vault. */
+  vaultId: string;
   folderId?: string;
 }): Promise<Canvas> {
   const raw = await request<RawCanvas>("/canvases", {
@@ -603,7 +602,6 @@ export async function deleteReminder(id: string): Promise<void> {
 
 export async function registerDevice(body: {
   platform: Device["platform"];
-  pushToken?: string;
   name?: string;
 }): Promise<Device> {
   return request<Device>("/devices", { method: "POST", body: JSON.stringify(body) });

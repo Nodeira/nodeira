@@ -3,8 +3,6 @@ import { atomWithStorage } from "jotai/utils";
 import { authStorage, type StoredUser } from "../lib/authStorage.js";
 
 // ID of the currently open note (null = none)
-export const activeNoteIdAtom = atom<string | null>(null);
-
 // Whether the right-side info panel is open
 export const asidePanelOpenAtom = atom(false);
 
@@ -15,8 +13,6 @@ export const openTabsAtom = atom<string[]>([]);
 export const viewsPaneOpenAtom = atom(true);
 
 // Selected folder ID for the views pane (null = all notes)
-export const viewsFolderAtom = atom<string | null>(null);
-
 // The currently active vault ID (null until loaded)
 export const currentVaultAtom = atom<string | null>(null);
 
@@ -34,4 +30,3 @@ export const fullscreenPaneAtom = atom<"left" | "browse" | "right" | "editor" | 
 export const authUserAtom = atom<StoredUser | null>(authStorage.getUser());
 
 // ID of the currently open canvas (null = none)
-export const activeCanvasIdAtom = atom<string | null>(null);

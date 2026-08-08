@@ -1,16 +1,27 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import type { PrismaClient } from "@prisma/client";
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "vitest";
-import { asPrismaService, cleanDatabase, createTestPrisma } from "../test/prisma-test-client.js";
+import {
+  asPrismaService,
+  cleanDatabase,
+  createOwnerWithVault,
+  createTestPrisma,
+  type TestOwner,
+} from "../test/prisma-test-client.js";
+import { VaultAccessService } from "../vaults/vault-access.service.js";
 import { FoldersService } from "./folders.service.js";
 
 let prisma: PrismaClient;
 let service: FoldersService;
+let owner: TestOwner;
 
 beforeAll(async () => {
   prisma = createTestPrisma();
   await prisma.$connect();
-  service = new FoldersService(asPrismaService(prisma));
+  service = new FoldersService(
+    asPrismaService(prisma),
+    new VaultAccessService(asPrismaService(prisma)),
+  );
 });
 
 afterAll(async () => {
@@ -19,80 +30,105 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await cleanDatabase(prisma);
+  owner = await createOwnerWithVault(prisma);
 });
 
 describe("FoldersService", () => {
   describe("create", () => {
-    it("creates a folder with the given name", async () => {
-      const folder = await service.create({ name: "Projects" });
+    it("creates a folder in the caller's vault", async () => {
+      const folder = await service.create(owner.userId, {
+        name: "Projects",
+        vaultId: owner.vaultId,
+      });
       expect(folder.name).toBe("Projects");
-      expect(folder.id).toBeDefined();
+      expect(folder.vaultId).toBe(owner.vaultId);
     });
 
-    it("creates a folder scoped to a vault", async () => {
-      const vault = await prisma.vault.create({ data: { name: "V1" } });
-      const folder = await service.create({ name: "Notes", vaultId: vault.id });
-      expect(folder.vaultId).toBe(vault.id);
+    it("refuses to create a folder in a vault the caller cannot reach", async () => {
+      const other = await createOwnerWithVault(prisma);
+      await expect(
+        service.create(owner.userId, { name: "Sneaky", vaultId: other.vaultId }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("refuses a parent folder from a different vault", async () => {
+      const other = await createOwnerWithVault(prisma);
+      const parent = await service.create(other.userId, { name: "Theirs", vaultId: other.vaultId });
+
+      // Sharing the other vault makes the parent reachable, so the failure that remains is
+      // specifically the cross-vault tree, not a permissions error.
+      await prisma.vaultMember.create({
+        data: { vaultId: other.vaultId, userId: owner.userId, role: "EDITOR" },
+      });
+
+      await expect(
+        service.create(owner.userId, {
+          name: "Child",
+          vaultId: owner.vaultId,
+          parentId: parent.id,
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
   describe("findAll", () => {
     it("returns folders ordered by name", async () => {
-      await service.create({ name: "Zebra" });
-      await service.create({ name: "Alpha" });
-      const folders = await service.findAll();
-      expect(folders).toHaveLength(2);
-      expect(folders[0]?.name).toBe("Alpha");
-      expect(folders[1]?.name).toBe("Zebra");
+      await service.create(owner.userId, { name: "Zebra", vaultId: owner.vaultId });
+      await service.create(owner.userId, { name: "Alpha", vaultId: owner.vaultId });
+      const folders = await service.findAll(owner.userId);
+      expect(folders.map((f) => f.name)).toEqual(["Alpha", "Zebra"]);
     });
 
-    it("filters by vaultId when provided", async () => {
-      const vault = await prisma.vault.create({ data: { name: "V1" } });
-      await service.create({ name: "In vault", vaultId: vault.id });
-      await service.create({ name: "No vault" });
-      const result = await service.findAll(vault.id);
-      expect(result).toHaveLength(1);
-      expect(result[0]?.name).toBe("In vault");
+    it("never returns folders from vaults the caller is not a member of", async () => {
+      const other = await createOwnerWithVault(prisma);
+      await service.create(other.userId, { name: "Theirs", vaultId: other.vaultId });
+      await service.create(owner.userId, { name: "Mine", vaultId: owner.vaultId });
+
+      const folders = await service.findAll(owner.userId);
+      expect(folders.map((f) => f.name)).toEqual(["Mine"]);
     });
 
-    it("returns empty array when no folders exist", async () => {
-      expect(await service.findAll()).toHaveLength(0);
+    it("returns an empty list when the caller has no vaults", async () => {
+      const stranger = await prisma.user.create({
+        data: { email: "nobody@example.com", password: "x" },
+      });
+      expect(await service.findAll(stranger.id)).toHaveLength(0);
     });
   });
 
   describe("update", () => {
-    it("updates folder icon", async () => {
-      const folder = await service.create({ name: "Work" });
-      const updated = await service.update(folder.id, { icon: "🏢" });
-      expect(updated.icon).toBe("🏢");
+    it("sets the icon", async () => {
+      const folder = await service.create(owner.userId, { name: "F", vaultId: owner.vaultId });
+      const updated = await service.update(owner.userId, folder.id, { icon: "star" });
+      expect(updated.icon).toBe("star");
     });
 
-    it("clears folder icon when set to null", async () => {
-      const folder = await service.create({ name: "Work" });
-      await service.update(folder.id, { icon: "🏢" });
-      const cleared = await service.update(folder.id, { icon: null });
-      expect(cleared.icon).toBeNull();
+    it("refuses to touch a folder in another user's vault", async () => {
+      const other = await createOwnerWithVault(prisma);
+      const theirs = await service.create(other.userId, { name: "T", vaultId: other.vaultId });
+      await expect(service.update(owner.userId, theirs.id, { icon: "star" })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("throws NotFoundException for unknown id", async () => {
       await expect(
-        service.update("00000000-0000-0000-0000-000000000000", { icon: "x" }),
+        service.update(owner.userId, "00000000-0000-0000-0000-000000000000", { icon: null }),
       ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe("remove", () => {
     it("deletes a folder", async () => {
-      const folder = await service.create({ name: "Temp" });
-      await service.remove(folder.id);
-      const all = await service.findAll();
-      expect(all).toHaveLength(0);
+      const folder = await service.create(owner.userId, { name: "Temp", vaultId: owner.vaultId });
+      await service.remove(owner.userId, folder.id);
+      expect(await prisma.folder.findUnique({ where: { id: folder.id } })).toBeNull();
     });
 
-    it("throws NotFoundException for unknown id", async () => {
-      await expect(service.remove("00000000-0000-0000-0000-000000000000")).rejects.toThrow(
-        NotFoundException,
-      );
+    it("refuses to delete a folder in another user's vault", async () => {
+      const other = await createOwnerWithVault(prisma);
+      const theirs = await service.create(other.userId, { name: "T", vaultId: other.vaultId });
+      await expect(service.remove(owner.userId, theirs.id)).rejects.toThrow(NotFoundException);
     });
   });
 });

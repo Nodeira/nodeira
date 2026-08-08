@@ -76,15 +76,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     };
   },
 
-  /** Listen for "open search" triggered by menu */
-  onOpenSearch(callback: () => void): () => void {
-    const listener = () => callback();
-    ipcRenderer.on("open-search", listener);
-    return () => {
-      ipcRenderer.removeListener("open-search", listener);
-    };
-  },
-
   /** Listen for "toggle sidebar" triggered by menu */
   onToggleSidebar(callback: () => void): () => void {
     const listener = () => callback();

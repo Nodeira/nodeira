@@ -1,13 +1,9 @@
 import { IsEnum, IsOptional, IsString } from "class-validator";
 
 export class RegisterDeviceDto {
+  // "ios" is retained only so an old client cannot 400; nothing ships for it.
   @IsEnum(["ios", "android", "desktop", "web"])
   platform!: "ios" | "android" | "desktop" | "web";
-
-  /** Expo push token for mobile devices; omit for WS-only clients (web/desktop). */
-  @IsString()
-  @IsOptional()
-  pushToken?: string;
 
   @IsString()
   @IsOptional()
