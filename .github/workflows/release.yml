@@ -290,6 +290,9 @@ jobs:
       needs.release.outputs.version != '' &&
       needs.release.outputs.desktop_changed == 'true'
     strategy:
+      # Without this, one platform's maker failing cancels the others mid-flight and the
+      # release silently ships a partial set of desktop artifacts.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -336,14 +339,57 @@ jobs:
       - name: Build web app
         run: pnpm --filter @nodeira/web run build
 
+      # Forge stamps artifact names and OS package metadata from apps/desktop/package.json,
+      # which semantic-release never bumps — v1.12.1 shipped `Nodeira-0.0.1-arm64.dmg`.
+      - name: Stamp release version into the desktop manifest
+        run: pnpm --filter @nodeira/desktop run stamp-version
+
+      # Non-fatal on purpose: the Squirrel maker has failed on GitHub's Windows runners
+      # ("The system cannot find the file specified" out of Squirrel's bundled helpers)
+      # while succeeding on local Windows. A broken installer maker must not cost us the
+      # portable archive too. The outcome is surfaced in the job summary below, and
+      # collect-artifacts still fails the job if NOTHING was produced.
       - name: Make Electron artifacts
+        id: make
+        continue-on-error: true
         run: pnpm --filter @nodeira/desktop run make
 
+      - name: Collect artifacts under stable names
+        run: pnpm --filter @nodeira/desktop run collect-artifacts
+
+      - name: Report maker outcome
+        shell: bash
+        run: |
+          {
+            echo "### Desktop artifacts — ${{ matrix.os }}"
+            if [ "${{ steps.make.outcome }}" = "failure" ]; then
+              echo "⚠️ \`electron-forge make\` FAILED — installer missing, portable archive still published."
+            else
+              echo "✅ \`electron-forge make\` succeeded."
+            fi
+            echo ""
+            ls -1sh apps/desktop/out/release
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Squirrel writes its own log next to its vendored binaries. Without this the only
+      # evidence of a Windows failure is a .NET stack trace with no inner detail.
+      - name: Upload Squirrel log on failure
+        if: steps.make.outcome == 'failure' && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: squirrel-log-${{ matrix.os }}
+          path: "**/electron-winstaller/vendor/Squirrel-Releasify.log"
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Explicit directory, not `out/make/**/*`: on Windows the Squirrel maker also emits an
+      # unpacked `nodeira-<version>-full/lib/net45/` tree, and that glob would have attached
+      # every .pak, .dll and locale file in it to the release.
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.release.outputs.version }}
-          files: apps/desktop/out/make/**/*
+          files: apps/desktop/out/release/*
 
   # Signed Android APK for the self-hosted F-Droid repo. Built on every release (the web
   # editor bundle is embedded in the APK, so it changes even when only apps/web changed).
