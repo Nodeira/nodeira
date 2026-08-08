@@ -3,15 +3,22 @@ import * as api from "../helpers/api";
 import fs from "fs";
 import path from "path";
 
-function getSeededVaultId(): string | undefined {
+/**
+ * The seed manifest is written by global-setup. A vault is required now that notes cannot
+ * exist outside one, so a missing manifest is a setup failure rather than something to
+ * paper over with `undefined` — which previously produced a confusing 400 from the API
+ * instead of naming the real problem.
+ */
+function getSeededVaultId(): string {
+  const manifestPath = path.resolve(__dirname, "../.seed-manifest.json");
+  let manifest: { vaultId?: string };
   try {
-    const m = JSON.parse(
-      fs.readFileSync(path.resolve(__dirname, "../.seed-manifest.json"), "utf-8"),
-    ) as { vaultId: string };
-    return m.vaultId;
+    manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as { vaultId?: string };
   } catch {
-    return undefined;
+    throw new Error(`No seed manifest at ${manifestPath} — did global-setup run?`);
   }
+  if (!manifest.vaultId) throw new Error("Seed manifest has no vaultId");
+  return manifest.vaultId;
 }
 
 interface MyFixtures {

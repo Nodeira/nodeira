@@ -12,8 +12,10 @@ The server is published as a multi-platform Docker image to GitHub Container Reg
 ### docker-compose.yml
 
 ```yaml
+# Matches docker-compose.example.yml in the repo — same service names, so commands from
+# either place work against the other.
 services:
-  db:
+  postgres:
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: nodeira
@@ -25,17 +27,19 @@ services:
       interval: 5s
       retries: 5
 
-  server:
+  nodeira:
     image: ghcr.io/nodeira/nodeira:latest
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://postgres:changeme@db:5432/nodeira
+      DATABASE_URL: postgresql://postgres:changeme@postgres:5432/nodeira
+      # Required: at least 32 characters. The server refuses to start without it.
       JWT_SECRET: changeme # generate: openssl rand -hex 32
       PORT: 3001
-      CORS_ORIGIN: https://your-domain.com
+      # Optional. Omit for a same-origin install; the API serves the web app itself.
+      # CORS_ORIGIN: https://your-domain.com
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
     volumes:
       - uploads:/app/apps/api/uploads
@@ -51,19 +55,21 @@ Run the stack:
 docker compose up -d
 ```
 
-The server applies committed migrations automatically on startup (`prisma migrate deploy`). To run them
-manually, use `docker compose exec server pnpm exec prisma migrate deploy`.
+The server applies committed migrations automatically on startup (`prisma migrate deploy`), so there is
+no manual step. Note that the runtime image does not contain pnpm — it is installed only in the build
+stage — so `docker compose exec ... pnpm exec prisma migrate deploy` will fail with `pnpm: not found`.
+Watch `docker compose logs -f nodeira` instead.
 
 ## Environment variables
 
 ### Server (`apps/api/.env`)
 
-| Variable       | Required | Default | Description                                                           |
-| -------------- | -------- | ------- | --------------------------------------------------------------------- |
-| `DATABASE_URL` | Yes      | —       | PostgreSQL connection string                                          |
-| `JWT_SECRET`   | Yes      | —       | Secret used to sign JWTs — generate with `openssl rand -hex 32`       |
-| `PORT`         | No       | `3001`  | HTTP/WS port                                                          |
-| `CORS_ORIGIN`  | Yes      | —       | Allowed CORS origin for the frontend (e.g. `https://app.example.com`) |
+| Variable       | Required | Default | Description                                                                                         |
+| -------------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL` | Yes      | —       | PostgreSQL connection string                                                                        |
+| `JWT_SECRET`   | Yes      | —       | Secret used to sign JWTs — generate with `openssl rand -hex 32`                                     |
+| `PORT`         | No       | `3001`  | HTTP/WS port                                                                                        |
+| `CORS_ORIGIN`  | No       | open    | Comma-separated allowed origins. Leave unset for a same-origin install (the API serves the web app) |
 
 ### Web (`apps/web/.env`)
 

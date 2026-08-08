@@ -4,9 +4,6 @@ dist/
 *.env
 .env.*
 !.env.example
-# Committed build config (non-secret): forces Metro's server root for release
-# bundling in the pnpm monorepo. See the file for details.
-!apps/mobile/.env
 
 # Android signing keys — NEVER commit these.
 *.jks
@@ -37,7 +34,3 @@ apps/desktop/.vite/
 apps/e2e/playwright-report/
 apps/e2e/test-results/
 apps/e2e/.seed-manifest.json
-
-# Expo cruft
-
-.expo/

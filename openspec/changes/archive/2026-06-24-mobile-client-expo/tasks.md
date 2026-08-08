@@ -5,7 +5,7 @@
 - [x] 1.3 Configure `apps/mobile/metro.config.js` with `watchFolders` pointing to repo root and `resolver.nodeModulesPaths` for workspace resolution
 - [x] 1.4 Add `@nodeira/shared-types` as a workspace dependency in `apps/mobile/package.json`
 - [x] 1.5 Add `dev` and `build` entries for `@nodeira/mobile` in root `turbo.json`
-- [ ] 1.6 Verify `pnpm exec turbo run dev --filter=@nodeira/mobile` starts the Expo dev server *(manual: run and scan QR with Expo Go)*
+- [ ] 1.6 Verify `pnpm exec turbo run dev --filter=@nodeira/mobile` starts the Expo dev server _(manual: run and scan QR with Expo Go)_
 
 ## 2. Expo Router Navigation
 
@@ -13,7 +13,7 @@
 - [x] 2.2 Create root layout `app/_layout.tsx` with Stack navigator
 - [x] 2.3 Create note list screen `app/index.tsx` (full implementation)
 - [x] 2.4 Create note editor screen `app/note/[id].tsx` (full implementation)
-- [ ] 2.5 Verify back navigation from editor returns to note list *(manual: test in Expo Go)*
+- [ ] 2.5 Verify back navigation from editor returns to note list _(manual: test in Expo Go)_
 
 ## 3. API Integration & Auth
 
@@ -45,8 +45,8 @@
 
 - [x] 6.1 Wire note editor screen to `getYjsContext(id)` from the Yjs provider
 - [x] 6.2 Integrate a text editor component bound to the `Y.Doc`'s `Y.Text` — plain `TextInput` synced to Yjs text (TipTap RN not yet stable)
-- [ ] 6.3 Verify edits are persisted to AsyncStorage within 500 ms of last keystroke *(manual: edit note, kill app, reopen — content should be restored)*
-- [ ] 6.4 Verify navigating away and back to the same note reuses the cached `Y.Doc` (no duplicate WebSocket connection) *(manual: check with server logs)*
+- [ ] 6.3 Verify edits are persisted to AsyncStorage within 500 ms of last keystroke _(manual: edit note, kill app, reopen — content should be restored)_
+- [ ] 6.4 Verify navigating away and back to the same note reuses the cached `Y.Doc` (no duplicate WebSocket connection) _(manual: check with server logs)_
 
 ## 7. Offline Sync & Network Awareness
 
@@ -54,7 +54,7 @@
 - [x] 7.2 Subscribe to `NetInfo.addEventListener` in a root-level effect and update `networkStatusAtom`
 - [x] 7.3 Implement offline banner component; show it when `networkStatusAtom === "offline"`
 - [x] 7.4 Wire `AppState` listener in `YjsProvider.ts`: disconnect WebSocket on `background`, reconnect on `active`
-- [ ] 7.5 Verify offline edits sync after device reconnects *(manual: airplane mode → edit → reconnect → confirm sync)*
+- [ ] 7.5 Verify offline edits sync after device reconnects _(manual: airplane mode → edit → reconnect → confirm sync)_
 
 ## 8. NativeWind Styling
 

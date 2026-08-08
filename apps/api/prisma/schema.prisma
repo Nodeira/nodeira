@@ -247,11 +247,10 @@ model Device {
   userId     String   @map("user_id")
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   platform   String // ios | android | desktop | web
-  pushToken  String?  @map("push_token") // Expo push token (mobile); null for WS-only clients
   name       String?
   lastSeenAt DateTime @default(now()) @map("last_seen_at")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@unique([userId, pushToken])
+  @@index([userId])
   @@map("devices")
 }

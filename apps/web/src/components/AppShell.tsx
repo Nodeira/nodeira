@@ -66,8 +66,7 @@ import { Sidebar } from "./sidebar/Sidebar.js";
 import { ResizeHandle } from "./ResizeHandle.js";
 import { ServerIndicator } from "./ServerIndicator.js";
 import { NoteAsidePanel } from "./aside/NoteAsidePanel.js";
-import { CreateVaultModal } from "./modals/CreateVaultModal.js";
-import { CreateFolderModal } from "./modals/CreateFolderModal.js";
+import { CreateNamedItemModal } from "./modals/CreateNamedItemModal.js";
 import { DeleteConfirmModal, type DeleteTarget } from "./modals/DeleteConfirmModal.js";
 import { MoveNoteModal } from "./modals/MoveNoteModal.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
@@ -649,12 +648,18 @@ export function AppShell({ children }: AppShellProps) {
         />
       </Drawer>
 
-      <CreateVaultModal
+      <CreateNamedItemModal
+        title="New Vault"
+        label="Vault name"
+        placeholder="Work"
         opened={newVaultOpen}
         onClose={closeNewVault}
         onCreate={handleCreateVault}
       />
-      <CreateFolderModal
+      <CreateNamedItemModal
+        title="New Folder"
+        label="Folder name"
+        placeholder="My Notes"
         opened={newFolderOpen}
         onClose={closeNewFolder}
         onCreate={handleCreateFolder}

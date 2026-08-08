@@ -355,10 +355,6 @@ export interface AppState {
   activeNoteId: string | null;
 }
 
-export const appStateKeys = {
-  all: ["appState"] as const,
-};
-
 export async function getAppState(): Promise<AppState> {
   return request<AppState>("/app-state");
 }
@@ -606,7 +602,6 @@ export async function deleteReminder(id: string): Promise<void> {
 
 export async function registerDevice(body: {
   platform: Device["platform"];
-  pushToken?: string;
   name?: string;
 }): Promise<Device> {
   return request<Device>("/devices", { method: "POST", body: JSON.stringify(body) });

@@ -4,7 +4,7 @@ import type * as Preset from "@docusaurus/preset-classic";
 const config: Config = {
   title: "Nodeira",
   tagline: "AI-enhanced, offline-first note-taking",
-  favicon: "img/favicon.ico",
+  favicon: "img/logo.svg",
 
   url: "https://nodeira.github.io",
   baseUrl: "/nodeira/",

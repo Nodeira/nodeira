@@ -60,7 +60,6 @@ declare global {
       /** Subscribe to "create new quick note" events from the global shortcut. Returns an unsubscribe function. */
       onNewQuickNote(callback: () => void): () => void;
       /** Subscribe to "open search" events from the main process menu. Returns an unsubscribe function. */
-      onOpenSearch(callback: () => void): () => void;
       /** Subscribe to "toggle sidebar" events from the main process menu. Returns an unsubscribe function. */
       onToggleSidebar(callback: () => void): () => void;
     };

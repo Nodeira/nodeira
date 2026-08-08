@@ -23,20 +23,25 @@ An Obsidian-like, AI-enhanced note-taking application. Notes sync offline-first 
 ## Features
 
 - Rich-text editing powered by TipTap + Yjs (offline-first, conflict-free sync)
-- Real-time collaboration via WebSocket (Hocuspocus / y-websocket)
-- Bidirectional note links and graph view _(planned)_
-- Canvas for research and brainstorming _(planned)_
-- AI skill tool integration — CLI agents can read and write notes directly _(planned)_
-- Plugin architecture with AI-optimized storage formats _(planned)_
-- Multi-vault support with folder organization
+- Real-time collaboration via WebSocket (Hocuspocus)
+- Bidirectional note links, backlinks and a graph view
+- Canvas for research and brainstorming
+- AI agent access — the `nodeira` CLI reads and writes notes as Markdown
+- Plugin architecture
+- Multi-user with shared vaults; nested folders
 - Note kinds: plain notes, tasks with Kanban view
+- Reminders (time-based, plus on-device geofencing on Android)
 - Pinned notes, recent view, per-note metadata and properties
+- Clients for web, desktop (Electron), and Android
 
 ## Tech Stack
 
 - **Monorepo:** Turborepo + pnpm workspaces
 - **Backend:** NestJS 10, Prisma ORM, PostgreSQL, Hocuspocus (Yjs WebSocket)
 - **Frontend:** React 19, Vite 6, TanStack Router, TanStack Query v5, Mantine v9, TipTap + Yjs
+- **Desktop:** Electron Forge + better-sqlite3
+- **Android:** native Kotlin / Jetpack Compose (the editor is a WebView hosting the web build)
+- **CLI:** Go + Cobra
 - **Docs:** Docusaurus 3
 
 ## Quick Start
@@ -53,8 +58,9 @@ Edit `docker-compose.yml` — replace both `CHANGE_ME` values with a strong data
 
 ```bash
 docker compose up -d
-docker compose exec nodeira pnpm exec prisma migrate deploy
 ```
+
+Migrations are applied automatically on startup, so there is no separate migrate step.
 
 Open `http://localhost:3001`. On first visit you will be directed to the setup page to create your admin account.
 
@@ -73,35 +79,25 @@ pnpm install
 
 # Configure the server
 cp apps/api/.env.example apps/api/.env
-# Edit apps/api/.env — set JWT_SECRET (openssl rand -hex 32)
+# Edit apps/api/.env — set JWT_SECRET (openssl rand -hex 32).
+# The server refuses to start without one of at least 32 characters, and refuses to
+# start if it is still the placeholder from .env.example.
 cd apps/api && pnpm exec prisma migrate dev && cd ../..
 
 # Start all dev servers (web :5173, server :3001, docs :3002)
 pnpm run dev
 ```
 
-Electron app launch:
+Running the desktop app in development (it loads the web dev server):
 
+```bash
+pnpm exec turbo run dev --filter=@nodeira/api    # 1. API server
+pnpm exec turbo run dev --filter=@nodeira/web    # 2. web dev server
+pnpm --filter @nodeira/desktop run start         # 3. Electron
 ```
-  1. API server (already need this running anyway):
-  pnpm exec turbo run dev --filter=@nodeira/api
 
-  2. Web dev server (Electron loads http://localhost:5173 in dev mode):
-  pnpm exec turbo run dev --filter=@nodeira/web
-
-  3. Electron (once the web server is up):
-  pnpm --filter @nodeira/desktop run start
-
-  ---
-  One prerequisite first — better-sqlite3 is a native addon and pnpm blocked its build scripts during install (you saw the "run pnpm approve-builds" prompt). Run this once:
-
-  ! pnpm approve-builds
-
-  Then reinstall so the postinstall rebuild runs:
-  ! pnpm install
-
-  After that, pnpm --filter @nodeira/desktop run start will bundle the main + preload via Vite and launch the Electron window pointing at your web dev server.
-```
+`better-sqlite3` is a native addon. If pnpm blocked its build scripts during install, run
+`pnpm approve-builds` once and reinstall so the rebuild happens.
 
 Open `http://localhost:5173`. On first visit you will be directed to the setup page to create your admin account.
 

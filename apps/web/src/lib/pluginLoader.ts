@@ -21,10 +21,6 @@ export function buildCdnUrl(source: string): string {
 
 const devPluginModules = new Map<string, () => Promise<PluginModule>>();
 
-export function registerDevPlugin(pluginId: string, loader: () => Promise<PluginModule>) {
-  devPluginModules.set(pluginId, loader);
-}
-
 // ── Load a single plugin ───────────────────────────────────────────────────────
 
 const loadedSources = new Set<string>();

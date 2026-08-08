@@ -243,6 +243,9 @@ importers:
       '@electron/rebuild':
         specifier: ^3.7.0
         version: 3.7.2
+      '@nodeira/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
       '@types/better-sqlite3':
         specifier: ^7.6.12
         version: 7.6.13
@@ -252,6 +255,9 @@ importers:
       electron:
         specifier: ^33.2.0
         version: 33.4.11
+      eslint:
+        specifier: ^9.0.0
+        version: 9.39.4(jiti@2.7.0)
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
