@@ -1,5 +1,7 @@
 package com.deranjer.nodeira.editor
 
+import com.deranjer.nodeira.BuildConfig
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -116,11 +118,20 @@ class EditorWebViewActivity : Activity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
-            // The page is served from https://appassets... but the dev server is plain
-            // http(ws). Allow mixed content for the spike; not needed against an https server.
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            // The page is served from https://appassets... while a self-hosted server may be
+            // plain http(ws). Allowing that in a release build means the editor will silently
+            // load active content over an unencrypted connection, so it is debug-only:
+            // release builds require https and fail loudly otherwise.
+            mixedContentMode =
+                if (BuildConfig.DEBUG) {
+                    WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                } else {
+                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                }
         }
-        WebView.setWebContentsDebuggingEnabled(true)
+        // Remote debugging exposes the WebView — and the JWT in its localStorage — to any
+        // adb client on the machine. Debug builds only.
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(msg: ConsoleMessage): Boolean {

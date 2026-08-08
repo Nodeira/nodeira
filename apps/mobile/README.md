@@ -132,13 +132,15 @@ To ship: push a `v*` tag higher than the previous release (CI does the rest).
 
 ## Known limitations / follow-ups
 
-- Cleartext + `MIXED_CONTENT_ALWAYS_ALLOW` are enabled for local http testing; not needed
-  against an https server.
+- **Offline**: only the editor WebView works offline (IndexedDB). Every native screen
+  (Home, Recents, Graph, Canvases) is a live REST call, so they show an error with no
+  network. A local cache is the main outstanding piece of work.
+- Reminders created on another client do not reach the phone until it refreshes: the app
+  does not yet connect to the `/notifications` WebSocket that web and desktop use. Time
+  reminders created _on the phone_ fire locally via `AlarmManager`.
 - Geofence create + fire was not yet exercised end-to-end on a device (the dev JWT had
   expired); the code path is wired and the proximity-alert approach is standard. Verify by
   logging in, creating a Location reminder, and walking into the radius (or `adb emu geo fix`).
 - Image-upload file picker inside the editor WebView is untested (bridge to the native
   Android Photo Picker if `<input type=file>` is insufficient).
-- No custom launcher icon yet (uses the default).
-- R8/minification is off; could be enabled later (needs Compose + serialization keep rules).
-- Location reminders pick a point by current location or manual lat/lng — no map picker yet.
+- No map picker for location reminders.

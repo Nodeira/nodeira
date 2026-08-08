@@ -65,13 +65,30 @@ data class FolderDto(
 @Serializable
 data class CreateNoteBody(
     val type: String = "note",
-    val vaultId: String? = null,
+    // Required: content cannot exist outside a vault, since access is decided by vault
+    // membership. The server rejects a null vaultId with 400.
+    val vaultId: String,
     val folderId: String? = null,
     val title: String? = null,
+)
+
+/**
+ * Partial note update. Every field is optional and omitted when null, so a rename does not
+ * clobber the folder and vice versa.
+ *
+ * `tags` is deliberately absent: they are derived from the document by the sync server and
+ * the API rejects them here.
+ */
+@Serializable
+data class UpdateNoteBody(
+    val title: String? = null,
+    val pinned: Boolean? = null,
+    val vaultId: String? = null,
+    val folderId: String? = null,
 )
 
 @Serializable
 data class CreateFolderBody(
     val name: String,
-    val vaultId: String? = null,
+    val vaultId: String,
 )

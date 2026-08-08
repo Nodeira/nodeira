@@ -1,5 +1,9 @@
 name: Desktop
 
+# A full three-OS Electron package on every PR touching apps/web -- which is most PRs --
+# duplicated what the release pipeline already does and cost roughly six runner-minutes a
+# push. PRs now build only when the desktop app itself changes; pushes to main keep the
+# wider net, since that is what feeds a release.
 on:
   push:
     branches: [main]
@@ -10,8 +14,7 @@ on:
   pull_request:
     paths:
       - "apps/desktop/**"
-      - "apps/web/**"
-      - "packages/**"
+  workflow_dispatch:
 
 jobs:
   build:

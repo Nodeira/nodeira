@@ -71,6 +71,9 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onCreateNote: (type: String, vaultId: String?, onCreated: (String) -> Unit) -> Unit,
     onCreateFolder: (name: String, vaultId: String?) -> Unit,
+    onDeleteNote: (String) -> Unit,
+    onTogglePin: (id: String, pinned: Boolean) -> Unit,
+    onRenameNote: (id: String, title: String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var selectedVaultId by remember { mutableStateOf<String?>(null) }
@@ -154,6 +157,9 @@ fun HomeScreen(
                                     note = note,
                                     onClick = { onOpenNote(note.id) },
                                     showPinTrailing = true,
+                                    onDelete = { onDeleteNote(note.id) },
+                                    onTogglePin = { onTogglePin(note.id, !note.pinned) },
+                                    onRename = { onRenameNote(note.id, it) },
                                 )
                             }
                         }
@@ -179,6 +185,9 @@ fun HomeScreen(
                                 foldersByParent = foldersByParent,
                                 expandedFolders = expandedFolders,
                                 searching = searching,
+                                onDeleteNote = onDeleteNote,
+                                onTogglePin = onTogglePin,
+                                onRenameNote = onRenameNote,
                                 onToggle = { id ->
                                     expandedFolders[id] = !(expandedFolders[id] == true)
                                 },
@@ -190,6 +199,9 @@ fun HomeScreen(
                                     note = note,
                                     onClick = { onOpenNote(note.id) },
                                     supporting = note.updatedAt?.let { formatTimestamp(it) },
+                                    onDelete = { onDeleteNote(note.id) },
+                                    onTogglePin = { onTogglePin(note.id, !note.pinned) },
+                                    onRename = { onRenameNote(note.id, it) },
                                 )
                             }
                         }
@@ -309,6 +321,9 @@ private fun LazyListScope.folderTree(
     searching: Boolean,
     onToggle: (String) -> Unit,
     onOpenNote: (String) -> Unit,
+    onDeleteNote: (String) -> Unit,
+    onTogglePin: (id: String, pinned: Boolean) -> Unit,
+    onRenameNote: (id: String, title: String) -> Unit,
 ) {
     foldersByParent[parentId].orEmpty().forEach { folder ->
         // While searching, hide folders whose subtree has no matching note.
@@ -335,6 +350,9 @@ private fun LazyListScope.folderTree(
                 searching = searching,
                 onToggle = onToggle,
                 onOpenNote = onOpenNote,
+                onDeleteNote = onDeleteNote,
+                onTogglePin = onTogglePin,
+                onRenameNote = onRenameNote,
             )
             items(folderNotes, key = { "f-${folder.id}-${it.id}" }) { note ->
                 Box(modifier = Modifier.padding(start = (24 + depth * 16).dp)) {
@@ -342,6 +360,9 @@ private fun LazyListScope.folderTree(
                         note = note,
                         onClick = { onOpenNote(note.id) },
                         supporting = note.updatedAt?.let { formatTimestamp(it) },
+                        onDelete = { onDeleteNote(note.id) },
+                        onTogglePin = { onTogglePin(note.id, !note.pinned) },
+                        onRename = { onRenameNote(note.id, it) },
                     )
                 }
             }
