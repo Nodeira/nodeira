@@ -1,42 +1,48 @@
-import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
+import { Injectable, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
 import { lookup } from "dns/promises";
 import { PrismaService } from "../database/prisma.service.js";
 import type { CreateCanvasDto } from "./dto/create-canvas.dto.js";
 import type { UpdateCanvasDto } from "./dto/update-canvas.dto.js";
 import type { OgPreview } from "@nodeira/shared-types";
-import type { Prisma } from "@prisma/client";
+import { VaultRole, type Prisma } from "@prisma/client";
+import { VaultAccessService } from "../vaults/vault-access.service.js";
 
 @Injectable()
 export class CanvasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: VaultAccessService,
+  ) {}
 
-  async findAll(vaultId?: string, vaultScope?: string | null, q?: string) {
-    const effectiveVaultId = vaultScope ?? vaultId;
+  async findAll(userId: string, vaultId?: string, vaultScope?: string | null, q?: string) {
+    const accessible = await this.access.accessibleVaultIds(userId, vaultScope);
+    const scoped = vaultId ? accessible.filter((id) => id === vaultId) : accessible;
     return this.prisma.canvas.findMany({
       where: {
-        ...(effectiveVaultId ? { vaultId: effectiveVaultId } : {}),
+        vaultId: { in: scoped },
         ...(q ? { title: { contains: q, mode: "insensitive" } } : {}),
       },
       orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     });
   }
 
-  async findOne(id: string, vaultScope?: string | null) {
+  async findOne(
+    userId: string,
+    id: string,
+    vaultScope?: string | null,
+    minRole: VaultRole = VaultRole.VIEWER,
+  ) {
     const canvas = await this.prisma.canvas.findUnique({ where: { id } });
     if (!canvas) throw new NotFoundException(`Canvas ${id} not found`);
-    if (vaultScope && canvas.vaultId !== vaultScope) {
-      throw new ForbiddenException("Token is scoped to a different vault");
-    }
+    await this.access.assertAccessToVaultOf(userId, canvas, minRole, vaultScope);
     return canvas;
   }
 
-  async create(dto: CreateCanvasDto, vaultScope?: string | null) {
-    if (vaultScope && dto.vaultId !== vaultScope) {
-      throw new ForbiddenException("Token is scoped to a different vault");
-    }
+  async create(userId: string, dto: CreateCanvasDto, vaultScope?: string | null) {
+    await this.access.assertAccess(userId, dto.vaultId, VaultRole.EDITOR, vaultScope);
 
     const agg = await this.prisma.canvas.aggregate({
-      where: { vaultId: dto.vaultId ?? null },
+      where: { vaultId: dto.vaultId },
       _max: { position: true },
     });
     const position = (agg._max.position ?? -1) + 1;
@@ -44,15 +50,15 @@ export class CanvasService {
     return this.prisma.canvas.create({
       data: {
         title: dto.title ?? "Untitled Canvas",
-        vaultId: dto.vaultId ?? null,
+        vaultId: dto.vaultId,
         folderId: dto.folderId ?? null,
         position,
       },
     });
   }
 
-  async update(id: string, dto: UpdateCanvasDto, vaultScope?: string | null) {
-    const canvas = await this.findOne(id, vaultScope);
+  async update(userId: string, id: string, dto: UpdateCanvasDto, vaultScope?: string | null) {
+    const canvas = await this.findOne(userId, id, vaultScope, VaultRole.EDITOR);
     return this.prisma.canvas.update({
       where: { id: canvas.id },
       data: {
@@ -65,8 +71,8 @@ export class CanvasService {
     });
   }
 
-  async remove(id: string, vaultScope?: string | null) {
-    await this.findOne(id, vaultScope);
+  async remove(userId: string, id: string, vaultScope?: string | null) {
+    await this.findOne(userId, id, vaultScope, VaultRole.EDITOR);
     await this.prisma.canvas.delete({ where: { id } });
   }
 

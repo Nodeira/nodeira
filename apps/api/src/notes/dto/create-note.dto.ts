@@ -20,9 +20,9 @@ export class CreateNoteDto {
   @IsOptional()
   type?: "note" | "quick";
 
+  // Required now: a note with no vault is a note no membership can authorize.
   @IsUUID()
-  @IsOptional()
-  vaultId?: string;
+  vaultId!: string;
 
   @IsUUID()
   @IsOptional()

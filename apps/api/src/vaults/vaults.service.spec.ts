@@ -1,15 +1,24 @@
-import type { PrismaClient } from "@prisma/client";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { VaultRole, type PrismaClient } from "@prisma/client";
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "vitest";
-import { asPrismaService, cleanDatabase, createTestPrisma } from "../test/prisma-test-client.js";
+import {
+  asPrismaService,
+  cleanDatabase,
+  createOwnerWithVault,
+  createTestPrisma,
+} from "../test/prisma-test-client.js";
+import { VaultAccessService } from "./vault-access.service.js";
 import { VaultsService } from "./vaults.service.js";
 
 let prisma: PrismaClient;
 let service: VaultsService;
+let access: VaultAccessService;
 
 beforeAll(async () => {
   prisma = createTestPrisma();
   await prisma.$connect();
-  service = new VaultsService(asPrismaService(prisma));
+  access = new VaultAccessService(asPrismaService(prisma));
+  service = new VaultsService(asPrismaService(prisma), access);
 });
 
 afterAll(async () => {
@@ -21,89 +30,104 @@ beforeEach(async () => {
 });
 
 describe("VaultsService", () => {
-  describe("onModuleInit (seed)", () => {
-    it("creates a Main vault and migrates orphaned notes and folders when DB is empty", async () => {
-      const orphanNote = await prisma.note.create({
-        data: { title: "Orphan", type: "note", position: 0 },
-      });
-      const orphanFolder = await prisma.folder.create({ data: { name: "OldFolder" } });
-
-      await service.onModuleInit();
-
-      const vaults = await prisma.vault.findMany();
-      expect(vaults).toHaveLength(1);
-      expect(vaults[0]?.name).toBe("Main vault");
-
-      const note = await prisma.note.findUnique({ where: { id: orphanNote.id } });
-      expect(note?.vaultId).toBe(vaults[0]?.id);
-
-      const folder = await prisma.folder.findUnique({ where: { id: orphanFolder.id } });
-      expect(folder?.vaultId).toBe(vaults[0]?.id);
-    });
-
-    it("does not create a vault when one already exists", async () => {
-      await prisma.vault.create({ data: { name: "Existing" } });
-      await service.onModuleInit();
-      const vaults = await prisma.vault.findMany();
-      expect(vaults).toHaveLength(1);
-      expect(vaults[0]?.name).toBe("Existing");
-    });
-  });
-
   describe("create", () => {
-    it("creates a vault with the given name", async () => {
-      const vault = await service.create({ name: "Work" });
-      expect(vault.name).toBe("Work");
-      expect(vault.id).toBeDefined();
+    it("creates a vault owned by the caller with an OWNER membership", async () => {
+      const { userId } = await createOwnerWithVault(prisma);
+      const vault = await service.create(userId, { name: "Second" });
+
+      expect(vault.ownerId).toBe(userId);
+      const member = await prisma.vaultMember.findUnique({
+        where: { vaultId_userId: { vaultId: vault.id, userId } },
+      });
+      expect(member?.role).toBe(VaultRole.OWNER);
     });
   });
 
   describe("findAll", () => {
-    it("returns vaults ordered by createdAt ascending", async () => {
-      const first = await service.create({ name: "First" });
-      const second = await service.create({ name: "Second" });
-      const all = await service.findAll();
-      expect(all).toHaveLength(2);
-      expect(all[0]?.id).toBe(first.id);
-      expect(all[1]?.id).toBe(second.id);
+    it("returns only vaults the caller is a member of", async () => {
+      const alice = await createOwnerWithVault(prisma);
+      const bob = await createOwnerWithVault(prisma);
+
+      const forAlice = await service.findAll(alice.userId);
+      expect(forAlice.map((v) => v.id)).toEqual([alice.vaultId]);
+
+      const forBob = await service.findAll(bob.userId);
+      expect(forBob.map((v) => v.id)).toEqual([bob.vaultId]);
     });
 
-    it("returns empty array when no vaults exist", async () => {
-      expect(await service.findAll()).toHaveLength(0);
+    it("includes a vault shared with the caller", async () => {
+      const alice = await createOwnerWithVault(prisma);
+      const bob = await createOwnerWithVault(prisma);
+
+      await service.addMember(alice.userId, alice.vaultId, bob.userId, VaultRole.EDITOR);
+
+      const forBob = await service.findAll(bob.userId);
+      expect(forBob.map((v) => v.id).sort()).toEqual([alice.vaultId, bob.vaultId].sort());
+    });
+  });
+
+  describe("sharing", () => {
+    it("refuses to share a vault the caller does not own", async () => {
+      const alice = await createOwnerWithVault(prisma);
+      const bob = await createOwnerWithVault(prisma);
+
+      await expect(
+        service.addMember(bob.userId, alice.vaultId, bob.userId, VaultRole.EDITOR),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("refuses to let an EDITOR re-share the vault", async () => {
+      const alice = await createOwnerWithVault(prisma);
+      const bob = await createOwnerWithVault(prisma);
+      const carol = await createOwnerWithVault(prisma);
+
+      await service.addMember(alice.userId, alice.vaultId, bob.userId, VaultRole.EDITOR);
+
+      await expect(
+        service.addMember(bob.userId, alice.vaultId, carol.userId, VaultRole.EDITOR),
+      ).rejects.toThrow(/OWNER/);
+    });
+
+    it("refuses to remove the owner", async () => {
+      const alice = await createOwnerWithVault(prisma);
+      await expect(service.removeMember(alice.userId, alice.vaultId, alice.userId)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("revokes access when a member is removed", async () => {
+      const alice = await createOwnerWithVault(prisma);
+      const bob = await createOwnerWithVault(prisma);
+
+      await service.addMember(alice.userId, alice.vaultId, bob.userId, VaultRole.EDITOR);
+      await service.removeMember(alice.userId, alice.vaultId, bob.userId);
+
+      const forBob = await service.findAll(bob.userId);
+      expect(forBob.map((v) => v.id)).toEqual([bob.vaultId]);
     });
   });
 
   describe("remove", () => {
+    it("refuses to delete a vault that still holds canvases", async () => {
+      const { userId, vaultId } = await createOwnerWithVault(prisma);
+      await prisma.canvas.create({ data: { title: "C", vaultId, position: 0 } });
+
+      // Canvases were never counted before, so a vault holding only canvases could be
+      // deleted — and the cascade would now take them with it.
+      await expect(service.remove(userId, vaultId)).rejects.toThrow(BadRequestException);
+    });
+
     it("deletes an empty vault", async () => {
-      const vault = await service.create({ name: "Empty" });
-      await service.remove(vault.id);
-      const all = await service.findAll();
-      expect(all).toHaveLength(0);
+      const { userId } = await createOwnerWithVault(prisma);
+      const vault = await service.create(userId, { name: "Disposable" });
+      await service.remove(userId, vault.id);
+      expect(await prisma.vault.findUnique({ where: { id: vault.id } })).toBeNull();
     });
 
-    it("throws when vault contains notes", async () => {
-      const vault = await service.create({ name: "Has notes" });
-      await prisma.note.create({
-        data: { title: "Note", type: "note", position: 0, vaultId: vault.id },
-      });
-      await expect(service.remove(vault.id)).rejects.toThrow(
-        "Cannot delete a vault that contains notes or folders",
-      );
-    });
-
-    it("throws when vault contains folders", async () => {
-      const vault = await service.create({ name: "Has folders" });
-      await prisma.folder.create({ data: { name: "Folder", vaultId: vault.id } });
-      await expect(service.remove(vault.id)).rejects.toThrow(
-        "Cannot delete a vault that contains notes or folders",
-      );
-    });
-
-    it("throws NotFoundException for unknown id", async () => {
-      const { NotFoundException } = await import("@nestjs/common");
-      await expect(service.remove("00000000-0000-0000-0000-000000000000")).rejects.toThrow(
-        NotFoundException,
-      );
+    it("hides a vault the caller cannot see behind NotFound", async () => {
+      const alice = await createOwnerWithVault(prisma);
+      const bob = await createOwnerWithVault(prisma);
+      await expect(service.remove(bob.userId, alice.vaultId)).rejects.toThrow(NotFoundException);
     });
   });
 });

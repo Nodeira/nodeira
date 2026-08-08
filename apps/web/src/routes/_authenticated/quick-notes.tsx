@@ -41,6 +41,7 @@ import {
 } from "../../lib/api.js";
 import { useYjsContext } from "../../providers/useYjsContext.js";
 import { useDeleteNote } from "../../lib/useDeleteNote.js";
+import { useActiveVaultId } from "../../lib/useActiveVaultId.js";
 import {
   DeleteConfirmModal,
   type DeleteTarget,
@@ -308,6 +309,7 @@ function QuickNotesPage() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const currentVaultId = useAtomValue(currentVaultAtom);
+  const activeVaultId = useActiveVaultId();
   const notesQueryKey = currentVaultId ? notesKeys.byVault(currentVaultId) : notesKeys.all;
   const { data: notes = [] } = useQuery({
     queryKey: notesQueryKey,
@@ -326,8 +328,10 @@ function QuickNotesPage() {
   // Invalidate with notesKeys.all, not notesQueryKey: keys match by prefix, so this
   // refreshes the vault-scoped entries too, while the reverse leaves ["notes"] stale.
   const createNoteMutation = useMutation({
-    mutationFn: () =>
-      createNote({ type: "quick", ...(currentVaultId ? { vaultId: currentVaultId } : {}) }),
+    mutationFn: () => {
+      if (!activeVaultId) throw new Error("No vault available");
+      return createNote({ type: "quick", vaultId: activeVaultId });
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
     onError: () => notifications.show({ message: "Couldn't create note", color: "red" }),
   });

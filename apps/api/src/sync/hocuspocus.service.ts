@@ -64,44 +64,50 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
     const logger = this.logger;
 
     this.server = Server.configure({
-      async onAuthenticate({ token }): Promise<SyncContext> {
+      // Authorization lives HERE, not in onLoadDocument. Hocuspocus caches documents in
+      // memory and only calls onLoadDocument on a cache miss, so a check there ran for the
+      // first connection to a note and every later connection rode in on it — including
+      // one from a user with no access to that vault. onAuthenticate runs per connection.
+      async onAuthenticate({ token, documentName }): Promise<SyncContext> {
         if (!token) throw new UnauthorizedException("Authentication required");
 
+        let user: AuthenticatedUser;
         if (token.startsWith("ndra_")) {
           const result = await apiTokenService.validateToken(token);
           if (!result) throw new UnauthorizedException("Invalid or expired API token");
-          return { user: result.user };
+          user = result.user;
+        } else {
+          try {
+            const payload = jwtService.verify<{ sub: string; email: string; role: string }>(token);
+            user = { id: payload.sub, email: payload.email, name: null, role: payload.role };
+          } catch {
+            throw new UnauthorizedException("Invalid or expired token");
+          }
         }
 
+        // Rejecting an unknown note matters as much as rejecting an unauthorized one:
+        // letting the connection through would hand the client a blank document that syncs
+        // and accepts edits, while every flush is dropped by updateYjsState's updateMany
+        // (0 rows). The user would watch their typing vanish with nothing logged.
         try {
-          const payload = jwtService.verify<{ sub: string; email: string; role: string }>(token);
-          return {
-            user: { id: payload.sub, email: payload.email, name: null, role: payload.role },
-          };
-        } catch {
-          throw new UnauthorizedException("Invalid or expired token");
+          await notesService.findOne(user.id, documentName, user.vaultScope);
+        } catch (err) {
+          if (err instanceof NotFoundException) {
+            logger.warn(`Rejecting sync connection for unreachable note ${documentName}`);
+            throw new UnauthorizedException("Note not found or not accessible");
+          }
+          throw err;
         }
+
+        return { user };
       },
 
       async onLoadDocument({ document, documentName, context }) {
         const { user } = context as SyncContext;
-        try {
-          const note = await notesService.findOne(documentName, user.vaultScope);
-          if (note.yjsState) {
-            applyUpdate(document as Doc, note.yjsState);
-          }
-        } catch (err) {
-          if (err instanceof NotFoundException) {
-            // Do NOT swallow this. Returning here hands the client a blank document that
-            // syncs and accepts edits, while every flush is silently dropped by
-            // updateYjsState's updateMany (0 rows) — the note does not exist. Rejecting
-            // the connection lets the client surface "note not found" instead of quietly
-            // eating the user's typing.
-            logger.warn(`Rejecting sync connection for unknown note ${documentName}`);
-          } else {
-            logger.error(`Failed to load Yjs state for ${documentName}`, err as Error);
-          }
-          throw err;
+        // Already authorized in onAuthenticate; this only loads persisted state.
+        const note = await notesService.findOne(user.id, documentName, user.vaultScope);
+        if (note.yjsState) {
+          applyUpdate(document as Doc, note.yjsState);
         }
       },
 

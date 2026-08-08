@@ -9,9 +9,9 @@ export class CreateCanvasDto {
   title?: string;
 
   @ApiPropertyOptional({ description: "UUID of the vault to place the canvas in" })
+  // Required now: a canvas with no vault is a canvas no membership can authorize.
   @IsUUID()
-  @IsOptional()
-  vaultId?: string;
+  vaultId!: string;
 
   @ApiPropertyOptional({ description: "UUID of the folder to place the canvas in" })
   @IsUUID()
