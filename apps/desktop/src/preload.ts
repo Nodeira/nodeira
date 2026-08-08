@@ -15,6 +15,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     setServerUrl(url: string): Promise<void> {
       return ipcRenderer.invoke("settings:setServerUrl", url) as Promise<void>;
     },
+    getKeybinds(): Record<string, string> {
+      return ipcRenderer.sendSync("settings:getKeybinds") as Record<string, string>;
+    },
+    setKeybinds(keybinds: Record<string, string>): Promise<Record<string, boolean>> {
+      return ipcRenderer.invoke("settings:setKeybinds", keybinds) as Promise<
+        Record<string, boolean>
+      >;
+    },
   },
 
   // ── SQLite: Yjs state ─────────────────────────────────────────────────────
@@ -56,6 +64,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("new-note", listener);
     return () => {
       ipcRenderer.removeListener("new-note", listener);
+    };
+  },
+
+  /** Listen for "create new quick note" triggered by the global shortcut */
+  onNewQuickNote(callback: () => void): () => void {
+    const listener = () => callback();
+    ipcRenderer.on("new-quick-note", listener);
+    return () => {
+      ipcRenderer.removeListener("new-quick-note", listener);
     };
   },
 

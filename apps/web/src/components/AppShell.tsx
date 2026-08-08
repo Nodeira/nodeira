@@ -131,7 +131,15 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     const api = window.electronAPI?.sqlite;
     if (!api) return;
-    void api.getNoteMetadata().then((cached) => {
+    void api.getNoteMetadata().then((raw) => {
+      // Dates cross the IPC boundary as ISO strings (JSON can't carry Date
+      // objects). The rest of the app — sorting, formatting — assumes real
+      // Date instances, so rehydrate them before seeding the query cache.
+      const cached = raw.map((n) => ({
+        ...n,
+        createdAt: new Date(n.createdAt),
+        updatedAt: new Date(n.updatedAt),
+      }));
       qc.setQueryData(notesKeys.all, cached);
       const byVault = new Map<string, typeof cached>();
       for (const note of cached) {
@@ -184,20 +192,32 @@ export function AppShell({ children }: AppShellProps) {
     prevNetworkStatus.current = networkStatus;
   }, [networkStatus, qc]);
 
-  // Desktop IPC: new-note, open-search, toggle-sidebar events from native menu / global shortcuts
+  // This effect subscribes once on mount, so it must read the latest handlers via
+  // refs — a plain closure would capture stale state (e.g. currentVaultId before
+  // the vault loads), creating orphaned notes the vault-filtered views never show.
+  const handleCreateNoteRef = useRef(handleCreateNote);
+  handleCreateNoteRef.current = handleCreateNote;
+  const toggleNavRef = useRef(toggleNav);
+  toggleNavRef.current = toggleNav;
+
+  // Desktop IPC: new-note, new-quick-note, toggle-sidebar events from native menu / global shortcuts
   useEffect(() => {
     const api = window.electronAPI;
     if (!api) return;
 
     const unsubNewNote = api.onNewNote(() => {
-      void handleCreateNote("note");
+      void handleCreateNoteRef.current("note");
+    });
+    const unsubNewQuickNote = api.onNewQuickNote(() => {
+      void handleCreateNoteRef.current("quick");
     });
     const unsubToggleSidebar = api.onToggleSidebar(() => {
-      toggleNav();
+      toggleNavRef.current();
     });
 
     return () => {
       unsubNewNote();
+      unsubNewQuickNote();
       unsubToggleSidebar();
     };
   }, []);
@@ -460,7 +480,12 @@ export function AppShell({ children }: AppShellProps) {
           <Group h="100%" px="sm" justify="space-between">
             <Group gap="sm">
               <Burger opened={navOpen} onClick={toggleNav} size="sm" />
-              <img src="/logo.svg" alt="Nodeira logo" width={24} height={24} />
+              <img
+                src={`${import.meta.env.BASE_URL}logo.svg`}
+                alt="Nodeira logo"
+                width={24}
+                height={24}
+              />
               <Text fw={700} size="lg">
                 Nodeira
               </Text>

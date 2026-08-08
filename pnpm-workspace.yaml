@@ -13,6 +13,10 @@ onlyBuiltDependencies:
   - core-js
   - core-js-pure
   - electron
+  # Runs select-7z-arch.js to alias vendor/7z-<arch>.{exe,dll} → 7z.{exe,dll};
+  # without this the Squirrel maker fails to extract the nupkg ("system cannot
+  # find the file specified").
+  - electron-winstaller
   - esbuild
   - leveldown
   - prisma
