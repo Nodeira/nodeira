@@ -2,7 +2,13 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-RUN npm install -g pnpm
+# Pinned to the version in package.json's packageManager field. Installing pnpm unpinned
+# meant every build picked up whatever npm served that day: a newer pnpm started trying to
+# self-manage to the declared version, then failed --frozen-lockfile with "Cannot verify the
+# identity of the @pnpm/exe.linux-x64 native binary: it is missing from pnpm-lock.yaml".
+# The same commit built fine hours earlier, so the break arrived from outside the repo.
+# --allow-build is disabled because the install below already passes --ignore-scripts.
+RUN npm install -g pnpm@10.33.2
 
 # Copy all workspace manifests first for layer caching.
 # pnpm requires every workspace package.json to be present before `pnpm install`
@@ -13,6 +19,13 @@ COPY apps/web/package.json ./apps/web/
 COPY apps/docs/package.json ./apps/docs/
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
+# These three are not built here, but the comment above is only true if EVERY workspace
+# manifest is present. They were missing, so pnpm produced no node_modules/@nodeira links
+# at all — and since shared-types resolves through "main": "./src/index.ts", the api and web
+# builds could not find it. (apps/mobile is a Gradle project with no package.json.)
+COPY apps/cli/package.json ./apps/cli/
+COPY apps/desktop/package.json ./apps/desktop/
+COPY apps/e2e/package.json ./apps/e2e/
 
 # Prisma schema and config must be present before `pnpm install` because the
 # apps/api postinstall script runs `prisma generate`, which requires the schema.
