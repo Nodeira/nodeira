@@ -128,11 +128,13 @@ export class NotesService {
     }
   }
 
-  async updateYjsState(id: string, yjsState: Uint8Array<ArrayBuffer>) {
+  /** Returns the number of rows written — 0 means the note no longer exists. */
+  async updateYjsState(id: string, yjsState: Uint8Array<ArrayBuffer>): Promise<number> {
     // updateMany affects 0 rows (no throw) when the note was deleted, so a still-open
     // editor connection can never resurrect a deleted note as an orphaned ghost.
     // Real notes are always created via POST /notes (with a vaultId) before sync runs.
-    await this.prisma.note.updateMany({ where: { id }, data: { yjsState } });
+    const { count } = await this.prisma.note.updateMany({ where: { id }, data: { yjsState } });
+    return count;
   }
 
   async syncLinks(sourceId: string, targetIds: string[]) {

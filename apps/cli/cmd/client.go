@@ -11,9 +11,14 @@ import (
 
 var httpClient = &http.Client{}
 
+// apiBasePath is the server's global prefix plus its URI version segment. main.ts sets
+// setGlobalPrefix("api") with enableVersioning({type: URI, defaultVersion: "1"}), so every
+// route lives under /api/v1. Without the version segment every request 404s.
+const apiBasePath = "/api/v1/"
+
 func apiURL(path string) string {
 	base := strings.TrimRight(getServerURL(), "/")
-	return base + "/api/" + strings.TrimLeft(path, "/")
+	return base + apiBasePath + strings.TrimLeft(path, "/")
 }
 
 func doRequest(method, path string, body any) ([]byte, int) {

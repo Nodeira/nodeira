@@ -155,10 +155,17 @@ describe("NotesService", () => {
       await expect(service.findOne(id)).rejects.toThrow(NotFoundException);
     });
 
+    it("reports 0 rows written for a missing note so the caller can log the dropped flush", async () => {
+      const state = new Uint8Array([1, 2, 3, 4]);
+      await expect(
+        service.updateYjsState("00000000-0000-0000-0000-000000000002", state),
+      ).resolves.toBe(0);
+    });
+
     it("updates yjsState on an existing note", async () => {
       const note = await service.create({ title: "My note" });
       const state = new Uint8Array([5, 6, 7, 8]);
-      await service.updateYjsState(note.id, state);
+      await expect(service.updateYjsState(note.id, state)).resolves.toBe(1);
       const updated = await service.findOne(note.id);
       expect(updated.yjsState).toEqual(state);
     });

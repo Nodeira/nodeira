@@ -67,7 +67,8 @@ func interactiveLogin() error {
 	})
 
 	resp, err := http.Post(
-		strings.TrimRight(serverURL, "/")+"/api/auth/login",
+		// Not apiURL(): login runs before a server URL is stored in config.
+		strings.TrimRight(serverURL, "/")+apiBasePath+"auth/login",
 		"application/json",
 		strings.NewReader(string(body)),
 	)

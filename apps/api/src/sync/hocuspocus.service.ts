@@ -89,15 +89,30 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
             applyUpdate(document as Doc, note.yjsState);
           }
         } catch (err) {
-          if (err instanceof NotFoundException) return;
-          logger.error(`Failed to load Yjs state for ${documentName}`, err as Error);
+          if (err instanceof NotFoundException) {
+            // Do NOT swallow this. Returning here hands the client a blank document that
+            // syncs and accepts edits, while every flush is silently dropped by
+            // updateYjsState's updateMany (0 rows) — the note does not exist. Rejecting
+            // the connection lets the client surface "note not found" instead of quietly
+            // eating the user's typing.
+            logger.warn(`Rejecting sync connection for unknown note ${documentName}`);
+          } else {
+            logger.error(`Failed to load Yjs state for ${documentName}`, err as Error);
+          }
           throw err;
         }
       },
 
       async onStoreDocument({ document, documentName }) {
         const state = encodeStateAsUpdate(document as Doc);
-        await notesService.updateYjsState(documentName, new Uint8Array(state));
+        const written = await notesService.updateYjsState(documentName, new Uint8Array(state));
+        if (written === 0) {
+          // The note was deleted while this connection was still open. Dropping the write
+          // is deliberate (it is what stops ghost resurrection), but it is data loss for
+          // anything typed after the delete, so make it visible rather than silent.
+          logger.warn(`Discarded Yjs flush for deleted note ${documentName}`);
+          return;
+        }
 
         try {
           const json = yDocToProsemirrorJSON(document as Doc, "default") as PmNode;
@@ -113,7 +128,9 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    this.server.destroy();
+    // Guarded because a context that was compiled but never initialised (as in DI tests)
+    // still gets its destroy hooks called, and `server` is only assigned in onModuleInit.
+    this.server?.destroy();
   }
 
   handleConnection(connection: WebSocket, request: IncomingMessage) {
