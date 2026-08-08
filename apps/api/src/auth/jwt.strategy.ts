@@ -32,7 +32,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    const user = await this.usersService.findByEmail(payload.email);
+    // Keyed on `sub`, the immutable user id. Looking the user up by email made email the
+    // de-facto identity, so changing it silently invalidated every live token.
+    const user = await this.usersService.findById(payload.sub);
     if (!user) throw new UnauthorizedException();
     return { id: user.id, email: user.email, name: user.name, role: user.role };
   }

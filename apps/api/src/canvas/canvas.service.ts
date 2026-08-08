@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
-import { lookup } from "dns/promises";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service.js";
 import type { CreateCanvasDto } from "./dto/create-canvas.dto.js";
 import type { UpdateCanvasDto } from "./dto/update-canvas.dto.js";
 import type { OgPreview } from "@nodeira/shared-types";
+import { safeFetchHtml } from "./safe-fetch.js";
 import { VaultRole, type Prisma } from "@prisma/client";
 import { VaultAccessService } from "../vaults/vault-access.service.js";
 
@@ -76,61 +76,12 @@ export class CanvasService {
     await this.prisma.canvas.delete({ where: { id } });
   }
 
-  private isPrivateIp(ip: string): boolean {
-    if (ip === "localhost" || ip === "::1") return true;
-    if (ip.startsWith("127.") || ip.startsWith("169.254.") || ip.startsWith("10.")) return true;
-    if (ip.startsWith("192.168.")) return true;
-    if (ip.startsWith("fc") || ip.startsWith("fd")) return true;
-    const m = /^172\.(\d+)\./.exec(ip);
-    if (m && parseInt(m[1]!) >= 16 && parseInt(m[1]!) <= 31) return true;
-    return false;
-  }
-
-  private async assertPublicUrl(url: string): Promise<void> {
-    let parsed: URL;
-    try {
-      parsed = new URL(url);
-    } catch {
-      throw new UnprocessableEntityException("Invalid URL");
-    }
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-      throw new UnprocessableEntityException("Only http and https URLs are allowed");
-    }
-    if (this.isPrivateIp(parsed.hostname)) {
-      throw new UnprocessableEntityException("URLs to private networks are not allowed");
-    }
-    try {
-      const { address } = await lookup(parsed.hostname);
-      if (this.isPrivateIp(address)) {
-        throw new UnprocessableEntityException("URLs to private networks are not allowed");
-      }
-    } catch (err) {
-      if (err instanceof UnprocessableEntityException) throw err;
-      throw new UnprocessableEntityException("Could not resolve URL hostname");
-    }
-  }
-
   async fetchUrlPreview(url: string): Promise<OgPreview> {
-    await this.assertPublicUrl(url);
-
-    let html: string;
-    let baseUrl: string;
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch(url, {
-        signal: controller.signal,
-        headers: { "User-Agent": "Nodeira/1.0 (+https://nodeira.app)" },
-      });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      html = await res.text();
-      baseUrl = new URL(url).origin;
-    } catch (err) {
-      if (err instanceof UnprocessableEntityException) throw err;
-      throw new UnprocessableEntityException("Could not fetch URL");
-    }
+    // safeFetchHtml validates every redirect hop and pins the socket to an address that
+    // was checked at connect time, so a hostname cannot resolve public for the check and
+    // private for the request.
+    const { html, finalUrl } = await safeFetchHtml(url);
+    const baseUrl = new URL(finalUrl).origin;
 
     const getTag = (property: string): string | null => {
       const ogMatch = html.match(

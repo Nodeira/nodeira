@@ -17,6 +17,7 @@ import type { RequestWithUser } from "../auth/request-with-user.js";
 import { CanvasService } from "./canvas.service.js";
 import { CreateCanvasDto } from "./dto/create-canvas.dto.js";
 import { UpdateCanvasDto } from "./dto/update-canvas.dto.js";
+import { PreviewUrlDto } from "./dto/preview-url.dto.js";
 
 @ApiTags("canvases")
 @ApiBearerAuth()
@@ -42,8 +43,8 @@ export class CanvasController {
   // Must be before :id to avoid "preview" being matched as an id
   @Post("preview")
   @HttpCode(200)
-  fetchPreview(@Body("url") url: string) {
-    return this.canvasService.fetchUrlPreview(url);
+  fetchPreview(@Body() dto: PreviewUrlDto) {
+    return this.canvasService.fetchUrlPreview(dto.url);
   }
 
   @Get(":id")

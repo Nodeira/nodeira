@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { APP_GUARD } from "@nestjs/core";
+import { validateEnv } from "./config/env.validation.js";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { existsSync } from "fs";
 import { join } from "path";
@@ -21,7 +24,11 @@ const webDistPath = join(process.cwd(), "public");
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    // Rate limiting. Login and first-run setup had none at all, so both were open to
+    // unlimited guessing. Applied globally with a generous default; the auth routes
+    // tighten it with their own @Throttle.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     // Only active when the web build is present (production Docker image).
     // Serves the React SPA and falls back to index.html for unknown routes.
     ...(existsSync(webDistPath)
@@ -47,5 +54,6 @@ const webDistPath = join(process.cwd(), "public");
     CanvasModule,
     RemindersModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

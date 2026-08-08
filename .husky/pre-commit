@@ -1,1 +1,19 @@
 pnpm exec lint-staged
+
+# Secret scanning.
+#
+# This used to live in .pre-commit-config.yaml, which defined gitleaks and
+# detect-private-key hooks — but git's core.hooksPath points at .husky/, so those hooks
+# were never executed. The config looked like protection and provided none. That file is
+# gone; this is the real hook, and .github/workflows/pr-checks.yml enforces it in CI where
+# the binary is always present.
+#
+# Skipped when gitleaks is not installed, so contributors are not blocked on it locally.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner || {
+    echo ""
+    echo "gitleaks found a secret in the staged changes. Remove it and re-stage."
+    echo "If it is a false positive, add a rule to .gitleaks.toml."
+    exit 1
+  }
+fi

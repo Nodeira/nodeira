@@ -19,6 +19,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  findById(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
   /**
    * Creates a user and the personal vault they start out owning.
    *
