@@ -1,6 +1,6 @@
-import { type ComponentType, memo, useEffect, useState } from "react";
-import { IconFile } from "@tabler/icons-react";
-import { toTablerName } from "../lib/icons.js";
+import { memo } from "react";
+import IconFile from "@tabler/icons-react/dist/esm/icons/IconFile.mjs";
+import { ICON_COMPONENTS } from "../lib/iconMap.js";
 
 interface DynamicIconProps {
   name: string;
@@ -9,44 +9,21 @@ interface DynamicIconProps {
   style?: React.CSSProperties;
 }
 
-// Cache of resolved icon components to avoid redundant dynamic imports
-const iconCache = new Map<
-  string,
-  ComponentType<{ size?: number; color?: string; style?: React.CSSProperties }>
->();
-
+/**
+ * Renders one of the picker's icons by kebab-case name.
+ *
+ * This used to resolve names at runtime via `await import("@tabler/icons-react")`, cached
+ * in a Map and rendered through state. That pulled the entire icon package — a 3.7 MB
+ * chunk — and made every icon render asynchronously, flashing the fallback first. The set
+ * of names the picker can produce is a fixed list, so a generated lookup covers it with no
+ * dynamic import, no state, no effect, and no flash.
+ */
 export const DynamicIcon = memo(function DynamicIcon({
   name,
   size = 16,
   color,
   style,
 }: DynamicIconProps) {
-  const [Icon, setIcon] = useState<ComponentType<{
-    size?: number;
-    color?: string;
-    style?: React.CSSProperties;
-  }> | null>(() => iconCache.get(name) ?? null);
-
-  useEffect(() => {
-    if (iconCache.has(name)) {
-      setIcon(() => iconCache.get(name)!);
-      return;
-    }
-    const componentName = toTablerName(name);
-    import("@tabler/icons-react")
-      .then((mod) => {
-        const Comp = (mod as Record<string, unknown>)[componentName] as
-          | ComponentType<{ size?: number; color?: string; style?: React.CSSProperties }>
-          | undefined;
-        if (Comp) {
-          iconCache.set(name, Comp);
-          setIcon(() => Comp);
-        }
-      })
-      .catch(() => {});
-  }, [name]);
-
-  if (!Icon)
-    return <IconFile size={size} {...(color ? { color } : {})} {...(style ? { style } : {})} />;
+  const Icon = ICON_COMPONENTS[name] ?? IconFile;
   return <Icon size={size} {...(color ? { color } : {})} {...(style ? { style } : {})} />;
 });

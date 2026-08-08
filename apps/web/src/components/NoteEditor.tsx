@@ -240,6 +240,10 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
   const [wikiSearch, setWikiSearch] = useState<WikiSearchState | null>(null);
   const wikiSearchRef = useRef<WikiSearchState | null>(null);
   wikiSearchRef.current = wikiSearch;
+  // Serialising the whole ProseMirror document to JSON and walking it recursively is too
+  // expensive to do in the render body: with shouldRerenderOnTransaction the editor
+  // re-renders on every keystroke. Recompute only when the document actually changes.
+  const [editorTags, setEditorTags] = useState<string[]>([]);
   const [tagSearch, setTagSearch] = useState<TagSearchState | null>(null);
   const tagSearchRef = useRef<TagSearchState | null>(null);
   tagSearchRef.current = tagSearch;
@@ -310,6 +314,7 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
 
   const editor = useEditor({
     shouldRerenderOnTransaction: true,
+    onCreate: ({ editor }) => setEditorTags(extractEditorTags(editor.getJSON() as JsonNode)),
     extensions: [
       StarterKit.configure({ undoRedo: false, codeBlock: false, link: false }),
       Collaboration.configure({ document: doc }),
@@ -328,6 +333,9 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
       HashTag,
     ],
     onUpdate: ({ editor }) => {
+      // Document changed — refresh the tag list here rather than on every render.
+      setEditorTags(extractEditorTags(editor.getJSON() as JsonNode));
+
       const { from } = editor.state.selection;
       const $from = editor.state.selection.$from;
       const textBefore = $from.parent.textBetween(0, $from.parentOffset);
@@ -447,7 +455,7 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
 
       {/* Tags extracted from note content */}
       {(() => {
-        const tags = editor ? extractEditorTags(editor.getJSON() as JsonNode) : [];
+        const tags = editorTags;
         if (tags.length === 0) return null;
         return (
           <Group px="md" pb={4} gap={4}>
