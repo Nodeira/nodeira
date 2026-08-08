@@ -1,3 +1,21 @@
+# [1.14.0](https://github.com/Nodeira/nodeira/compare/v1.13.1...v1.14.0) (2026-08-08)
+
+
+### Bug Fixes
+
+* **api:** rate limiting, SSRF hardening, config fail-fast, and real secret scanning ([a1b12d2](https://github.com/Nodeira/nodeira/commit/a1b12d24155b3a991ba5bf33e274dd5d6dd1787b))
+* **web:** refcount Yjs contexts and stop leaking sockets, docs and databases ([ec3cdf3](https://github.com/Nodeira/nodeira/commit/ec3cdf3e973f0db2b6cdeb6250041886e6a9c124))
+
+
+### Features
+
+* **api:** enforce multi-user access through vault membership ([9784127](https://github.com/Nodeira/nodeira/commit/9784127cc7e6f55e0da7256530cd350d3726ccaa))
+
+
+### Performance Improvements
+
+* **web:** drop the 3.7 MB icon chunk and split the graph view out of the bundle ([0b96fc3](https://github.com/Nodeira/nodeira/commit/0b96fc3de09087e1ca52922ec3d889016fbcd6c0))
+
 ## [1.13.1](https://github.com/Nodeira/nodeira/compare/v1.13.0...v1.13.1) (2026-08-08)
 
 
