@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/Nodeira/nodeira/compare/v1.12.1...v1.13.0) (2026-08-08)
+
+
+### Features
+
+* **desktop:** user-rebindable global shortcuts for new note / quick note ([3e54d92](https://github.com/Nodeira/nodeira/commit/3e54d921dc00922850b548164085a98b131775c8))
+
 ## [1.12.1](https://github.com/Nodeira/nodeira/compare/v1.12.0...v1.12.1) (2026-07-26)
 
 
