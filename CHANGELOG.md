@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/Nodeira/nodeira/compare/v1.13.0...v1.13.1) (2026-08-08)
+
+
+### Bug Fixes
+
+* **api:** restore API-token auth, stop silent sync data loss, and unblock DI tests ([e695499](https://github.com/Nodeira/nodeira/commit/e695499b7c61c232b458c5b31ba49840a411046f))
+
 # [1.13.0](https://github.com/Nodeira/nodeira/compare/v1.12.1...v1.13.0) (2026-08-08)
 
 
