@@ -48,6 +48,10 @@ const config: ForgeConfig = {
       }
     },
   },
+  // NB: the portable .zip for each platform is NOT produced by a maker. @electron-forge/
+  // maker-zip delegates to cross-zip, whose Windows branch calls fs.rmdir(recursive) —
+  // removed in Node 22, which is what CI runs — so it throws on the one platform we most
+  // need it for. scripts/collect-artifacts.mjs builds the archive directly instead.
   makers: [
     {
       name: "@electron-forge/maker-squirrel",

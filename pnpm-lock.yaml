@@ -246,6 +246,9 @@ importers:
       '@types/node':
         specifier: ^22.9.0
         version: 22.19.18
+      archiver:
+        specifier: ^7.0.1
+        version: 7.0.1
       electron:
         specifier: ^33.2.0
         version: 33.4.11

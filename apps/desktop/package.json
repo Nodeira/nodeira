@@ -10,6 +10,8 @@
     "build": "electron-forge package",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "stamp-version": "node scripts/stamp-version.mjs",
+    "collect-artifacts": "node scripts/collect-artifacts.mjs",
     "postinstall": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
@@ -26,6 +28,7 @@
     "@electron/rebuild": "^3.7.0",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.9.0",
+    "archiver": "^7.0.1",
     "electron": "^33.2.0",
     "typescript": "^5.8.0",
     "vite": "^6.0.0"

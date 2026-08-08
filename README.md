@@ -32,6 +32,19 @@ An Obsidian-like, AI-enhanced note-taking application. Notes sync offline-first 
 - Note kinds: plain notes, tasks with Kanban view
 - Pinned notes, recent view, per-note metadata and properties
 
+## Downloads
+
+These links always resolve to the newest release — no need to hunt through the releases page.
+Full list, including the CLI and F-Droid, on the [Downloads page](https://Nodeira.github.io/nodeira/downloads).
+
+|             | Windows                                                                                                                                                                                           | macOS                                                                                                                                                                                       | Linux                                                                                                                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Desktop** | [Setup .exe](https://github.com/Nodeira/nodeira/releases/latest/download/Nodeira-win32-x64-Setup.exe) · [.zip](https://github.com/Nodeira/nodeira/releases/latest/download/Nodeira-win32-x64.zip) | [.dmg](https://github.com/Nodeira/nodeira/releases/latest/download/Nodeira-darwin-arm64.dmg) · [.zip](https://github.com/Nodeira/nodeira/releases/latest/download/Nodeira-darwin-arm64.zip) | [.deb](https://github.com/Nodeira/nodeira/releases/latest/download/Nodeira-linux-x64.deb) · [.zip](https://github.com/Nodeira/nodeira/releases/latest/download/Nodeira-linux-x64.zip) |
+| **CLI**     | [amd64](https://github.com/Nodeira/nodeira/releases/latest/download/nodeira-windows-amd64.exe)                                                                                                    | [arm64](https://github.com/Nodeira/nodeira/releases/latest/download/nodeira-darwin-arm64) · [amd64](https://github.com/Nodeira/nodeira/releases/latest/download/nodeira-darwin-amd64)       | [amd64](https://github.com/Nodeira/nodeira/releases/latest/download/nodeira-linux-amd64) · [arm64](https://github.com/Nodeira/nodeira/releases/latest/download/nodeira-linux-arm64)   |
+
+**Android:** add `https://deranjer.github.io/fdroid/repo` to your F-Droid client.
+**Server:** `docker pull ghcr.io/nodeira/nodeira:latest`
+
 ## Tech Stack
 
 - **Monorepo:** Turborepo + pnpm workspaces
