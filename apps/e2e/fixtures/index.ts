@@ -27,6 +27,26 @@ interface MyFixtures {
 }
 
 export const test = base.extend<MyFixtures>({
+  /**
+   * Signs the browser in before any navigation.
+   *
+   * The web app gates every real route behind `_authenticated`, which reads the token from
+   * localStorage — so without this every test landed on /login and asserted against an
+   * empty page. That has been true since auth was introduced and went unnoticed because
+   * the suite ran nowhere.
+   */
+  page: async ({ page }, use) => {
+    const { token, user } = await api.getSession();
+    await page.addInitScript(
+      ([t, u]) => {
+        window.localStorage.setItem("nodeira_token", t as string);
+        window.localStorage.setItem("nodeira_user", JSON.stringify(u));
+      },
+      [token, user] as const,
+    );
+    await use(page);
+  },
+
   testNote: async ({}, use) => {
     const note = await api.createNote({
       title: `Test Note ${Date.now()}`,

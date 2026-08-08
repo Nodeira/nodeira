@@ -11,7 +11,11 @@ interface Manifest {
 }
 
 export async function seedDocsData(): Promise<void> {
-  const vault = await api.createVault("E2E Docs Vault");
+  // Seed into the account's primary vault rather than a dedicated one. The web app selects
+  // the first vault on load, so fixtures parked in a separate vault were invisible to every
+  // test — which is part of why this suite had quietly stopped proving anything.
+  const vaultId = await api.getPrimaryVaultId();
+  const vault = { id: vaultId };
   const folderDev = await api.createFolder("Development", vault.id);
   const folderIdeas = await api.createFolder("Ideas", vault.id);
   const note1 = await api.createNote({
@@ -46,7 +50,7 @@ export async function seedDocsData(): Promise<void> {
     noteIds: [note1.id, note2.id, note3.id, qn1.id, qn2.id, qn3.id],
   };
   await fs.writeFile(SEED_MANIFEST, JSON.stringify(manifest, null, 2));
-  console.log(`[seed] Created E2E Docs Vault (${vault.id}) with 3 notes and 3 quick notes`);
+  console.log(`[seed] Seeded vault ${vault.id} with 3 notes and 3 quick notes`);
 }
 
 export async function teardownDocsData(): Promise<void> {

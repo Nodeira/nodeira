@@ -89,6 +89,73 @@ jobs:
         working-directory: apps/cli
         run: go vet ./...
 
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # The suite existed but ran nowhere: it is not part of `pnpm test`, and no workflow
+    # invoked it. It had already silently broken — its health check called a guarded route
+    # unauthenticated — and nothing noticed.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: nodeira
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nodeira
+      JWT_SECRET: ci-secret-that-is-long-enough-to-pass-validation
+      API_BASE_URL: http://localhost:3001
+      WEB_BASE_URL: http://localhost:5173
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @nodeira/e2e exec playwright install --with-deps chromium
+
+      - name: Apply migrations
+        run: pnpm --filter @nodeira/api exec prisma migrate deploy
+
+      - name: Start API and web
+        run: |
+          pnpm --filter @nodeira/api run dev > /tmp/api.log 2>&1 &
+          pnpm --filter @nodeira/web run dev > /tmp/web.log 2>&1 &
+          npx --yes wait-on http://localhost:3001/api/v1/setup/status http://localhost:5173 --timeout 180000
+
+      - name: Run e2e
+        run: pnpm run test:e2e
+
+      - name: Server logs on failure
+        if: failure()
+        run: tail -100 /tmp/api.log /tmp/web.log
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/e2e/playwright-report/
+          retention-days: 7
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest

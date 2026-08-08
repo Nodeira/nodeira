@@ -14,7 +14,11 @@ export async function setup({ provide }: { provide: (key: string, value: string)
   // broken on Windows for a reason no TCP probe reveals. Pin to IPv4 explicitly.
   const databaseUrl = container.getConnectionUri().replace("@localhost:", "@127.0.0.1:");
 
-  execSync("pnpm exec prisma db push", {
+  // migrate deploy, not db push: production applies the committed migration chain, so the
+  // suite should exercise the same path. With db push the tests validated schema.prisma
+  // while the migrations that actually run in deployments went untested — a migration could
+  // be broken or missing entirely and every test would still pass.
+  execSync("pnpm exec prisma migrate deploy", {
     cwd: apiDir,
     env: { ...process.env, DATABASE_URL: databaseUrl },
     stdio: "inherit",

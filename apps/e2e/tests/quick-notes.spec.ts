@@ -13,9 +13,16 @@ test.describe("Quick Notes page", () => {
 
   test("New button creates a note and increments count", async ({ page }) => {
     await page.goto("/quick-notes");
-    const initialCount = await page.locator(".mantine-Card-root").count();
+
+    // Wait for the seeded cards before counting. Reading the count straight after goto
+    // raced the initial render, so initialCount was often 0 and the assertion compared
+    // against 1 while the real total was 7.
+    const cards = page.locator(".mantine-Card-root");
+    await expect(cards.first()).toBeVisible({ timeout: 10_000 });
+    const initialCount = await cards.count();
+
     await page.getByRole("button", { name: "New", exact: true }).click();
-    await expect(page.locator(".mantine-Card-root")).toHaveCount(initialCount + 1);
+    await expect(cards).toHaveCount(initialCount + 1);
   });
 
   test("search filters by title", async ({ page, quickNote }) => {
