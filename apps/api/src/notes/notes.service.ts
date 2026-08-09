@@ -319,7 +319,7 @@ export class NotesService {
     // is lost the moment a connected editor flushes, and the diverged state vectors can
     // never reconcile. The bridge persists via onStoreDocument, so there is no separate
     // write on this path.
-    const applied = await this.documentBridge.transact(id, (doc) => {
+    const applied = await this.documentBridge.transact(id, { id: userId, vaultScope }, (doc) => {
       const fragment = doc.getXmlFragment("default");
       fragment.delete(0, fragment.length);
       if (elements.length > 0) fragment.insert(0, elements);

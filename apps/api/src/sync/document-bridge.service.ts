@@ -14,7 +14,26 @@ interface DirectConnectionLike {
   disconnect(): Promise<void>;
 }
 
-type Opener = (documentName: string) => Promise<DirectConnectionLike>;
+/**
+ * Who a document operation is being performed as — the part of the authenticated user that
+ * loading a document needs in order to authorize the read.
+ */
+export interface DocumentActor {
+  id: string;
+  /** Explicitly `| undefined`: the repo runs with `exactOptionalPropertyTypes`, and callers
+   *  forward an optional `vaultScope` straight through. */
+  vaultScope?: string | null | undefined;
+}
+
+/**
+ * The context Hocuspocus carries on a connection. A socket gets one from `onAuthenticate`;
+ * a direct connection has no socket and no token, so its caller must supply one.
+ */
+export interface SyncContext {
+  user: DocumentActor;
+}
+
+type Opener = (documentName: string, context: SyncContext) => Promise<DirectConnectionLike>;
 
 /**
  * Lets REST handlers mutate a note's Yjs document through the sync server instead of
@@ -42,13 +61,23 @@ export class DocumentBridge {
   }
 
   /**
-   * Applies `fn` to the live document. Returns false when the sync server is not
+   * Applies `fn` to the live document as `actor`. Returns false when the sync server is not
    * available, so the caller can fall back to a direct database write.
+   *
+   * `actor` is required rather than optional on purpose. A direct connection never runs
+   * `onAuthenticate`, so nothing else populates the context that `onLoadDocument` reads —
+   * omitting it made every call blow up on a cache miss (and only on a cache miss, which is
+   * why it went unnoticed). Callers must have authorized the request themselves first; this
+   * carries that decision through, it does not make it.
    */
-  async transact(documentName: string, fn: DocumentTransaction): Promise<boolean> {
+  async transact(
+    documentName: string,
+    actor: DocumentActor,
+    fn: DocumentTransaction,
+  ): Promise<boolean> {
     if (!this.opener) return false;
 
-    const connection = await this.opener(documentName);
+    const connection = await this.opener(documentName, { user: actor });
     try {
       await connection.transact(fn);
       return true;
