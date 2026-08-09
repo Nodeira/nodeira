@@ -1,3 +1,10 @@
+## [1.14.2](https://github.com/Nodeira/nodeira/compare/v1.14.1...v1.14.2) (2026-08-09)
+
+
+### Bug Fixes
+
+* **docker:** repair the image build so releases publish again ([9b3af23](https://github.com/Nodeira/nodeira/commit/9b3af239ed1c691eb6746dcab1fbb2017c2e2489))
+
 ## [1.14.1](https://github.com/Nodeira/nodeira/compare/v1.14.0...v1.14.1) (2026-08-09)
 
 
