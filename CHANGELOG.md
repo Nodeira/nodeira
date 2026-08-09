@@ -1,3 +1,17 @@
+# [1.15.0](https://github.com/Nodeira/nodeira/compare/v1.14.3...v1.15.0) (2026-08-09)
+
+
+### Bug Fixes
+
+* **ci:** make the secret scan and API tests actually pass ([b1fcf86](https://github.com/Nodeira/nodeira/commit/b1fcf86383f1729e16a505bde8ab21b3b9fc6098))
+* slim the runtime image and stop the CLI dumping raw Yjs bytes ([3ca2ed0](https://github.com/Nodeira/nodeira/commit/3ca2ed0ebbbee23e3664daf5d49b3f82059cceaa))
+
+
+### Features
+
+* **mobile:** serve Home, Recents, Graph and Canvases from an offline cache ([b418c49](https://github.com/Nodeira/nodeira/commit/b418c4940267893f6bef9b7c52b5b57fe9f4c90c))
+* **web:** add vault sharing and user management ([243be67](https://github.com/Nodeira/nodeira/commit/243be67a00d2eea863b1d16d7d5033c7dff19323))
+
 ## [1.14.3](https://github.com/Nodeira/nodeira/compare/v1.14.2...v1.14.3) (2026-08-09)
 
 
