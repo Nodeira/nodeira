@@ -168,10 +168,21 @@ jobs:
       # The repo carried a .pre-commit-config.yaml defining gitleaks, but git's
       # core.hooksPath points at .husky/, so it never ran anywhere. This is the
       # enforcement point; .husky/pre-commit runs it locally when installed.
-      - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      #
+      # The binary, not gitleaks/gitleaks-action@v2: that action refuses to run on an
+      # organization repo without a paid GITLEAKS_LICENSE and exits 1. It failed on every
+      # PR since this job was added — a scan that never scanned anything. The tool itself
+      # is MIT-licensed and has no such restriction.
+      - name: Install gitleaks
+        run: |
+          curl -sSLf "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.24.3
+
+      - name: gitleaks
+        run: gitleaks detect --redact --no-banner --verbose
 
   commitlint:
     runs-on: ubuntu-latest
