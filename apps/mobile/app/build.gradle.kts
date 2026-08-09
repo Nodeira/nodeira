@@ -91,7 +91,14 @@ dependencies {
     // Lifecycle + navigation
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    // ProcessLifecycleOwner — tells the app when it is foregrounded, which is when the
+    // notifications socket should be connected.
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
     implementation("androidx.navigation:navigation-compose:2.8.5")
+
+    // Periodic reminder sync, so reminders created on another client get an on-device alarm
+    // even when the app is closed.
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Networking
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

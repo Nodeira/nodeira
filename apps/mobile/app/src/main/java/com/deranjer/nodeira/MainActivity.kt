@@ -84,9 +84,13 @@ private fun NodeiraNavHost() {
                     }
                 },
             )
+            val appContext = LocalContext.current.applicationContext
             LoginScreen(
                 viewModel = vm,
                 onLoggedIn = {
+                    // The process was already foregrounded when the app started, so the
+                    // lifecycle observer's onStart fired before a token existed. Connect now.
+                    container.onEnterForeground(appContext as android.app.Application)
                     navController.navigate(ROUTE_MAIN) {
                         popUpTo(ROUTE_LOGIN) { inclusive = true }
                     }
@@ -252,7 +256,8 @@ private fun sharedRemindersViewModel(
                     container.repository,
                     container.reminderScheduler,
                     container.geofenceManager,
-                    container.reminderCache,
+                    container.reminderSync,
+                    container.reminderSocket,
                 )
             }
         },
@@ -299,6 +304,8 @@ private fun openCanvas(navController: NavController, container: AppContainer, ca
     openEmbed(navController, container, EditorWebViewActivity.canvasPath(canvasId))
 
 private fun logout(navController: NavController, container: AppContainer) {
+    // Before repository.logout(), which clears the token the socket authenticated with.
+    container.onLogout(navController.context.applicationContext as android.app.Application)
     container.repository.logout()
     navController.navigate(ROUTE_LOGIN) {
         popUpTo(ROUTE_MAIN) { inclusive = true }
