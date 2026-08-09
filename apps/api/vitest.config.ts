@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [swc.vite({ module: { type: "es6" } })],
   test: {
     globals: true,
-    setupFiles: ["reflect-metadata"],
+    setupFiles: ["reflect-metadata", "./src/test/setup-env.ts"],
     globalSetup: ["./src/test/global-setup.ts"],
     pool: "forks",
     poolOptions: {

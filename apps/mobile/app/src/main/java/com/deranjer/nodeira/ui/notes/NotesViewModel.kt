@@ -19,6 +19,10 @@ data class NotesUiState(
     val vaults: List<VaultDto> = emptyList(),
     val folders: List<FolderDto> = emptyList(),
     val error: String? = null,
+    /** Showing a cached snapshot because the last refresh failed. */
+    val offline: Boolean = false,
+    /** When that snapshot was taken, for the offline banner. */
+    val lastSyncedAt: Long? = null,
 )
 
 /**
@@ -33,7 +37,23 @@ class NotesViewModel(
     val state: StateFlow<NotesUiState> = _state.asStateFlow()
 
     init {
+        // Paint the cached snapshot first so the list is there immediately — and stays there
+        // if the refresh below fails. Previously a failed load meant an error screen even
+        // when a perfectly good copy had already been fetched.
+        loadFromCache()
         refresh()
+    }
+
+    private fun loadFromCache() {
+        if (!repository.hasCachedData()) return
+        _state.update {
+            it.copy(
+                notes = repository.cachedNotes(),
+                vaults = repository.cachedVaults(),
+                folders = repository.cachedFolders(),
+                lastSyncedAt = repository.lastSyncedAt(),
+            )
+        }
     }
 
     fun refresh() {
@@ -45,9 +65,29 @@ class NotesViewModel(
                 // failure as non-fatal so the note list still renders if either is unavailable.
                 val vaults = runCatching { repository.getVaults() }.getOrDefault(emptyList())
                 val folders = runCatching { repository.getFolders() }.getOrDefault(emptyList())
-                _state.update { it.copy(loading = false, notes = notes, vaults = vaults, folders = folders) }
+                repository.markSynced()
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        notes = notes,
+                        vaults = vaults,
+                        folders = folders,
+                        offline = false,
+                        error = null,
+                        lastSyncedAt = repository.lastSyncedAt(),
+                    )
+                }
             } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = e.message ?: "Failed to load notes") }
+                // With a cached snapshot on screen this is a connectivity notice, not a
+                // failure: the user keeps their notes and sees when they were last synced.
+                val haveCache = repository.hasCachedData()
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        offline = haveCache,
+                        error = if (haveCache) null else e.message ?: "Failed to load notes",
+                    )
+                }
             }
         }
     }

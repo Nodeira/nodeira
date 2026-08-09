@@ -132,9 +132,10 @@ To ship: push a `v*` tag higher than the previous release (CI does the rest).
 
 ## Known limitations / follow-ups
 
-- **Offline**: only the editor WebView works offline (IndexedDB). Every native screen
-  (Home, Recents, Graph, Canvases) is a live REST call, so they show an error with no
-  network. A local cache is the main outstanding piece of work.
+- **Offline is read-only.** Home, Recents, Graph and Canvases now serve a cached snapshot
+  and show an "Offline — showing notes from …" banner when a refresh fails, but creating,
+  renaming, pinning and deleting still require the network and fail with no queue or retry.
+  Editing note _content_ offline works, via the WebView's IndexedDB.
 - Reminders created on another client do not reach the phone until it refreshes: the app
   does not yet connect to the `/notifications` WebSocket that web and desktop use. Time
   reminders created _on the phone_ fire locally via `AlarmManager`.

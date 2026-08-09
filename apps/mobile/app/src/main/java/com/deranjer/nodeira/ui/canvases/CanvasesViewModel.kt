@@ -14,6 +14,8 @@ data class CanvasesUiState(
     val loading: Boolean = true,
     val canvases: List<CanvasDto> = emptyList(),
     val error: String? = null,
+    val offline: Boolean = false,
+    val lastSyncedAt: Long? = null,
 )
 
 class CanvasesViewModel(
@@ -24,6 +26,10 @@ class CanvasesViewModel(
     val state: StateFlow<CanvasesUiState> = _state.asStateFlow()
 
     init {
+        // Cached list first, so a failed refresh does not blank the screen.
+        _state.update {
+            it.copy(canvases = repository.cachedCanvases(), lastSyncedAt = repository.lastSyncedAt())
+        }
         refresh()
     }
 
@@ -31,9 +37,25 @@ class CanvasesViewModel(
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             try {
-                _state.update { it.copy(loading = false, canvases = repository.getCanvases()) }
+                val canvases = repository.getCanvases()
+                repository.markSynced()
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        canvases = canvases,
+                        offline = false,
+                        lastSyncedAt = repository.lastSyncedAt(),
+                    )
+                }
             } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = e.message ?: "Failed to load canvases") }
+                val haveCache = repository.hasCachedCanvases()
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        offline = haveCache,
+                        error = if (haveCache) null else e.message ?: "Failed to load canvases",
+                    )
+                }
             }
         }
     }

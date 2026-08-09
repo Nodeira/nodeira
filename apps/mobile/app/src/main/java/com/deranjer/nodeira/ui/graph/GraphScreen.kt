@@ -6,6 +6,8 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
+import com.deranjer.nodeira.ui.notes.OfflineBanner
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,13 +49,21 @@ fun GraphScreen(
         onNavigate = onNavigate,
         onLogout = onLogout,
     ) {
-        when {
-            state.loading -> CircularProgressIndicator(Modifier.padding(24.dp))
-            state.error != null ->
-                Text(state.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
-            state.nodes.isEmpty() ->
-                Text("No notes to graph", modifier = Modifier.padding(24.dp))
-            else -> ForceGraph(state, onOpenNote)
+        Column {
+            if (state.offline) OfflineBanner(state.lastSyncedAt)
+            when {
+                state.loading && state.nodes.isEmpty() ->
+                    CircularProgressIndicator(Modifier.padding(24.dp))
+                state.error != null ->
+                    Text(
+                        state.error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(24.dp),
+                    )
+                state.nodes.isEmpty() ->
+                    Text("No notes to graph", modifier = Modifier.padding(24.dp))
+                else -> ForceGraph(state, onOpenNote)
+            }
         }
     }
 }

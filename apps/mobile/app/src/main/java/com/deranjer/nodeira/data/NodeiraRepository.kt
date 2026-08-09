@@ -13,7 +13,30 @@ import com.deranjer.nodeira.data.net.ReminderDto
 class NodeiraRepository(
     private val auth: AuthStorage,
     private val network: NetworkModule,
+    private val cache: OfflineCache,
 ) {
+
+    /** True when a cached snapshot exists to render before the network answers. */
+    fun hasCachedData(): Boolean = cache.hasNotes()
+
+    fun hasCachedGraph(): Boolean = cache.hasGraph()
+
+    fun hasCachedCanvases(): Boolean = cache.hasCanvases()
+
+    fun cachedNotes(): List<NoteDto> = cache.loadNotes()
+
+    fun cachedVaults(): List<com.deranjer.nodeira.data.net.VaultDto> = cache.loadVaults()
+
+    fun cachedFolders(): List<com.deranjer.nodeira.data.net.FolderDto> = cache.loadFolders()
+
+    /** When the cache was last refreshed, for the "showing offline copy" line. */
+    fun lastSyncedAt(): Long? = cache.lastSyncedAt
+
+    fun markSynced() = cache.markSynced()
+
+    fun cachedGraph(): List<com.deranjer.nodeira.data.net.GraphLink> = cache.loadGraph()
+
+    fun cachedCanvases(): List<com.deranjer.nodeira.data.net.CanvasDto> = cache.loadCanvases()
 
     /** Logs in against [serverUrl] and persists the session on success. */
     suspend fun login(serverUrl: String, email: String, password: String) {
@@ -24,19 +47,26 @@ class NodeiraRepository(
         auth.userEmail = res.user.email
     }
 
-    fun logout() = auth.clearSession()
+    fun logout() {
+        auth.clearSession()
+        // The cache holds note titles and folder names; it must not survive the session.
+        cache.clear()
+    }
 
     private fun requireApi() =
         network.apiFor(auth.serverUrl ?: error("No server configured"))
 
     suspend fun getNotes(): List<NoteDto> =
-        requireApi().getNotes().sortedByDescending { it.updatedAt ?: "" }
+        requireApi().getNotes().sortedByDescending { it.updatedAt ?: "" }.also(cache::saveNotes)
 
     suspend fun getVaults(): List<com.deranjer.nodeira.data.net.VaultDto> =
-        requireApi().getVaults().sortedBy { it.name.lowercase() }
+        requireApi().getVaults().sortedBy { it.name.lowercase() }.also(cache::saveVaults)
 
     suspend fun getFolders(vaultId: String? = null): List<com.deranjer.nodeira.data.net.FolderDto> =
         requireApi().getFolders(vaultId).sortedBy { it.name.lowercase() }
+            // Only the unfiltered list is a faithful snapshot; a vault-filtered one would
+            // overwrite the cache with a subset.
+            .also { if (vaultId == null) cache.saveFolders(it) }
 
     suspend fun createNote(
         type: String,
@@ -70,10 +100,10 @@ class NodeiraRepository(
 
     suspend fun deleteReminder(id: String) = requireApi().deleteReminder(id)
 
-    suspend fun getGraph(): List<com.deranjer.nodeira.data.net.GraphLink> = requireApi().getGraph()
+    suspend fun getGraph(): List<com.deranjer.nodeira.data.net.GraphLink> = requireApi().getGraph().also(cache::saveGraph)
 
     suspend fun getCanvases(): List<com.deranjer.nodeira.data.net.CanvasDto> =
-        requireApi().getCanvases().sortedByDescending { it.updatedAt ?: "" }
+        requireApi().getCanvases().also(cache::saveCanvases).sortedByDescending { it.updatedAt ?: "" }
 
     suspend fun createCanvas(title: String): com.deranjer.nodeira.data.net.CanvasDto =
         requireApi().createCanvas(com.deranjer.nodeira.data.net.CreateCanvasBody(title = title))
