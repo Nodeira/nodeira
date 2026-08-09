@@ -6,7 +6,8 @@
     "moduleResolution": "node",
     "outDir": "./dist",
     "rootDir": ".",
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "lib": ["ES2022", "DOM"]
   },
   "include": ["."]
 }
