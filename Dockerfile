@@ -44,12 +44,26 @@ COPY packages/eslint-config ./packages/eslint-config
 RUN cd apps/api && pnpm exec prisma generate
 RUN pnpm exec turbo run build --filter=@nodeira/api... --filter=@nodeira/web...
 
+# Drop devDependencies now that everything is built. Stage 2 copied the builder's entire
+# node_modules, so the runtime image shipped TypeScript, Vite, ESLint, Electron Forge,
+# Playwright and the rest -- the bulk of a 2.4 GB image.
+#
+# Order matters: `prisma generate` writes the client into node_modules/@prisma/client, and
+# pruning reinstalls that package and discards it. So prune first, then regenerate. The
+# regenerate step is also why `prisma` moved to dependencies -- the server runs
+# `prisma migrate deploy` on boot, so it has to survive the prune either way.
+# confirmModulesPurge=false because switching an existing install to --prod makes pnpm want
+# to remove node_modules, and it refuses to do that unprompted without a TTY.
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts --store-dir /pnpm/store     --config.confirmModulesPurge=false
+RUN cd apps/api && pnpm exec prisma generate
+
 # ── Stage 2: Production image ─────────────────────────────────────────────────
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Production node_modules (includes generated Prisma client)
+# Production-only node_modules (devDependencies pruned in the builder), including the
+# generated Prisma client.
 COPY --from=builder /app/node_modules ./node_modules
 
 # Workspace package that node_modules/@nodeira/shared-types symlinks to

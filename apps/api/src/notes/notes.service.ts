@@ -97,6 +97,20 @@ export class NotesService {
     return note;
   }
 
+  /**
+   * findOne for HTTP responses: the same note without its Yjs state.
+   *
+   * yjsState is a Bytes column, and JSON-serialising it produces an object with one
+   * numeric key per byte — hundreds of lines of noise around the handful of fields a
+   * caller wants. It is worst for the CLI, whose whole purpose is being read by an agent.
+   * findAll already omitted it; only the single-note route leaked it. No client reads it:
+   * note content travels over the sync protocol, or as Markdown via /notes/:id/content.
+   */
+  async findOneForResponse(userId: string, id: string, vaultScope?: string | null) {
+    const { yjsState: _yjsState, ...meta } = await this.findOne(userId, id, vaultScope);
+    return meta;
+  }
+
   async update(userId: string, id: string, dto: UpdateNoteDto, vaultScope?: string | null) {
     await this.findOne(userId, id, vaultScope, VaultRole.EDITOR);
     // Moving a note into another vault requires write access to the destination too,

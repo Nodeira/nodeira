@@ -52,7 +52,7 @@ export class NotesController {
 
   @Get(":id")
   findOne(@Request() req: RequestWithUser, @Param("id") id: string) {
-    return this.notesService.findOne(req.user.id, id, req.user.vaultScope);
+    return this.notesService.findOneForResponse(req.user.id, id, req.user.vaultScope);
   }
 
   // Must be before PATCH :id so "reorder" is not treated as an id param
