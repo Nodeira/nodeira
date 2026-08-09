@@ -7,6 +7,7 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import { existsSync } from "fs";
 import { join } from "path";
 import { AppStateModule } from "./app-state/app-state.module.js";
+import { AttachmentsModule } from "./attachments/attachments.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { FoldersModule } from "./folders/folders.module.js";
@@ -35,7 +36,10 @@ const webDistPath = join(process.cwd(), "public");
       ? [
           ServeStaticModule.forRoot({
             rootPath: webDistPath,
-            // Don't intercept API, WebSocket, Swagger, or upload paths
+            // Don't intercept API, WebSocket or Swagger paths.
+            // `/uploads` is no longer served at all (attachments moved behind
+            // /api/v1/attachments), but it stays excluded so a stale client asking for one
+            // gets a 404 rather than 200 index.html dressed up as a PNG.
             exclude: ["/api/(.*)", "/sync(.*)", "/notifications(.*)", "/docs(.*)", "/uploads(.*)"],
           }),
         ]
@@ -43,6 +47,7 @@ const webDistPath = join(process.cwd(), "public");
     AuthModule,
     SetupModule,
     AppStateModule,
+    AttachmentsModule,
     DatabaseModule,
     DocumentBridgeModule,
     FoldersModule,

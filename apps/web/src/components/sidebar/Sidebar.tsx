@@ -40,6 +40,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { authUserAtom, currentVaultAtom, viewsPaneOpenAtom } from "../../store/atoms.js";
 import { destroyAllYjsContexts } from "../../providers/YjsProvider.js";
 import { authStorage } from "../../lib/authStorage.js";
+import { clearAttachmentTicket } from "../../lib/attachments.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 import { DynamicIcon } from "../DynamicIcon.js";
 import { SortableNoteItem } from "./SortableNoteItem.js";
@@ -107,6 +108,9 @@ export function Sidebar({
     // it, so without this every cached socket stays open authenticated as the user who
     // just logged out, until a full page reload.
     destroyAllYjsContexts();
+    // Same reasoning as the sockets: the attachment ticket outlives the session token by up
+    // to an hour, so it has to be dropped explicitly rather than left for the next user.
+    clearAttachmentTicket();
     authStorage.clear();
     setAuthUser(null);
     void navigate({ to: "/login" });

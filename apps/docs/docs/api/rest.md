@@ -303,21 +303,44 @@ Returns `422 Unprocessable Entity` if the URL cannot be fetched.
 
 ---
 
-## Upload
+## Attachments
 
 ### `POST /api/v1/upload`
 
-Uploads an image file.
+Uploads an image or PDF.
 
 **Request** — `multipart/form-data`, field name `file`.
 
-**Constraints** — images only, max 10 MB.
+**Constraints** — PNG, JPEG, GIF, WebP or PDF, detected from the file's magic bytes; max 50 MB.
 
 **Response**
 
 ```json
 { "url": "/uploads/<uuid>.<ext>" }
 ```
+
+The returned string is an identifier stored inside the note, not a fetchable path — nothing is
+served under `/uploads`. Read it back through the route below.
+
+### `GET /api/v1/attachments/:filename`
+
+Returns the file. Requires either an `Authorization: Bearer` header (session JWT or `ndra_` API
+token) or a `?t=<ticket>` query parameter. Responds `401` without one and `404` for a filename
+that is not a well-formed `<uuid>.<ext>` or has no file behind it.
+
+### `GET /api/v1/attachments/ticket`
+
+Issues a short-lived credential for clients that cannot set a header on the fetch — an `<img>`
+tag, or a PDF viewer given a URL.
+
+**Response**
+
+```json
+{ "ticket": "<opaque>", "expiresAt": 1760000000000 }
+```
+
+`expiresAt` is epoch milliseconds, roughly an hour out. The ticket unlocks
+`GET /api/v1/attachments/:filename` and nothing else.
 
 ---
 

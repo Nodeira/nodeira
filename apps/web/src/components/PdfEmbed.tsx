@@ -4,17 +4,25 @@ import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from "@tiptap
 import type { NodeViewProps } from "@tiptap/react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ActionIcon, Box, Group, Loader, Text } from "@mantine/core";
-import { IconChevronLeft, IconChevronRight, IconExternalLink, IconFileTypePdf } from "@tabler/icons-react";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconExternalLink,
+  IconFileTypePdf,
+} from "@tabler/icons-react";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 // ?url tells Vite to resolve the npm package path and return the correct asset URL.
 // new URL('bare-specifier', import.meta.url) only works for local relative paths in Vite.
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { useAttachmentUrl } from "../lib/attachments.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 function PdfEmbedView({ node }: NodeViewProps) {
   const { src, title } = node.attrs as { src: string; title: string };
+  // `src` stays the stored `/uploads/<uuid>.pdf`; this is the fetchable form of it.
+  const resolved = useAttachmentUrl(src);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [error, setError] = useState(false);
@@ -43,7 +51,10 @@ function PdfEmbedView({ node }: NodeViewProps) {
           px="sm"
           py={6}
           gap="xs"
-          style={{ background: "var(--mantine-color-default-hover)", borderBottom: "1px solid var(--mantine-color-default-border)" }}
+          style={{
+            background: "var(--mantine-color-default-hover)",
+            borderBottom: "1px solid var(--mantine-color-default-border)",
+          }}
         >
           <IconFileTypePdf size={16} color="var(--mantine-color-red-6)" />
           <Text size="sm" fw={500} style={{ flex: 1 }} truncate>
@@ -53,9 +64,10 @@ function PdfEmbedView({ node }: NodeViewProps) {
             size="xs"
             variant="subtle"
             title="Open PDF in new tab"
+            disabled={!resolved}
             onClick={(e) => {
               e.stopPropagation();
-              window.open(src, "_blank", "noopener,noreferrer");
+              if (resolved) window.open(resolved, "_blank", "noopener,noreferrer");
             }}
           >
             <IconExternalLink size={14} />
@@ -91,11 +103,17 @@ function PdfEmbedView({ node }: NodeViewProps) {
         <Box style={{ maxHeight: "70vh", overflow: "auto", background: "#525659" }}>
           {error ? (
             <Box p="md">
-              <Text size="sm" c="red">Failed to load PDF.</Text>
+              <Text size="sm" c="red">
+                Failed to load PDF.
+              </Text>
+            </Box>
+          ) : resolved === undefined ? (
+            <Box p="xl" style={{ display: "flex", justifyContent: "center" }}>
+              <Loader size="sm" />
             </Box>
           ) : (
             <Document
-              file={src}
+              file={resolved}
               onLoadSuccess={onLoadSuccess}
               onLoadError={() => setError(true)}
               loading={
@@ -104,12 +122,7 @@ function PdfEmbedView({ node }: NodeViewProps) {
                 </Box>
               }
             >
-              <Page
-                pageNumber={pageNumber}
-                width={700}
-                renderAnnotationLayer
-                renderTextLayer
-              />
+              <Page pageNumber={pageNumber} width={700} renderAnnotationLayer renderTextLayer />
             </Document>
           )}
         </Box>

@@ -94,11 +94,11 @@ location /sync/ {
 location /api/ {
     proxy_pass http://server:3001;
 }
-
-location /uploads/ {
-    proxy_pass http://server:3001;
-}
 ```
+
+No `/uploads/` block is needed: attachments are fetched through `/api/v1/attachments/`, which the
+`/api/` rule already covers. If you are upgrading from a release that had one, **remove it** —
+that location proxied a directory the server used to hand out with no authentication.
 
 ## Database migrations
 
