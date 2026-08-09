@@ -1,5 +1,12 @@
-# Reinstalled fresh during build
-node_modules
+# Reinstalled fresh during build.
+#
+# The pattern must be `**/node_modules`, not `node_modules`: .dockerignore patterns are
+# anchored to the context root, so the bare form excluded only ./node_modules. The nested
+# ones were copied in by `COPY apps/api ./apps/api`, overwriting the workspace symlinks
+# pnpm had just created with the host's — which on Windows are absolute
+# (`G:/Programming/nodeira/packages/shared-types`) and resolve to nothing in the image.
+# @nodeira/shared-types then failed to resolve and the api and web builds died.
+**/node_modules
 
 # Version control
 .git
