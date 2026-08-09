@@ -44,6 +44,7 @@ class ReminderScheduler(private val context: Context) {
             body = reminder.body,
             recurrence = reminder.recurrence,
             baseFireAt = reminder.fireAt,
+            timezone = reminder.timezone,
         )
         val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
             alarmManager.canScheduleExactAlarms()
@@ -64,8 +65,17 @@ class ReminderScheduler(private val context: Context) {
     }
 
     fun cancel(id: String) {
+        // Extras play no part in PendingIntent equality — only the action, data and component
+        // do — so the placeholders here still resolve to the alarm that was scheduled.
         alarmManager.cancel(
-            pendingIntent(id, title = "", body = null, recurrence = null, baseFireAt = null),
+            pendingIntent(
+                id,
+                title = "",
+                body = null,
+                recurrence = null,
+                baseFireAt = null,
+                timezone = null,
+            ),
         )
     }
 
@@ -78,6 +88,7 @@ class ReminderScheduler(private val context: Context) {
         body: String?,
         recurrence: String?,
         baseFireAt: String?,
+        timezone: String?,
     ): PendingIntent {
         val intent = Intent(context, ReminderAlarmReceiver::class.java).apply {
             action = ReminderAlarmReceiver.ACTION_FIRE
@@ -89,6 +100,7 @@ class ReminderScheduler(private val context: Context) {
             putExtra(ReminderAlarmReceiver.EXTRA_BODY, body)
             putExtra(ReminderAlarmReceiver.EXTRA_RECURRENCE, recurrence)
             putExtra(ReminderAlarmReceiver.EXTRA_BASE_FIRE_AT, baseFireAt)
+            putExtra(ReminderAlarmReceiver.EXTRA_TIMEZONE, timezone)
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getBroadcast(context, id.hashCode(), intent, flags)
@@ -101,7 +113,29 @@ class ReminderScheduler(private val context: Context) {
         fun triggerTimeMillis(r: ReminderDto): Long? {
             r.snoozeUntil?.let { return parseMillis(it) }
             val base = r.fireAt?.let { parseMillis(it) } ?: return null
-            return if (r.recurrence.isNullOrBlank()) base else nextOccurrence(base, r.recurrence)
+            return if (r.recurrence.isNullOrBlank()) {
+                base
+            } else {
+                nextOccurrence(base, r.recurrence, zoneOf(r.timezone))
+            }
+        }
+
+        /**
+         * The reminder's own zone, falling back to the device's.
+         *
+         * `ReminderDto.timezone` was carried from the API and never read, so recurrence was
+         * computed in whatever zone the phone was currently in. That is usually right and
+         * quietly wrong for a traveller: a daily 09:00 reminder set at home starts firing at
+         * 09:00 local wherever the phone has been carried to, which is not what was asked for.
+         */
+        fun zoneOf(timezone: String?): ZoneId {
+            if (timezone.isNullOrBlank()) return ZoneId.systemDefault()
+            return try {
+                ZoneId.of(timezone)
+            } catch (_: Exception) {
+                Log.w(TAG, "Unknown reminder time zone \"$timezone\"; using the device zone")
+                ZoneId.systemDefault()
+            }
         }
 
         /** Parses an ISO-8601 instant (with `Z` or an offset) to epoch millis. */
@@ -115,9 +149,18 @@ class ReminderScheduler(private val context: Context) {
             }
         }
 
-        /** Advances [baseMillis] by the recurrence step until it is in the future. */
-        fun nextOccurrence(baseMillis: Long, recurrence: String): Long {
-            val zone = ZoneId.systemDefault()
+        /**
+         * Advances [baseMillis] by the recurrence step until it is in the future, keeping the
+         * wall-clock time in [zone].
+         *
+         * `ZonedDateTime.plusDays` preserves the local time across a DST transition (unlike
+         * adding 24 hours to an instant), so the only thing that was wrong here was the zone.
+         */
+        fun nextOccurrence(
+            baseMillis: Long,
+            recurrence: String,
+            zone: ZoneId = ZoneId.systemDefault(),
+        ): Long {
             var dt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(baseMillis), zone)
             val now = ZonedDateTime.now(zone)
             while (dt.isBefore(now)) {

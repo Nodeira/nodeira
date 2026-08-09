@@ -10,6 +10,7 @@ import {
   MinLength,
   ValidateIf,
 } from "class-validator";
+import { IsTimeZone } from "./is-time-zone.validator.js";
 
 export class CreateReminderDto {
   @IsString()
@@ -44,7 +45,7 @@ export class CreateReminderDto {
   @IsDateString()
   fireAt?: string;
 
-  @IsString()
+  @IsTimeZone()
   @IsOptional()
   timezone?: string;
 

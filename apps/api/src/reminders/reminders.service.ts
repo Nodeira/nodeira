@@ -1,12 +1,35 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import type { Prisma, Reminder } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service.js";
 import type { CreateReminderDto } from "./dto/create-reminder.dto.js";
 import type { UpdateReminderDto } from "./dto/update-reminder.dto.js";
 import type { RegisterDeviceDto } from "./dto/register-device.dto.js";
+import {
+  addRecurrence,
+  instantFromWallClock,
+  isValidTimeZone,
+  wallClockIn,
+  type Recurrence,
+} from "./zoned-time.js";
+
+const RECURRENCES: readonly string[] = ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"];
+
+function isRecurrence(value: string): value is Recurrence {
+  return RECURRENCES.includes(value);
+}
+
+/** The reminder's zone when usable, UTC otherwise. Never throws on bad stored data. */
+function resolveZone(timezone: string | null | undefined, logger: Logger): string {
+  if (!timezone) return "UTC";
+  if (isValidTimeZone(timezone)) return timezone;
+  logger.warn(`Reminder has unknown time zone "${timezone}"; falling back to UTC`);
+  return "UTC";
+}
 
 @Injectable()
 export class RemindersService {
+  private readonly logger = new Logger(RemindersService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // --- Reminders CRUD ---
@@ -112,7 +135,12 @@ export class RemindersService {
   /** After a reminder fires: advance recurring ones, otherwise mark FIRED. */
   async markFired(reminder: Reminder, now: Date): Promise<void> {
     const next = reminder.recurrence
-      ? this.computeNextOccurrence(reminder.fireAt ?? now, reminder.recurrence, now)
+      ? this.computeNextOccurrence(
+          reminder.fireAt ?? now,
+          reminder.recurrence,
+          now,
+          reminder.timezone,
+        )
       : null;
 
     await this.prisma.reminder.update({
@@ -123,30 +151,34 @@ export class RemindersService {
     });
   }
 
-  /** Advance `from` by the recurrence interval until strictly after `now`. */
-  computeNextOccurrence(from: Date, recurrence: string, now: Date): Date {
-    const next = new Date(from);
-    const advance = () => {
-      switch (recurrence) {
-        case "DAILY":
-          next.setDate(next.getDate() + 1);
-          break;
-        case "WEEKLY":
-          next.setDate(next.getDate() + 7);
-          break;
-        case "MONTHLY":
-          next.setMonth(next.getMonth() + 1);
-          break;
-        case "YEARLY":
-          next.setFullYear(next.getFullYear() + 1);
-          break;
-        default:
-          next.setTime(now.getTime() + 60_000); // unknown cadence: nudge forward a minute
-      }
-    };
-    do {
-      advance();
-    } while (next <= now);
+  /**
+   * Advance `from` by the recurrence interval until strictly after `now`, keeping the
+   * reminder's wall-clock time in its own zone.
+   *
+   * `timezone` used to be written on every reminder and read by nothing: the arithmetic ran
+   * on `Date.setDate`/`setMonth`, which work in the *server's* zone. A DAILY reminder for
+   * 09:00 in a DST-observing zone therefore drifted to 08:00 or 10:00 twice a year, and the
+   * same row produced different answers on servers deployed in different zones.
+   *
+   * A reminder with no zone falls back to UTC rather than server-local, so the result depends
+   * on the data instead of on where the process happens to run.
+   */
+  computeNextOccurrence(from: Date, recurrence: string, now: Date, timezone?: string | null): Date {
+    if (!isRecurrence(recurrence)) {
+      // Unknown cadence: nudge forward a minute rather than loop forever.
+      return new Date(now.getTime() + 60_000);
+    }
+
+    const zone = resolveZone(timezone, this.logger);
+    let wall = wallClockIn(from, zone);
+    let next = from;
+
+    // Bounded so a pathological zone/step combination cannot spin. 4000 iterations covers
+    // more than a decade of catching up a daily reminder.
+    for (let i = 0; i < 4000 && next <= now; i++) {
+      wall = addRecurrence(wall, recurrence);
+      next = instantFromWallClock(wall, zone);
+    }
     return next;
   }
 
