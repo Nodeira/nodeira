@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
@@ -59,6 +60,7 @@ import com.deranjer.nodeira.ui.nav.AppDestination
 import com.deranjer.nodeira.ui.nav.AppScaffold
 import com.deranjer.nodeira.ui.notes.NoteListItem
 import com.deranjer.nodeira.ui.notes.NotesUiState
+import com.deranjer.nodeira.ui.notes.OfflineBanner
 import com.deranjer.nodeira.ui.notes.formatTimestamp
 
 @Composable
@@ -141,11 +143,15 @@ fun HomeScreen(
                                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
                             )
                         }
+                        if (state.offline) {
+                            item("offline") { OfflineBanner(state.lastSyncedAt) }
+                        }
                         item("vault") {
                             VaultRow(
                                 vaults = state.vaults,
                                 selectedVaultId = selectedVaultId,
                                 noteCount = scoped.size,
+                                offline = state.offline,
                                 onSelect = { selectedVaultId = it },
                             )
                         }
@@ -246,6 +252,7 @@ private fun VaultRow(
     vaults: List<VaultDto>,
     selectedVaultId: String?,
     noteCount: Int,
+    offline: Boolean,
     onSelect: (String?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -258,14 +265,17 @@ private fun VaultRow(
             headlineContent = { Text(selectedName) },
             supportingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // This row claimed "synced" unconditionally, which is a lie the moment a
+                    // refresh fails and the list is being served from the cache.
                     Icon(
-                        Icons.Filled.Sync,
+                        if (offline) Icons.Filled.CloudOff else Icons.Filled.Sync,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = if (offline) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.width(6.dp))
-                    Text("$noteCount notes · synced")
+                    Text("$noteCount notes · " + if (offline) "offline" else "synced")
                 }
             },
             leadingContent = {

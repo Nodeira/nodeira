@@ -4,9 +4,14 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
@@ -16,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -186,20 +192,65 @@ fun NotesStateBox(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-        when {
-            state.loading && state.notes.isEmpty() ->
-                CircularProgressIndicator(Modifier.align(Alignment.Center))
-            state.error != null ->
-                Text(
-                    state.error,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                )
-            state.notes.isEmpty() ->
-                Text(emptyMessage, modifier = Modifier.align(Alignment.Center))
-            else -> content()
+    Column(modifier = modifier.fillMaxSize()) {
+        // Shown when a refresh failed but a cached snapshot is on screen. Without it the
+        // list would look live while quietly being stale.
+        if (state.offline) {
+            OfflineBanner(state.lastSyncedAt)
         }
+        Box(modifier = Modifier.fillMaxSize()) {
+            when {
+                state.loading && state.notes.isEmpty() ->
+                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                state.error != null ->
+                    Text(
+                        state.error,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                    )
+                state.notes.isEmpty() ->
+                    Text(emptyMessage, modifier = Modifier.align(Alignment.Center))
+                else -> content()
+            }
+        }
+    }
+}
+
+/** Shared by every screen that can serve a cached snapshot. */
+@Composable
+fun OfflineBanner(lastSyncedAt: Long?) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Icon(
+                Icons.Filled.CloudOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = "Offline" + (lastSyncedAt?.let { " — showing notes from ${relativeTime(it)}" } ?: ""),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    }
+}
+
+/** Coarse "how stale is this" phrasing; exact timestamps are noise in a banner. */
+private fun relativeTime(epochMillis: Long): String {
+    val minutes = (System.currentTimeMillis() - epochMillis) / 60_000
+    return when {
+        minutes < 1 -> "just now"
+        minutes < 60 -> "$minutes min ago"
+        minutes < 60 * 24 -> "${minutes / 60} h ago"
+        else -> "${minutes / (60 * 24)} d ago"
     }
 }
 

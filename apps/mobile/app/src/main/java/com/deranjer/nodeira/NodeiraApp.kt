@@ -3,6 +3,7 @@ package com.deranjer.nodeira
 import android.app.Application
 import com.deranjer.nodeira.data.AuthStorage
 import com.deranjer.nodeira.data.NodeiraRepository
+import com.deranjer.nodeira.data.OfflineCache
 import com.deranjer.nodeira.data.ReminderCache
 import com.deranjer.nodeira.data.SettingsStorage
 import com.deranjer.nodeira.data.net.NetworkModule
@@ -30,8 +31,9 @@ class AppContainer(app: NodeiraApp) {
     val reminderScheduler = ReminderScheduler(app)
     val geofenceManager = LocationGeofenceManager(app)
     val reminderCache = ReminderCache(app)
+    val offlineCache = OfflineCache(app)
     private val network = NetworkModule(authStorage)
-    val repository = NodeiraRepository(authStorage, network)
+    val repository = NodeiraRepository(authStorage, network, offlineCache)
 
     /** Emits when the API returns 401 (expired session) — the UI navigates to login. */
     val unauthorized = network.unauthorized

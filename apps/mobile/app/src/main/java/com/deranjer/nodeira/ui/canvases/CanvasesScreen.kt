@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.Column
+import com.deranjer.nodeira.ui.notes.OfflineBanner
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -53,21 +55,28 @@ fun CanvasesScreen(
             }
         },
     ) {
-        when {
-            state.loading && state.canvases.isEmpty() ->
-                CircularProgressIndicator(Modifier.padding(24.dp))
-            state.error != null ->
-                Text(state.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
-            state.canvases.isEmpty() ->
-                Text("No canvases yet", modifier = Modifier.padding(24.dp))
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.canvases, key = { it.id }) { canvas ->
-                    CanvasRow(
-                        canvas = canvas,
-                        onClick = { onOpenCanvas(canvas.id) },
-                        onDelete = { viewModel.delete(canvas.id) },
+        Column {
+            if (state.offline) OfflineBanner(state.lastSyncedAt)
+            when {
+                state.loading && state.canvases.isEmpty() ->
+                    CircularProgressIndicator(Modifier.padding(24.dp))
+                state.error != null ->
+                    Text(
+                        state.error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(24.dp),
                     )
-                    HorizontalDivider()
+                state.canvases.isEmpty() ->
+                    Text("No canvases yet", modifier = Modifier.padding(24.dp))
+                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(state.canvases, key = { it.id }) { canvas ->
+                        CanvasRow(
+                            canvas = canvas,
+                            onClick = { onOpenCanvas(canvas.id) },
+                            onDelete = { viewModel.delete(canvas.id) },
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
         }
