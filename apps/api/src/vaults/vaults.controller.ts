@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Request,
+  UseGuards,
+} from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import type { RequestWithUser } from "../auth/request-with-user.js";
 import { VaultsService } from "./vaults.service.js";
@@ -41,7 +51,10 @@ export class VaultsController {
     return this.vaultsService.addMember(req.user.id, id, dto.userId, dto.role, req.user.vaultScope);
   }
 
+  // 204: there is no representation to return, and a 200 with an empty body is awkward
+  // for clients to parse.
   @Delete(":id/members/:userId")
+  @HttpCode(204)
   removeMember(
     @Request() req: RequestWithUser,
     @Param("id") id: string,

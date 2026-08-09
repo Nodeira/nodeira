@@ -29,6 +29,7 @@ import {
 import { loadPlugin } from "../../lib/pluginLoader.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 import type { Keybinds } from "../../lib/electronAPI.js";
+import { SharingTab } from "../../components/settings/SharingTab.js";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -44,6 +45,7 @@ function SettingsPage() {
           <Tabs.Tab value="general">General</Tabs.Tab>
           {isElectron && <Tabs.Tab value="connection">Connection</Tabs.Tab>}
           {isElectron && <Tabs.Tab value="keybinds">Keybinds</Tabs.Tab>}
+          <Tabs.Tab value="sharing">Sharing</Tabs.Tab>
           <Tabs.Tab value="plugins">Plugins</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="general" pt="md">
@@ -59,6 +61,9 @@ function SettingsPage() {
             <KeybindsTab />
           </Tabs.Panel>
         )}
+        <Tabs.Panel value="sharing" pt="md">
+          <SharingTab />
+        </Tabs.Panel>
         <Tabs.Panel value="plugins" pt="md">
           <PluginsTab />
         </Tabs.Panel>

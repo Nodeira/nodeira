@@ -9,6 +9,10 @@ import type {
   PluginRecord,
   Reminder,
   Vault,
+  VaultMember,
+  VaultRole,
+  DirectoryUser,
+  UserRole,
 } from "@nodeira/shared-types";
 import { authStorage } from "./authStorage.js";
 import { getApiBaseUrl } from "./serverConfig.js";
@@ -33,6 +37,41 @@ type RawVault = Omit<Vault, "createdAt" | "updatedAt"> & {
 };
 
 // ── Base client ───────────────────────────────────────────────────────────────
+
+/**
+ * An API failure that carries the status and the server's own message.
+ *
+ * `request` previously threw `new Error("API POST /notes failed: 403")` — a plain string
+ * with no status, so callers could not tell a 404 from a 500 and any message shown to a
+ * user was that raw sentence. Nest returns `{ message, statusCode }`, which is far more
+ * useful; `message` may be an array when the validation pipe rejects a body.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+function messageForStatus(status: number): string {
+  switch (status) {
+    case 400:
+      return "That request was not valid.";
+    case 403:
+      return "You do not have permission to do that.";
+    case 404:
+      return "Not found.";
+    case 409:
+      return "That already exists.";
+    case 429:
+      return "Too many attempts — wait a moment and try again.";
+    default:
+      return status >= 500 ? "The server ran into a problem." : "Request failed.";
+  }
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = authStorage.getToken();
@@ -60,13 +99,18 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (!res.ok) {
-    throw new Error(`API ${init.method ?? "GET"} ${path} failed: ${res.status}`);
+    const body = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
+    const fromServer = Array.isArray(body?.message) ? body.message.join(", ") : body?.message;
+    throw new ApiError(res.status, fromServer || messageForStatus(res.status));
   }
 
-  // 204 No Content — nothing to parse
+  // An empty body is not only a 204: a handler returning void yields 200 with no content,
+  // and res.json() throws on that. It surfaced as a delete that worked server-side while
+  // the UI reported failure and never refreshed, because the mutation landed in onError.
   if (res.status === 204) return undefined as T;
-
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -342,6 +386,65 @@ export async function createVault(name: string): Promise<Vault> {
 
 export async function deleteVault(id: string): Promise<void> {
   await request(`/vaults/${id}`, { method: "DELETE" });
+}
+
+// ── Vault sharing ─────────────────────────────────────────────────────────────
+// Access is decided by vault membership, so these are what actually grant another user
+// sight of a vault's notes. The endpoints shipped with multi-user; nothing drove them
+// until now, which left sharing API-only.
+
+export const vaultMembersKeys = {
+  forVault: (vaultId: string) => ["vaults", vaultId, "members"] as const,
+};
+
+interface RawVaultMember extends Omit<VaultMember, "createdAt"> {
+  createdAt: string;
+}
+
+export async function getVaultMembers(vaultId: string): Promise<VaultMember[]> {
+  const raw = await request<RawVaultMember[]>(`/vaults/${vaultId}/members`);
+  return raw.map((m) => ({ ...m, createdAt: new Date(m.createdAt) }));
+}
+
+export async function addVaultMember(
+  vaultId: string,
+  userId: string,
+  role: VaultRole,
+): Promise<void> {
+  await request(`/vaults/${vaultId}/members`, {
+    method: "POST",
+    body: JSON.stringify({ userId, role }),
+  });
+}
+
+export async function removeVaultMember(vaultId: string, userId: string): Promise<void> {
+  await request(`/vaults/${vaultId}/members/${userId}`, { method: "DELETE" });
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+export const usersKeys = {
+  all: ["users"] as const,
+};
+
+interface RawDirectoryUser extends Omit<DirectoryUser, "createdAt"> {
+  createdAt: string;
+}
+
+/** Directory for the sharing picker. Any authenticated user may read it. */
+export async function getUsers(): Promise<DirectoryUser[]> {
+  const raw = await request<RawDirectoryUser[]>("/users");
+  return raw.map((u) => ({ ...u, createdAt: new Date(u.createdAt) }));
+}
+
+/** Admin-only. There is deliberately no public registration. */
+export async function createUser(body: {
+  email: string;
+  password: string;
+  name?: string;
+  role?: UserRole;
+}): Promise<DirectoryUser> {
+  return request<DirectoryUser>("/users", { method: "POST", body: JSON.stringify(body) });
 }
 
 export async function deleteFolder(id: string): Promise<void> {
