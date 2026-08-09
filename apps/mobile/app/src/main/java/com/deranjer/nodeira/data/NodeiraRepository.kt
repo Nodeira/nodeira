@@ -40,15 +40,22 @@ class NodeiraRepository(
 
     suspend fun createNote(
         type: String,
-        vaultId: String?,
+        vaultId: String,
         folderId: String? = null,
     ): NoteDto = requireApi().createNote(
         com.deranjer.nodeira.data.net.CreateNoteBody(type = type, vaultId = vaultId, folderId = folderId),
     )
 
+    suspend fun updateNote(
+        id: String,
+        body: com.deranjer.nodeira.data.net.UpdateNoteBody,
+    ): NoteDto = requireApi().updateNote(id, body)
+
+    suspend fun deleteNote(id: String) = requireApi().deleteNote(id)
+
     suspend fun createFolder(
         name: String,
-        vaultId: String?,
+        vaultId: String,
     ): com.deranjer.nodeira.data.net.FolderDto = requireApi().createFolder(
         com.deranjer.nodeira.data.net.CreateFolderBody(name = name, vaultId = vaultId),
     )

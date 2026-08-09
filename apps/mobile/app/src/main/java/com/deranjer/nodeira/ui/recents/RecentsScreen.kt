@@ -46,6 +46,9 @@ fun RecentsScreen(
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit,
     onCreateNote: (onCreated: (String) -> Unit) -> Unit,
+    onDeleteNote: (String) -> Unit,
+    onTogglePin: (id: String, pinned: Boolean) -> Unit,
+    onRenameNote: (id: String, title: String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var sort by remember { mutableStateOf(SortOrder.UPDATED) }
@@ -112,6 +115,9 @@ fun RecentsScreen(
                             onClick = { onOpenNote(note.id) },
                             supporting = note.updatedAt?.let { formatTimestamp(it) },
                             showPinTrailing = true,
+                            onDelete = { onDeleteNote(note.id) },
+                            onTogglePin = { onTogglePin(note.id, !note.pinned) },
+                            onRename = { onRenameNote(note.id, it) },
                         )
                     }
                 }

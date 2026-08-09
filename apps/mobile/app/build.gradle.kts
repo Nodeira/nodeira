@@ -36,7 +36,10 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 was off, so release APKs shipped every class and method name intact and
+            // considerably larger than necessary. Resource shrinking rides along with it.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -61,6 +64,8 @@ android {
 
     buildFeatures {
         compose = true
+        // EditorWebViewActivity gates remote debugging and mixed content on BuildConfig.DEBUG.
+        buildConfig = true
     }
 }
 
@@ -69,6 +74,8 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.webkit:webkit:1.12.1")
+    // Keystore-backed preferences for the session JWT, which used to sit in plaintext.
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     // Provides the Material3 XML theme used as the activity base theme (see AndroidManifest).
     implementation("com.google.android.material:material:1.12.0")
 

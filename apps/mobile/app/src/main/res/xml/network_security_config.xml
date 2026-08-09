@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release builds require HTTPS.
+
+  The manifest previously set android:usesCleartextTraffic="true" unconditionally, so a
+  shipped APK would happily send the bearer token and every note over plain HTTP. The debug
+  variant overrides this file (src/debug/res/xml) to allow cleartext against a local dev
+  server, which is the only place it is actually needed.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

@@ -119,6 +119,9 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onLogout = { logout(navController, container) },
                 onRefresh = vm::refresh,
                 onCreateNote = { type, vaultId, onCreated -> vm.createNote(type, vaultId, onCreated) },
+                onDeleteNote = { id -> vm.deleteNote(id) },
+                onTogglePin = { id, pinned -> vm.setNotePinned(id, pinned) },
+                onRenameNote = { id, title -> vm.renameNote(id, title) },
                 onCreateFolder = { name, vaultId -> vm.createFolder(name, vaultId) },
             )
         }
@@ -132,6 +135,9 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onNavigate = { navController.navigateTopLevel(it) },
                 onLogout = { logout(navController, container) },
                 onCreateNote = { onCreated -> vm.createNote("note", null, onCreated) },
+                onDeleteNote = { id -> vm.deleteNote(id) },
+                onTogglePin = { id, pinned -> vm.setNotePinned(id, pinned) },
+                onRenameNote = { id, title -> vm.renameNote(id, title) },
             )
         }
 

@@ -26,6 +26,14 @@ interface NodeiraApi {
     @POST("notes")
     suspend fun createNote(@Body body: CreateNoteBody): NoteDto
 
+    // The app could create and read notes but never rename, pin, move or remove one — the
+    // only way to delete a note from a phone was to open the editor WebView.
+    @PATCH("notes/{id}")
+    suspend fun updateNote(@Path("id") id: String, @Body body: UpdateNoteBody): NoteDto
+
+    @DELETE("notes/{id}")
+    suspend fun deleteNote(@Path("id") id: String)
+
     @GET("vaults")
     suspend fun getVaults(): List<VaultDto>
 
