@@ -15,7 +15,7 @@ import { yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import { ApiTokenService } from "../auth/api-token.service.js";
 import type { AuthenticatedUser } from "../auth/jwt.strategy.js";
 import { NotesService } from "../notes/notes.service.js";
-import { DocumentBridge } from "./document-bridge.service.js";
+import { DocumentBridge, type SyncContext } from "./document-bridge.service.js";
 
 type PmNode = { type: string; content?: PmNode[]; attrs?: Record<string, unknown> };
 
@@ -39,10 +39,6 @@ function extractHashTags(node: PmNode): string[] {
     tags.push(...extractHashTags(child));
   }
   return tags;
-}
-
-interface SyncContext {
-  user: AuthenticatedUser;
 }
 
 @Injectable()
@@ -103,8 +99,18 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
       },
 
       async onLoadDocument({ document, documentName, context }) {
-        const { user } = context as SyncContext;
-        // Already authorized in onAuthenticate; this only loads persisted state.
+        // Sockets get a context from onAuthenticate; direct connections get one from
+        // DocumentBridge. A missing one means a third way of opening a document appeared
+        // without carrying a caller — say so, rather than throwing a TypeError on destructure.
+        const sync = context as SyncContext | undefined;
+        if (!sync?.user) {
+          throw new Error(
+            `onLoadDocument called with no context for ${documentName}. Every connection must ` +
+              `carry the user it acts as (see DocumentBridge.transact).`,
+          );
+        }
+        const { user } = sync;
+        // Already authorized by the caller; this only loads persisted state.
         const note = await notesService.findOne(user.id, documentName, user.vaultScope);
         if (note.yjsState) {
           applyUpdate(document as Doc, note.yjsState);
@@ -135,8 +141,12 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
     });
 
     // Let REST handlers (PUT /notes/:id/content) mutate live documents through the sync
-    // server rather than overwriting yjs_state behind its back.
-    this.documentBridge.register((documentName) => this.server.openDirectConnection(documentName));
+    // server rather than overwriting yjs_state behind its back. The context is what
+    // onLoadDocument authorizes the read with — openDirectConnection takes one precisely
+    // because it bypasses onAuthenticate.
+    this.documentBridge.register((documentName, context) =>
+      this.server.openDirectConnection(documentName, context),
+    );
   }
 
   onModuleDestroy() {

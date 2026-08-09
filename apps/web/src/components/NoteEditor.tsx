@@ -16,7 +16,6 @@ import Collaboration from "@tiptap/extension-collaboration";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
-import Image from "@tiptap/extension-image";
 import { Link, RichTextEditor } from "@mantine/tiptap";
 import { createLowlight, common } from "lowlight";
 import {
@@ -50,6 +49,7 @@ import {
   uploadPdf,
 } from "../lib/api.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
+import { AttachmentImage } from "./AttachmentImage.js";
 import { PdfEmbed } from "./PdfEmbed.js";
 import { WikiLink } from "./WikiLink.js";
 import { HashTag } from "./HashTag.js";
@@ -326,7 +326,7 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
       CodeBlockLowlight.configure({ lowlight }),
       TaskList,
       TaskItem.configure({ nested: false }),
-      Image,
+      AttachmentImage,
       PdfEmbed,
       CanvasEmbed,
       WikiLink,

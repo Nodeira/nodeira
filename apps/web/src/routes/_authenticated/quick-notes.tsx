@@ -14,7 +14,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
-import Image from "@tiptap/extension-image";
+import { AttachmentImage } from "../../components/AttachmentImage.js";
 import {
   ActionIcon,
   Box,
@@ -107,7 +107,7 @@ function QuickNoteCard({
       Collaboration.configure({ document: doc }),
       TaskList,
       TaskItem.configure({ nested: false }),
-      Image,
+      AttachmentImage,
     ],
     onTransaction: ({ editor: e }) => {
       if (contentRef.current) {

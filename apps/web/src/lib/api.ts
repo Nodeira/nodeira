@@ -15,6 +15,7 @@ import type {
   UserRole,
 } from "@nodeira/shared-types";
 import { authStorage } from "./authStorage.js";
+import { clearAttachmentTicket } from "./attachments.js";
 import { getApiBaseUrl } from "./serverConfig.js";
 import { router } from "../router.js";
 import "./electronAPI.js";
@@ -88,6 +89,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (res.status === 401) {
     authStorage.clear();
+    clearAttachmentTicket();
     // Navigate via the router, not window.location: under Electron the app runs
     // on memory history from a file:// origin, so window.location.pathname is the
     // disk path (never "/login") and assigning window.location.href would try to

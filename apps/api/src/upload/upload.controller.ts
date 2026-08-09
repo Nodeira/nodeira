@@ -12,6 +12,7 @@ import { memoryStorage } from "multer";
 import { join } from "path";
 import { randomUUID } from "crypto";
 import { writeFile, mkdir } from "fs/promises";
+import { uploadsDir } from "../attachments/uploads-dir.js";
 
 const MAGIC: Array<{ bytes: (number | null)[]; mime: string; ext: string }> = [
   { bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], mime: "image/png", ext: ".png" },
@@ -48,11 +49,14 @@ export class UploadController {
     const detected = detectFileType(file.buffer);
     if (!detected) throw new BadRequestException("Only image or PDF files are allowed");
 
-    const uploadsDir = join(process.cwd(), "uploads");
-    await mkdir(uploadsDir, { recursive: true });
+    const dir = uploadsDir();
+    await mkdir(dir, { recursive: true });
     const filename = `${randomUUID()}${detected.ext}`;
-    await writeFile(join(uploadsDir, filename), file.buffer);
+    await writeFile(join(dir, filename), file.buffer);
 
+    // Still `/uploads/<name>` — this string is what gets embedded in note Yjs documents, and
+    // every note ever written already holds that form. Clients resolve it to the authenticated
+    // /api/v1/attachments route at render time, so the stored value never has to change.
     return { url: `/uploads/${filename}` };
   }
 }

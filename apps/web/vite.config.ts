@@ -21,10 +21,9 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
-      "/uploads": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-      },
+      // No /uploads entry: attachments are fetched from /api/v1/attachments/<name>, which
+      // the /api rule already proxies. The stored `/uploads/<name>` string is resolved
+      // client-side (see lib/attachments.ts) and never requested as-is.
       "/sync": {
         target: "ws://localhost:3001",
         ws: true,

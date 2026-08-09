@@ -6,9 +6,9 @@ import { SyncWsAdapter } from "./sync/sync-ws-adapter.js";
 import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, mkdirSync } from "fs";
-import { join } from "path";
 import helmet from "helmet";
 import { AppModule } from "./app.module.js";
+import { uploadsDir } from "./attachments/uploads-dir.js";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -23,10 +23,11 @@ async function bootstrap() {
     defaultVersion: "1",
   });
 
-  // Ensure uploads directory exists and serve it at /uploads/<filename>
-  const uploadsDir = join(process.cwd(), "uploads");
-  if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
-  app.useStaticAssets(uploadsDir, { prefix: "/uploads" });
+  // Ensure the uploads directory exists. It is NOT served statically: every uploaded image
+  // and PDF used to be fetchable at /uploads/<uuid> with no credential at all, the UUID being
+  // the only thing standing between an attachment and the open internet. Reads now go through
+  // /api/v1/attachments/<uuid>, which authenticates (see AttachmentsController).
+  if (!existsSync(uploadsDir())) mkdirSync(uploadsDir(), { recursive: true });
 
   // Use raw WebSocket adapter — y-websocket/Hocuspocus protocol is incompatible with Socket.IO.
   // SyncWsAdapter overrides exact-path matching so the /sync gateway accepts
