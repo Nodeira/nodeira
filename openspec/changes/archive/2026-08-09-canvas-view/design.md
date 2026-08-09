@@ -7,6 +7,7 @@ The frontend already uses React Flow-compatible patterns: `@dnd-kit` for drag-an
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Infinite canvas with five node types matching the JSON Canvas spec (text, file/note, link/web-preview, group, + image extension)
 - Edges with optional labels and arrow styles
 - Server-side OG metadata proxy for web preview nodes
@@ -15,6 +16,7 @@ The frontend already uses React Flow-compatible patterns: `@dnd-kit` for drag-an
 - Dedicated sidebar nav section (Canvases) parallel to Graph, Quick Notes, Tags
 
 **Non-Goals:**
+
 - Real-time multi-user collaboration on canvases (no Yjs/Hocuspocus for v1)
 - Full web page screenshot capture (Puppeteer / headless Chrome)
 - Canvas-to-note conversion or export
@@ -62,13 +64,13 @@ The frontend already uses React Flow-compatible patterns: `@dnd-kit` for drag-an
 
 ## Risks / Trade-offs
 
-| Risk | Mitigation |
-|------|------------|
-| Large canvas data causes slow saves | Debounce auto-save at 1500ms; consider partial node updates in a v2 |
-| `og:image` URLs may be relative or inaccessible after fetch | Normalize relative URLs against base URL; skip image if fetch fails |
-| React Flow bundle size (~200KB gzip) increases web app load time | Code-split the canvas route with `React.lazy` |
-| Canvas route not auto-discovered by TanStack Router if file naming is wrong | File must follow exact naming convention: `canvas.$canvasId.tsx` |
-| ProseMirror node conflicts if `CanvasEmbed` node name collides | Name the TipTap extension `canvasEmbed` (camelCase, unique in schema) |
+| Risk                                                                        | Mitigation                                                            |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Large canvas data causes slow saves                                         | Debounce auto-save at 1500ms; consider partial node updates in a v2   |
+| `og:image` URLs may be relative or inaccessible after fetch                 | Normalize relative URLs against base URL; skip image if fetch fails   |
+| React Flow bundle size (~200KB gzip) increases web app load time            | Code-split the canvas route with `React.lazy`                         |
+| Canvas route not auto-discovered by TanStack Router if file naming is wrong | File must follow exact naming convention: `canvas.$canvasId.tsx`      |
+| ProseMirror node conflicts if `CanvasEmbed` node name collides              | Name the TipTap extension `canvasEmbed` (camelCase, unique in schema) |
 
 ## Migration Plan
 
