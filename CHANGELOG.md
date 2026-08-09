@@ -1,3 +1,16 @@
+# [1.16.0](https://github.com/Nodeira/nodeira/compare/v1.15.0...v1.16.0) (2026-08-09)
+
+
+### Bug Fixes
+
+* **api:** give direct document connections an authenticated context ([e1c4103](https://github.com/Nodeira/nodeira/commit/e1c41030b266478f1e7c0d3e253fc97a90dfa924))
+* **api:** put attachments behind authentication ([544cb50](https://github.com/Nodeira/nodeira/commit/544cb504db4b48178e0e23295c0cc54935e911e8))
+
+
+### Features
+
+* **mobile:** receive reminders over the notifications WebSocket ([2604fd3](https://github.com/Nodeira/nodeira/commit/2604fd3d2fe06bccb8fc015db234c1e8efca1844))
+
 # [1.15.0](https://github.com/Nodeira/nodeira/compare/v1.14.3...v1.15.0) (2026-08-09)
 
 
