@@ -25,6 +25,7 @@ import {
   patchAppState,
 } from "../lib/api.js";
 import { queryClient } from "../lib/queryClient.js";
+import { canvasIdFromPath, noteIdFromPath } from "../lib/routeMatch.js";
 
 type ContextMenuState = { tabId: string; x: number; y: number } | null;
 
@@ -54,10 +55,10 @@ export function TabBar() {
     queryFn: () => getCanvases(),
   });
 
-  const noteMatch = routerState.location.pathname.match(/^\/notes\/([^/]+)$/);
-  const canvasMatch = routerState.location.pathname.match(/^\/canvas\/([^/]+)$/);
-  const currentNoteId = noteMatch?.[1] ?? null;
-  const currentTabId = currentNoteId ?? (canvasMatch ? `${CANVAS_PREFIX}${canvasMatch[1]}` : null);
+  const currentNoteId = noteIdFromPath(routerState.location.pathname);
+  const currentCanvasId = canvasIdFromPath(routerState.location.pathname);
+  const currentTabId =
+    currentNoteId ?? (currentCanvasId ? `${CANVAS_PREFIX}${currentCanvasId}` : null);
 
   function navigateToTab(id: string) {
     if (isCanvasTab(id)) {

@@ -18,6 +18,7 @@ import { browsePaneViewAtom, currentVaultAtom } from "../store/atoms.js";
 import { getNotes, notesKeys, updateNoteKind } from "../lib/api.js";
 import { TASK_STATUSES } from "../lib/noteKindRegistry.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../lib/pluginRegistry.js";
+import { noteIdFromPath } from "../lib/routeMatch.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
 
 // ── Shared note card ──────────────────────────────────────────────────────────
@@ -277,7 +278,7 @@ export function BrowsePane() {
 
   const navigate = useNavigate();
   const routerState = useRouterState();
-  const activeNoteId = routerState.location.pathname.match(/^\/notes\/([^/]+)$/)?.[1] ?? null;
+  const activeNoteId = noteIdFromPath(routerState.location.pathname);
 
   const qc = useQueryClient();
   const kindMutation = useMutation({

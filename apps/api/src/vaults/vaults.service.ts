@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { VaultRole } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service.js";
+import { orNotFound } from "../database/prisma-errors.js";
 import type { CreateVaultDto } from "./dto/create-vault.dto.js";
 import { VaultAccessService } from "./vault-access.service.js";
 
@@ -95,10 +96,6 @@ export class VaultsService {
       throw new BadRequestException("Cannot delete a vault that still contains content");
     }
 
-    try {
-      return await this.prisma.vault.delete({ where: { id } });
-    } catch {
-      throw new NotFoundException(`Vault ${id} not found`);
-    }
+    return orNotFound(this.prisma.vault.delete({ where: { id } }), `Vault ${id} not found`);
   }
 }
