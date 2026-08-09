@@ -10,7 +10,6 @@ export interface Note {
   folderId: string | null;
   pinned: boolean;
   icon: string | null;
-  yjsState?: string; // base64-encoded Yjs binary (Y.encodeStateAsUpdate)
   createdAt: Date;
   updatedAt: Date;
   tags: string[];
