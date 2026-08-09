@@ -1,3 +1,10 @@
+## [1.14.3](https://github.com/Nodeira/nodeira/compare/v1.14.2...v1.14.3) (2026-08-09)
+
+
+### Bug Fixes
+
+* **mobile:** restore note creation, add note management, and harden release builds ([47b4a19](https://github.com/Nodeira/nodeira/commit/47b4a19ce5480a086742433aad6d00ae7121a0a9))
+
 ## [1.14.2](https://github.com/Nodeira/nodeira/compare/v1.14.1...v1.14.2) (2026-08-09)
 
 
