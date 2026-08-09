@@ -50,6 +50,11 @@ fun AppScaffold(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    // Every authenticated screen sits inside this scaffold, so asking here means the socket
+    // and the background sync can actually show what they receive, whether or not the user
+    // ever visits Reminders.
+    RequestNotificationPermission()
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {

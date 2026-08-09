@@ -25,6 +25,13 @@ else is being rebuilt as native screens. See the plan in
 >   with current-location capture, radius, notify-on-leave). TIME → `AlarmManager`;
 >   LOCATION → `LocationManager.addProximityAlert` (both Google-Play-Services-free). A
 >   `ReminderCache` + `BootReceiver` re-registers everything after a reboot.
+> - `data/net/ReminderSocket` — the `/notifications` WebSocket web and desktop use, connected
+>   while the app is foregrounded (`ProcessLifecycleOwner`). Delivers reminders that fire
+>   server-side, including ones created on another client.
+> - `reminders/ReminderSyncWorker` — periodic WorkManager sync so a reminder created elsewhere
+>   gets a local alarm even with the app closed. Deliberately not a foreground service:
+>   `AlarmManager` already fires through Doze, so the phone only needs to _learn_ about the
+>   reminder, not hold a socket open.
 > - `ui/settings` — server/account info, startup-screen preference, version.
 > - `editor/EditorWebViewActivity` — embedded web surfaces (note editor / canvas) launched
 >   with the stored server URL + JWT; path-based (`/embed/note/<id>`, `/embed/canvas/<id>`).
@@ -136,9 +143,10 @@ To ship: push a `v*` tag higher than the previous release (CI does the rest).
   and show an "Offline — showing notes from …" banner when a refresh fails, but creating,
   renaming, pinning and deleting still require the network and fail with no queue or retry.
   Editing note _content_ offline works, via the WebView's IndexedDB.
-- Reminders created on another client do not reach the phone until it refreshes: the app
-  does not yet connect to the `/notifications` WebSocket that web and desktop use. Time
-  reminders created _on the phone_ fire locally via `AlarmManager`.
+- Reminder delivery for a _closed_ app depends on `ReminderSyncWorker`'s cadence. WorkManager
+  will not run a periodic job more often than every 15 minutes and defers it under Doze, so a
+  reminder created on another client and due within the next few minutes may arrive late or
+  only on next app open. Anything further out gets its alarm well before it is due.
 - Geofence create + fire was not yet exercised end-to-end on a device (the dev JWT had
   expired); the code path is wired and the proximity-alert approach is standard. Verify by
   logging in, creating a Location reminder, and walking into the radius (or `adb emu geo fix`).

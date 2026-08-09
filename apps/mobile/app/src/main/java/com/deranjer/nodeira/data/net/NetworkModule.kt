@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.concurrent.TimeUnit
 
 /**
  * Builds [NodeiraApi] instances. The server URL is user-configurable at runtime, so the
@@ -52,6 +53,22 @@ class NetworkModule(private val auth: AuthStorage) {
         .addInterceptor(
             HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC },
         )
+        .build()
+
+    /**
+     * Client for the /notifications WebSocket.
+     *
+     * Shares the connection pool with [client] but drops the auth interceptor — that socket
+     * authenticates with a `?token=` query parameter, and a 401-triggered `clearSession()`
+     * from a handshake would log the user out over what is only a notifications channel.
+     *
+     * `pingInterval` matters more than it looks: without keepalive frames, a mobile NAT or a
+     * carrier proxy silently drops an idle socket, and the client goes on believing it is
+     * connected while nothing arrives.
+     */
+    val webSocketClient: OkHttpClient = client.newBuilder()
+        .apply { interceptors().clear() }
+        .pingInterval(30, TimeUnit.SECONDS)
         .build()
 
     private val cache = mutableMapOf<String, NodeiraApi>()

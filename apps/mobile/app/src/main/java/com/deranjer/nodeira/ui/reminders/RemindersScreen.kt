@@ -1,9 +1,5 @@
 package com.deranjer.nodeira.ui.reminders
 
-import android.Manifest
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,7 +17,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -44,15 +39,9 @@ fun RemindersScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // Ask for notification permission on first entry (Android 13+).
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { /* result ignored; reminders still schedule, notifications just won't show if denied */ }
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
+    // Notification permission is requested by AppScaffold, which wraps every authenticated
+    // screen — reminders now arrive over the socket and the background sync too, so asking
+    // only here left those silently unable to show anything.
 
     AppScaffold(
         title = "Reminders",

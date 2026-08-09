@@ -3,11 +3,12 @@ package com.deranjer.nodeira.ui.reminders
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deranjer.nodeira.data.NodeiraRepository
-import com.deranjer.nodeira.data.ReminderCache
 import com.deranjer.nodeira.data.net.CreateReminderBody
 import com.deranjer.nodeira.data.net.ReminderDto
+import com.deranjer.nodeira.data.net.ReminderSocket
 import com.deranjer.nodeira.reminders.LocationGeofenceManager
 import com.deranjer.nodeira.reminders.ReminderScheduler
+import com.deranjer.nodeira.reminders.ReminderSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +27,8 @@ class RemindersViewModel(
     private val repository: NodeiraRepository,
     private val scheduler: ReminderScheduler,
     private val geofences: LocationGeofenceManager,
-    private val cache: ReminderCache,
+    private val sync: ReminderSync,
+    socket: ReminderSocket,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RemindersUiState())
@@ -34,18 +36,23 @@ class RemindersViewModel(
 
     init {
         refresh()
+
+        // A reminder firing means the server changed its status (and, for a recurring one,
+        // its next fire time), so the open list is now stale. The socket has already posted
+        // the notification; this only brings the screen back in line.
+        viewModelScope.launch {
+            socket.events.collect { refresh() }
+        }
     }
 
     fun refresh() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             try {
-                val reminders = repository.getReminders()
+                // Fetches, then (re)registers time alarms + location geofences and caches
+                // the list for reboot replay — the same path the background worker takes.
+                val reminders = sync.run()
                 _state.update { it.copy(loading = false, reminders = reminders) }
-                // (Re)register time alarms + location geofences, and cache for reboot replay.
-                scheduler.sync(reminders)
-                geofences.sync(reminders)
-                cache.save(reminders)
             } catch (e: Exception) {
                 _state.update { it.copy(loading = false, error = e.message ?: "Failed to load reminders") }
             }
