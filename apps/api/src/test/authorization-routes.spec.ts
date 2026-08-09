@@ -142,7 +142,10 @@ describe("vault sharing over HTTP", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/vaults/${alice.vaultId}/members/${bob.id}`)
       .set(auth(alice))
-      .expect(200);
+      // 204, not 200: there is nothing to return, and a 200 with an empty body made the
+      // web client's res.json() throw — the revoke worked server-side while the UI
+      // reported failure and never refreshed its member list.
+      .expect(204);
 
     await request(app.getHttpServer()).get(`/api/v1/notes/${note.id}`).set(auth(bob)).expect(404);
   });
