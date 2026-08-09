@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/Nodeira/nodeira/compare/v1.14.0...v1.14.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **desktop:** publish stable-named artifacts and stop losing the Windows build ([3eac864](https://github.com/Nodeira/nodeira/commit/3eac864df1697f46bf6e494a2d381ec04e5da682))
+
 # [1.14.0](https://github.com/Nodeira/nodeira/compare/v1.13.1...v1.14.0) (2026-08-08)
 
 
