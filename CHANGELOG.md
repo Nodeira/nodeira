@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/Nodeira/nodeira/compare/v1.16.0...v1.16.1) (2026-08-11)
+
+
+### Performance Improvements
+
+* **web:** load React Flow and react-pdf on demand ([6649f9f](https://github.com/Nodeira/nodeira/commit/6649f9ffd983fe1df7f37551d994fe063b822aea))
+
 # [1.16.0](https://github.com/Nodeira/nodeira/compare/v1.15.0...v1.16.0) (2026-08-09)
 
 
