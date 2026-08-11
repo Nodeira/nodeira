@@ -1,12 +1,28 @@
 import { Box, Text } from "@mantine/core";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
-import { ReactFlowProvider } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { canvasKeys, getCanvas } from "../lib/api.js";
-import { CanvasView } from "./canvas/CanvasView.js";
+import { CanvasPreview } from "./canvas/CanvasPreview.js";
+
+/** Shown while the canvas is being fetched and while its renderer chunk loads. */
+function LoadingCanvas() {
+  return (
+    <Box
+      style={{
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text size="sm" c="dimmed">
+        Loading canvas…
+      </Text>
+    </Box>
+  );
+}
 
 function CanvasEmbedView({ node }: NodeViewProps) {
   const canvasId = node.attrs.canvasId as string;
@@ -48,23 +64,14 @@ function CanvasEmbedView({ node }: NodeViewProps) {
               background: "var(--mantine-color-gray-0)",
             }}
           >
-            <Text size="sm" c="dimmed">Canvas not found</Text>
+            <Text size="sm" c="dimmed">
+              Canvas not found
+            </Text>
           </Box>
         ) : canvas ? (
-          <ReactFlowProvider>
-            <CanvasView initialData={canvas.data} readOnly />
-          </ReactFlowProvider>
+          <CanvasPreview data={canvas.data} fallback={<LoadingCanvas />} />
         ) : (
-          <Box
-            style={{
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text size="sm" c="dimmed">Loading canvas…</Text>
-          </Box>
+          <LoadingCanvas />
         )}
         <Box
           style={{
