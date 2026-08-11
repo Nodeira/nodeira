@@ -5,17 +5,31 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { useRef, useEffect, useState } from "react";
-import { ReactFlowProvider } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import { canvasKeys, createCanvas, deleteCanvas, getCanvases } from "../../lib/api.js";
 import { useActiveVaultId } from "../../lib/useActiveVaultId.js";
 import { currentVaultAtom } from "../../store/atoms.js";
-import { CanvasView } from "../../components/canvas/CanvasView.js";
+import { CanvasPreview } from "../../components/canvas/CanvasPreview.js";
 import type { Canvas, CanvasData } from "@nodeira/shared-types";
 
 export const Route = createFileRoute("/_authenticated/canvases")({
   component: CanvasesPage,
 });
+
+function ThumbnailPlaceholder() {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <IconLayout size={32} color="var(--mantine-color-gray-4)" />
+    </div>
+  );
+}
 
 function CanvasThumbnail({ data }: { data: CanvasData }) {
   const [mounted, setMounted] = useState(false);
@@ -49,21 +63,12 @@ function CanvasThumbnail({ data }: { data: CanvasData }) {
       }}
     >
       {mounted && hasNodes ? (
-        <ReactFlowProvider>
-          <CanvasView initialData={data} readOnly />
-        </ReactFlowProvider>
+        // The placeholder doubles as the Suspense fallback: the thumbnail already renders it
+        // until the card scrolls into view, so the renderer chunk loading looks like more of
+        // the same rather than a new spinner.
+        <CanvasPreview data={data} fallback={<ThumbnailPlaceholder />} />
       ) : (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <IconLayout size={32} color="var(--mantine-color-gray-4)" />
-        </div>
+        <ThumbnailPlaceholder />
       )}
     </div>
   );

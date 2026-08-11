@@ -1,8 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
-import { Document, Page, pdfjs } from "react-pdf";
 import { ActionIcon, Box, Group, Loader, Text } from "@mantine/core";
 import {
   IconChevronLeft,
@@ -10,14 +9,20 @@ import {
   IconExternalLink,
   IconFileTypePdf,
 } from "@tabler/icons-react";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-// ?url tells Vite to resolve the npm package path and return the correct asset URL.
-// new URL('bare-specifier', import.meta.url) only works for local relative paths in Vite.
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useAttachmentUrl } from "../lib/attachments.js";
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+// react-pdf and pdfjs-dist are over a megabyte together, and this extension is registered on
+// every editor mount so that a document containing a pdfEmbed node still parses. The schema
+// has to be eager; the renderer does not.
+const PdfViewer = lazy(() => import("./PdfViewer.js").then((m) => ({ default: m.PdfViewer })));
+
+function PdfSpinner() {
+  return (
+    <Box p="xl" style={{ display: "flex", justifyContent: "center" }}>
+      <Loader size="sm" />
+    </Box>
+  );
+}
 
 function PdfEmbedView({ node }: NodeViewProps) {
   const { src, title } = node.attrs as { src: string; title: string };
@@ -101,29 +106,20 @@ function PdfEmbedView({ node }: NodeViewProps) {
 
         {/* PDF canvas */}
         <Box style={{ maxHeight: "70vh", overflow: "auto", background: "#525659" }}>
-          {error ? (
-            <Box p="md">
-              <Text size="sm" c="red">
-                Failed to load PDF.
-              </Text>
-            </Box>
-          ) : resolved === undefined ? (
-            <Box p="xl" style={{ display: "flex", justifyContent: "center" }}>
-              <Loader size="sm" />
-            </Box>
+          {resolved === undefined ? (
+            <PdfSpinner />
           ) : (
-            <Document
-              file={resolved}
-              onLoadSuccess={onLoadSuccess}
-              onLoadError={() => setError(true)}
-              loading={
-                <Box p="xl" style={{ display: "flex", justifyContent: "center" }}>
-                  <Loader size="sm" />
-                </Box>
-              }
-            >
-              <Page pageNumber={pageNumber} width={700} renderAnnotationLayer renderTextLayer />
-            </Document>
+            // The same spinner covers fetching the ticket, loading the viewer chunk and
+            // pdf.js parsing the document, so the three stages read as one wait.
+            <Suspense fallback={<PdfSpinner />}>
+              <PdfViewer
+                src={resolved}
+                pageNumber={pageNumber}
+                onLoadSuccess={onLoadSuccess}
+                onLoadError={() => setError(true)}
+                failed={error}
+              />
+            </Suspense>
           )}
         </Box>
       </Box>
