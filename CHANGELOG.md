@@ -1,3 +1,16 @@
+# [1.18.0](https://github.com/Nodeira/nodeira/compare/v1.17.0...v1.18.0) (2026-08-15)
+
+
+### Bug Fixes
+
+* **web:** resolve deep links against the origin root, not the visited path ([6fbe847](https://github.com/Nodeira/nodeira/commit/6fbe847c8b7670546d722c347312a565adcb8972))
+* **web:** three canvas bugs found in the never-performed manual QA pass ([645e1de](https://github.com/Nodeira/nodeira/commit/645e1dea0e504cb80190c1543ab43271e84ecf3f)), closes [#15](https://github.com/Nodeira/nodeira/issues/15)
+
+
+### Features
+
+* **mobile:** offline write queue for create/rename/pin/move/delete ([eb74a1a](https://github.com/Nodeira/nodeira/commit/eb74a1a52d9873ecd702090b5726934233e78c1f)), closes [#48](https://github.com/Nodeira/nodeira/issues/48)
+
 # [1.17.0](https://github.com/Nodeira/nodeira/compare/v1.16.2...v1.17.0) (2026-08-15)
 
 
