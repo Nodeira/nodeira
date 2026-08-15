@@ -58,6 +58,7 @@ import {
 import { loadAllPlugins } from "../lib/pluginLoader.js";
 import { useDeleteNote } from "../lib/useDeleteNote.js";
 import { useActiveVaultId } from "../lib/useActiveVaultId.js";
+import { noteIdFromPath } from "../lib/routeMatch.js";
 import { useReminderSocket } from "../lib/useReminderSocket.js";
 import { TabBar } from "./TabBar.js";
 import { BrowsePane } from "./BrowsePane.js";
@@ -338,8 +339,7 @@ export function AppShell({ children }: AppShellProps) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const noteRouteMatch = routerState.location.pathname.match(/^\/notes\/([^/]+)$/);
-  const activeNoteId = noteRouteMatch?.[1] ?? null;
+  const activeNoteId = noteIdFromPath(routerState.location.pathname);
   const activeNote = notes.find((n) => n.id === activeNoteId) ?? null;
   const activeDragNote = notes.find((n) => n.id === activeDragId) ?? null;
 

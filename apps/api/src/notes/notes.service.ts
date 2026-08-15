@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { VaultRole, type Prisma } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service.js";
+import { orNotFound } from "../database/prisma-errors.js";
 import type { CreateNoteDto } from "./dto/create-note.dto.js";
 import type { UpdateNoteDto } from "./dto/update-note.dto.js";
 import type { ReorderNoteItemDto } from "./dto/reorder-notes.dto.js";
@@ -118,8 +119,8 @@ export class NotesService {
     if (dto.vaultId !== undefined) {
       await this.access.assertAccess(userId, dto.vaultId, VaultRole.EDITOR, vaultScope);
     }
-    try {
-      return await this.prisma.note.update({
+    return orNotFound(
+      this.prisma.note.update({
         where: { id },
         data: {
           ...(dto.title !== undefined && { title: dto.title }),
@@ -134,10 +135,9 @@ export class NotesService {
           // REST was silently wiped moments later. The document is the single source of
           // truth; UpdateNoteDto no longer accepts the field.
         },
-      });
-    } catch {
-      throw new NotFoundException(`Note ${id} not found`);
-    }
+      }),
+      `Note ${id} not found`,
+    );
   }
 
   async reorder(userId: string, items: ReorderNoteItemDto[], vaultScope?: string | null) {
@@ -157,11 +157,7 @@ export class NotesService {
 
   async remove(userId: string, id: string, vaultScope?: string | null) {
     await this.findOne(userId, id, vaultScope, VaultRole.EDITOR);
-    try {
-      return await this.prisma.note.delete({ where: { id } });
-    } catch {
-      throw new NotFoundException(`Note ${id} not found`);
-    }
+    return orNotFound(this.prisma.note.delete({ where: { id } }), `Note ${id} not found`);
   }
 
   /** Returns the number of rows written — 0 means the note no longer exists. */

@@ -18,17 +18,24 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
         val body = intent.getStringExtra(EXTRA_BODY)
         val recurrence = intent.getStringExtra(EXTRA_RECURRENCE)
         val baseFireAt = intent.getStringExtra(EXTRA_BASE_FIRE_AT)
+        val timezone = intent.getStringExtra(EXTRA_TIMEZONE)
 
         ReminderNotifications.show(context, id, title, body)
 
-        // Reschedule the next occurrence for recurring reminders.
+        // Reschedule the next occurrence for recurring reminders. The zone rides along in the
+        // intent because this path never touches the API — without it, a recurring reminder
+        // rescheduled from here would drift back to the device zone on its very next hop.
         if (!recurrence.isNullOrBlank() && baseFireAt != null) {
             ReminderScheduler.parseMillis(baseFireAt)?.let { base ->
-                val next = ReminderScheduler.nextOccurrence(base, recurrence)
+                val next = ReminderScheduler.nextOccurrence(
+                    base,
+                    recurrence,
+                    ReminderScheduler.zoneOf(timezone),
+                )
                 if (next > System.currentTimeMillis()) {
                     val dto = com.deranjer.nodeira.data.net.ReminderDto(
                         id = id, title = title, body = body,
-                        recurrence = recurrence, fireAt = baseFireAt,
+                        recurrence = recurrence, fireAt = baseFireAt, timezone = timezone,
                     )
                     ReminderScheduler(context).schedule(dto, next)
                 }
@@ -43,5 +50,6 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
         const val EXTRA_BODY = "body"
         const val EXTRA_RECURRENCE = "recurrence"
         const val EXTRA_BASE_FIRE_AT = "base_fire_at"
+        const val EXTRA_TIMEZONE = "timezone"
     }
 }

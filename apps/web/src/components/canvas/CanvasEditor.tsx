@@ -4,6 +4,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useRef, useState } from "react";
 import { canvasKeys, getCanvas, updateCanvas, uploadImage } from "../../lib/api.js";
+import { pickImageFile } from "../../lib/pickImageFile.js";
 import { CanvasContextMenu } from "./CanvasContextMenu.js";
 import { CanvasToolbar, type AddNodeType } from "./CanvasToolbar.js";
 import { CanvasView, type CanvasViewHandle } from "./CanvasView.js";
@@ -82,53 +83,34 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
     [],
   );
 
-  const handleToolbarAdd = useCallback(
-    (type: AddNodeType) => {
-      if (type === "file") {
-        setPendingPos({ x: 0, y: 0 });
-        setAddNoteOpen(true);
-      } else if (type === "link") {
-        setPendingPos({ x: 0, y: 0 });
-        setAddLinkOpen(true);
-      } else if (type === "image") {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = "image/*";
-        input.onchange = async () => {
-          const file = input.files?.[0];
-          if (!file) return;
-          const { url } = await uploadImage(file);
-          addNodeViaRef("image", { url });
-        };
-        input.click();
-      } else {
-        addNodeViaRef(type);
-      }
-    },
-    [addNodeViaRef],
-  );
-
-  const handleContextAdd = useCallback(
-    (type: AddNodeType, screenX: number, screenY: number) => {
-      if (type === "file") {
-        setPendingPos({ x: screenX, y: screenY });
-        setAddNoteOpen(true);
-      } else if (type === "link") {
-        setPendingPos({ x: screenX, y: screenY });
-        setAddLinkOpen(true);
-      } else if (type === "image") {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = "image/*";
-        input.onchange = async () => {
-          const file = input.files?.[0];
-          if (!file) return;
-          const { url } = await uploadImage(file);
-          addNodeViaRef("image", { url }, screenX, screenY);
-        };
-        input.click();
-      } else {
-        addNodeViaRef(type, {}, screenX, screenY);
+  /**
+   * Adds a node, optionally at a screen position.
+   *
+   * The toolbar and the right-click menu had one of these each, identical but for whether a
+   * position was threaded through — including two copies of the hidden-file-input dance. The
+   * position is the only real difference, so it is the only thing that varies here: absent
+   * means "wherever the canvas puts a toolbar-created node".
+   */
+  const handleAdd = useCallback(
+    (type: AddNodeType, pos?: { x: number; y: number }) => {
+      switch (type) {
+        case "file":
+          setPendingPos(pos ?? { x: 0, y: 0 });
+          setAddNoteOpen(true);
+          break;
+        case "link":
+          setPendingPos(pos ?? { x: 0, y: 0 });
+          setAddLinkOpen(true);
+          break;
+        case "image":
+          void pickImageFile().then(async (file) => {
+            if (!file) return;
+            const { url } = await uploadImage(file);
+            addNodeViaRef("image", { url }, pos?.x, pos?.y);
+          });
+          break;
+        default:
+          addNodeViaRef(type, {}, pos?.x, pos?.y);
       }
     },
     [addNodeViaRef],
@@ -210,7 +192,7 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
       </Group>
 
       <Box style={{ flex: 1, minHeight: 0, position: "relative" }}>
-        <CanvasToolbar saveStatus={saveStatus} onAddNode={handleToolbarAdd} />
+        <CanvasToolbar saveStatus={saveStatus} onAddNode={(type) => handleAdd(type)} />
 
         <ReactFlowProvider>
           <CanvasView ref={canvasViewRef} initialData={canvas.data} onChange={scheduleSave} />
@@ -221,7 +203,7 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
             x={contextMenu.x}
             y={contextMenu.y}
             onClose={() => setContextMenu(null)}
-            onAddNode={handleContextAdd}
+            onAddNode={(type, x, y) => handleAdd(type, { x, y })}
           />
         )}
       </Box>

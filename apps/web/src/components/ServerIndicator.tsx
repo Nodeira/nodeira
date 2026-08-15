@@ -3,6 +3,7 @@ import { IconServer, IconServerOff } from "@tabler/icons-react";
 import { Badge, Button, Popover, Stack, Text, TextInput } from "@mantine/core";
 import { useAtomValue } from "jotai";
 import { networkStatusAtom } from "../store/networkStatusAtom.js";
+import { useServerUrlForm } from "../lib/useServerUrlForm.js";
 import "../lib/electronAPI.js";
 
 /** Parse "http://localhost:3001" → "localhost:3001" for a compact badge label. */
@@ -25,30 +26,12 @@ export function ServerIndicator() {
   const networkStatus = useAtomValue(networkStatusAtom);
 
   const [opened, setOpened] = useState(false);
-  const [url, setUrl] = useState(apiBaseUrl);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { url, setUrl, error, loading, save } = useServerUrlForm(apiBaseUrl);
 
   // Browser build (no Electron) or no URL configured (connect screen handles that)
   if (!electronAPI || !apiBaseUrl) return null;
 
   const online = networkStatus === "online";
-
-  async function handleSave() {
-    const trimmed = url.trim();
-    if (!trimmed) {
-      setError("Server URL is required");
-      return;
-    }
-    if (!/^https?:\/\/.+/.test(trimmed)) {
-      setError("Enter a valid URL starting with http:// or https://");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    // Persists to SQLite and reloads the window — loading resolves on reload
-    await electronAPI!.settings.setServerUrl(trimmed);
-  }
 
   return (
     <Popover
@@ -89,7 +72,7 @@ export function ServerIndicator() {
             value={url}
             onChange={(e) => setUrl(e.currentTarget.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") void handleSave();
+              if (e.key === "Enter") void save();
             }}
             error={error}
             size="sm"
@@ -98,7 +81,7 @@ export function ServerIndicator() {
             size="sm"
             loading={loading}
             disabled={url.trim() === apiBaseUrl}
-            onClick={() => void handleSave()}
+            onClick={() => void save()}
             fullWidth
           >
             Save &amp; Reconnect

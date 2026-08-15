@@ -8,15 +8,37 @@ test.beforeAll(() => {
   fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 });
 
+const LIST_ITEM = /^[-*]\s/;
+
+/**
+ * Types markdown into the editor, letting TipTap's input rules do the formatting.
+ *
+ * The list handling is the whole point of this being more than a loop. `- ` only becomes a
+ * bullet when it starts a *paragraph*; pressing Enter inside a list item starts another list
+ * item, so every following `- ` was typed as literal text and the first `##` after a list
+ * became a heading-shaped string inside a bullet. The published screenshots showed exactly
+ * that. Pressing Enter on an empty item is how TipTap leaves a list, so do that whenever the
+ * next line is not itself a list item.
+ */
 async function typeIntoEditor(page: Page, lines: string[]) {
   const editor = page.locator(".ProseMirror, .tiptap").first();
   await editor.click();
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? "";
-    if (line !== "") {
-      await page.keyboard.type(line);
-    }
-    if (i < lines.length - 1) {
+    const next = lines[i + 1];
+    const inList = LIST_ITEM.test(line);
+
+    // Inside a list the bullet marker is supplied by the editor, not by the typing.
+    await page.keyboard.type(
+      inList && i > 0 && LIST_ITEM.test(lines[i - 1] ?? "") ? line.replace(LIST_ITEM, "") : line,
+    );
+
+    if (next === undefined) break;
+
+    await page.keyboard.press("Enter");
+    if (inList && !LIST_ITEM.test(next)) {
+      // Empty item + Enter lifts the cursor back out to a plain paragraph.
       await page.keyboard.press("Enter");
     }
   }

@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service.js";
+import { orNotFound } from "../database/prisma-errors.js";
 import type { InstallPluginDto } from "./dto/install-plugin.dto.js";
 
 function derivePluginId(source: string): string {
@@ -29,18 +30,16 @@ export class PluginsService {
   }
 
   async setEnabled(pluginId: string, enabled: boolean) {
-    try {
-      return await this.prisma.plugin.update({ where: { pluginId }, data: { enabled } });
-    } catch {
-      throw new NotFoundException(`Plugin "${pluginId}" not found`);
-    }
+    return orNotFound(
+      this.prisma.plugin.update({ where: { pluginId }, data: { enabled } }),
+      `Plugin "${pluginId}" not found`,
+    );
   }
 
   async remove(pluginId: string) {
-    try {
-      return await this.prisma.plugin.delete({ where: { pluginId } });
-    } catch {
-      throw new NotFoundException(`Plugin "${pluginId}" not found`);
-    }
+    return orNotFound(
+      this.prisma.plugin.delete({ where: { pluginId } }),
+      `Plugin "${pluginId}" not found`,
+    );
   }
 }

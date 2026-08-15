@@ -29,6 +29,7 @@ import {
 import { loadPlugin } from "../../lib/pluginLoader.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 import type { Keybinds } from "../../lib/electronAPI.js";
+import { useServerUrlForm } from "../../lib/useServerUrlForm.js";
 import { SharingTab } from "../../components/settings/SharingTab.js";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -114,24 +115,9 @@ function GeneralTab() {
 }
 
 function ConnectionTab() {
-  const [url, setUrl] = useState(window.electronAPI?.apiBaseUrl ?? "");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSave() {
-    const trimmed = url.trim();
-    if (!trimmed) {
-      setError("Server URL is required");
-      return;
-    }
-    if (!/^https?:\/\/.+/.test(trimmed)) {
-      setError("Enter a valid URL starting with http:// or https://");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    await window.electronAPI!.settings.setServerUrl(trimmed);
-  }
+  const { url, setUrl, error, loading, save } = useServerUrlForm(
+    window.electronAPI?.apiBaseUrl ?? "",
+  );
 
   return (
     <Stack gap="md" style={{ maxWidth: 500 }}>
@@ -146,7 +132,7 @@ function ConnectionTab() {
       <Button
         loading={loading}
         disabled={url.trim() === (window.electronAPI?.apiBaseUrl ?? "")}
-        onClick={() => void handleSave()}
+        onClick={() => void save()}
         style={{ alignSelf: "flex-start" }}
       >
         Save &amp; Reconnect
