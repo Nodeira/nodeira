@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/Nodeira/nodeira/compare/v1.16.2...v1.17.0) (2026-08-15)
+
+
+### Features
+
+* **api:** make note creation idempotent on a client-chosen id ([d9dfd4a](https://github.com/Nodeira/nodeira/commit/d9dfd4a2d6152af2aff0f0d90b705b0a3d19d691))
+
 ## [1.16.2](https://github.com/Nodeira/nodeira/compare/v1.16.1...v1.16.2) (2026-08-15)
 
 
