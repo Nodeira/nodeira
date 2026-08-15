@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -241,6 +242,73 @@ fun OfflineBanner(lastSyncedAt: Long?) {
             )
         }
     }
+}
+
+/** Shown when there are changes made offline that haven't reached the server yet. */
+@Composable
+fun PendingWritesBanner(count: Int) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Icon(
+                Icons.Filled.Sync,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = if (count == 1) "1 change waiting to sync" else "$count changes waiting to sync",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Asks the person to resolve one queued write that couldn't be replayed on its own — see
+ * [com.deranjer.nodeira.data.sync.ConflictResolver] for why these three cases specifically
+ * need a person rather than resolving automatically.
+ */
+@Composable
+fun ConflictDialog(
+    conflict: com.deranjer.nodeira.data.sync.Conflict,
+    onResolve: (keepLocal: Boolean) -> Unit,
+) {
+    val (message, keepLabel, discardLabel) = when (conflict.reason) {
+        com.deranjer.nodeira.data.sync.ConflictReason.RENAMED_BUT_DELETED ->
+            Triple(
+                "This note was deleted elsewhere while you renamed it to “${conflict.write.title}” here.",
+                "Keep my rename",
+                "Accept the deletion",
+            )
+        com.deranjer.nodeira.data.sync.ConflictReason.RENAMED_BOTH_SIDES ->
+            Triple(
+                "You renamed this note to “${conflict.write.title}”, but it's now " +
+                    "“${conflict.serverTitle}” elsewhere.",
+                "Keep my title",
+                "Keep their title",
+            )
+        com.deranjer.nodeira.data.sync.ConflictReason.DELETED_BUT_EDITED ->
+            Triple(
+                "You deleted this note, but it was edited elsewhere afterward.",
+                "Delete anyway",
+                "Keep the note",
+            )
+    }
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text("Sync conflict") },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = { onResolve(true) }) { Text(keepLabel) } },
+        dismissButton = { TextButton(onClick = { onResolve(false) }) { Text(discardLabel) } },
+    )
 }
 
 /** Coarse "how stale is this" phrasing; exact timestamps are noise in a banner. */

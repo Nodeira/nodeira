@@ -58,9 +58,11 @@ import com.deranjer.nodeira.ui.components.NBadge
 import com.deranjer.nodeira.ui.components.SectionLabel
 import com.deranjer.nodeira.ui.nav.AppDestination
 import com.deranjer.nodeira.ui.nav.AppScaffold
+import com.deranjer.nodeira.ui.notes.ConflictDialog
 import com.deranjer.nodeira.ui.notes.NoteListItem
 import com.deranjer.nodeira.ui.notes.NotesUiState
 import com.deranjer.nodeira.ui.notes.OfflineBanner
+import com.deranjer.nodeira.ui.notes.PendingWritesBanner
 import com.deranjer.nodeira.ui.notes.formatTimestamp
 
 @Composable
@@ -76,6 +78,7 @@ fun HomeScreen(
     onDeleteNote: (String) -> Unit,
     onTogglePin: (id: String, pinned: Boolean) -> Unit,
     onRenameNote: (id: String, title: String) -> Unit,
+    onResolveConflict: (opId: String, keepLocal: Boolean) -> Unit = { _, _ -> },
 ) {
     var query by remember { mutableStateOf("") }
     var selectedVaultId by remember { mutableStateOf<String?>(null) }
@@ -111,6 +114,9 @@ fun HomeScreen(
             )
         },
     ) {
+        state.conflicts.firstOrNull()?.let { conflict ->
+            ConflictDialog(conflict = conflict, onResolve = { keepLocal -> onResolveConflict(conflict.write.opId, keepLocal) })
+        }
         Box(modifier = Modifier.fillMaxSize()) {
             when {
                 state.loading && state.notes.isEmpty() ->
@@ -145,6 +151,9 @@ fun HomeScreen(
                         }
                         if (state.offline) {
                             item("offline") { OfflineBanner(state.lastSyncedAt) }
+                        }
+                        if (state.pendingWrites > 0) {
+                            item("pending-writes") { PendingWritesBanner(state.pendingWrites) }
                         }
                         item("vault") {
                             VaultRow(

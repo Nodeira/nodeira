@@ -70,6 +70,12 @@ data class CreateNoteBody(
     val vaultId: String,
     val folderId: String? = null,
     val title: String? = null,
+    /**
+     * Client-chosen id. Always sent by [com.deranjer.nodeira.data.NodeiraRepository.createNote]
+     * so a note created offline keeps the same id once the create is replayed — see
+     * `CreateNoteDto` on the API side for why that matters.
+     */
+    val id: String? = null,
 )
 
 /**

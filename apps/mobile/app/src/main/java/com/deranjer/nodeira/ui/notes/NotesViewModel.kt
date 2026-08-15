@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.deranjer.nodeira.data.NodeiraRepository
 import com.deranjer.nodeira.data.net.FolderDto
 import com.deranjer.nodeira.data.net.NoteDto
-import com.deranjer.nodeira.data.net.UpdateNoteBody
 import com.deranjer.nodeira.data.net.VaultDto
+import com.deranjer.nodeira.data.sync.Conflict
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +23,10 @@ data class NotesUiState(
     val offline: Boolean = false,
     /** When that snapshot was taken, for the offline banner. */
     val lastSyncedAt: Long? = null,
+    /** Changes made offline, not yet confirmed by the server. */
+    val pendingWrites: Int = 0,
+    /** Queued changes that need a person to pick a side. */
+    val conflicts: List<Conflict> = emptyList(),
 )
 
 /**
@@ -75,17 +79,25 @@ class NotesViewModel(
                         offline = false,
                         error = null,
                         lastSyncedAt = repository.lastSyncedAt(),
+                        pendingWrites = repository.pendingWriteCount(),
+                        conflicts = repository.conflicts(),
                     )
                 }
             } catch (e: Exception) {
                 // With a cached snapshot on screen this is a connectivity notice, not a
                 // failure: the user keeps their notes and sees when they were last synced.
+                // The cache already reflects any offline edit — mutateNote/createNote/
+                // deleteNote write through it — so it's safe to reload here rather than leave
+                // the previous state.notes stale.
                 val haveCache = repository.hasCachedData()
                 _state.update {
                     it.copy(
                         loading = false,
+                        notes = if (haveCache) repository.cachedNotes() else it.notes,
                         offline = haveCache,
                         error = if (haveCache) null else e.message ?: "Failed to load notes",
+                        pendingWrites = repository.pendingWriteCount(),
+                        conflicts = repository.conflicts(),
                     )
                 }
             }
@@ -152,7 +164,7 @@ class NotesViewModel(
         val trimmed = title.trim().ifEmpty { "Untitled" }
         viewModelScope.launch {
             try {
-                repository.updateNote(id, UpdateNoteBody(title = trimmed))
+                repository.renameNote(id, trimmed)
                 refresh()
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "Failed to rename note") }
@@ -163,7 +175,7 @@ class NotesViewModel(
     fun setNotePinned(id: String, pinned: Boolean) {
         viewModelScope.launch {
             try {
-                repository.updateNote(id, UpdateNoteBody(pinned = pinned))
+                repository.setNotePinned(id, pinned)
                 refresh()
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "Failed to update note") }
@@ -174,11 +186,20 @@ class NotesViewModel(
     fun moveNote(id: String, vaultId: String?, folderId: String?) {
         viewModelScope.launch {
             try {
-                repository.updateNote(id, UpdateNoteBody(vaultId = vaultId, folderId = folderId))
+                repository.moveNote(id, vaultId, folderId)
                 refresh()
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "Failed to move note") }
             }
+        }
+    }
+
+    /** A person's answer to a queued conflict — see [NodeiraRepository.resolveConflict]. */
+    fun resolveConflict(opId: String, keepLocal: Boolean) {
+        _state.update { it.copy(conflicts = it.conflicts.filterNot { c -> c.write.opId == opId }) }
+        viewModelScope.launch {
+            repository.resolveConflict(opId, keepLocal)
+            refresh()
         }
     }
 
