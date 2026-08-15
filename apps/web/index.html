@@ -3,6 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // `base: "./"` (vite.config.ts) makes every asset reference below relative, so
+      // Electron can load this file over file://. Anything server-hosted instead needs
+      // those relative references resolved against the origin root — otherwise a deep
+      // link like /notes/<id> resolves "./assets/*.js" as "/notes/<id>/assets/*.js",
+      // which the SPA fallback answers with this same index.html, and the app loads
+      // blank. document.write here (rather than appendChild) is deliberate: it runs
+      // synchronously during parsing, before the browser resolves the icon and module
+      // tags below, which is what a <base> element needs to affect them.
+      if (location.protocol !== "file:") document.write('<base href="/">');
+    </script>
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <title>Nodeira</title>
   </head>
