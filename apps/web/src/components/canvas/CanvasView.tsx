@@ -317,6 +317,11 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
+          // Off in read-only mode: a canvas embedded in a note relies on its own
+          // double-click to navigate to the full canvas (CanvasEmbed.tsx), and React
+          // Flow's default zoom-on-double-click was consuming that click on the pane
+          // before it could bubble up.
+          zoomOnDoubleClick={!readOnly}
           panOnDrag={true}
           style={{ background: "var(--mantine-color-body)" }}
         >
