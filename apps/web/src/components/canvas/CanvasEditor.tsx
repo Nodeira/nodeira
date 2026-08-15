@@ -27,6 +27,11 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
   const [addNoteOpen, setAddNoteOpen] = useState(false);
   const [addLinkOpen, setAddLinkOpen] = useState(false);
   const canvasViewRef = useRef<CanvasViewHandle | null>(null);
+  // Every toolbar-triggered add with no explicit position (right-click menu adds do have
+  // one) used to land at the same fixed (100, 100), so each new node hid the last one
+  // completely until it was dragged aside. Cascades diagonally instead, wrapping so it
+  // doesn't wander off the visible canvas after many adds.
+  const addCascadeCount = useRef(0);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
 
@@ -77,7 +82,8 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
       if (screenX !== undefined && screenY !== undefined) {
         canvasViewRef.current?.addNodeAtScreenPos(type, screenX, screenY, extraData);
       } else {
-        canvasViewRef.current?.addNode(type, 100, 100, extraData);
+        const offset = (addCascadeCount.current++ % 8) * 24;
+        canvasViewRef.current?.addNode(type, 100 + offset, 100 + offset, extraData);
       }
     },
     [],

@@ -67,13 +67,15 @@
 ## 11. Verification
 
 - [x] 11.1 Run `pnpm exec turbo run typecheck` — no TypeScript errors across all packages
-- [ ] 11.2 Navigate to `/canvases`, create a new canvas — verify it persists after page reload
-- [ ] 11.3 Add a TextCardNode, edit its content, verify debounced save works
-- [ ] 11.4 Add a NoteCardNode via the Note modal, double-click to open the note
-- [ ] 11.5 Add a WebPreviewNode, verify OG preview renders (title + image)
-- [ ] 11.6 Upload an image via the Image button, verify ImageNode renders
-- [ ] 11.7 Draw an edge between two nodes, add a label via double-click
-- [ ] 11.8 Open a note, embed a canvas via the toolbar, verify the miniature renders in read-only mode and double-click navigates to the full canvas
-- [ ] 11.9 On the canvases list page, verify each card shows a thumbnail matching the actual canvas node layout; verify empty canvases show the placeholder
-- [ ] 11.10 Type a canvas title in the sidebar search bar, verify the canvas appears in results with a canvas icon; clicking navigates to `/canvas/:id`
-- [ ] 11.11 Place a NoteCardNode referencing a note, then delete that note via the API; reload the canvas and verify the card shows the "Note deleted" placeholder state
+- [x] 11.2 Navigate to `/canvases`, create a new canvas — verify it persists after page reload
+- [x] 11.3 Add a TextCardNode, edit its content, verify debounced save works
+- [x] 11.4 Add a NoteCardNode via the Note modal, double-click to open the note
+- [x] 11.5 Add a WebPreviewNode, verify OG preview renders (title + image)
+- [x] 11.6 Upload an image via the Image button, verify ImageNode renders
+- [x] 11.7 Draw an edge between two nodes, add a label via double-click — **fixed.** The label's double-click target (`CanvasEdge.tsx`) rendered `null` when `label` was empty, giving it a 0×0 bounding box that could never be hit. Now given a `minWidth`/`minHeight` of 16px regardless of content. Verified: hit box went from 0×0 to 32×32, and a label typed and committed now persists across reload.
+- [x] 11.8 Open a note, embed a canvas via the toolbar, verify the miniature renders in read-only mode and double-click navigates to the full canvas — **fixed.** `ReadOnlyCanvas.tsx` rendered `CanvasView readOnly` without disabling React Flow's default `zoomOnDoubleClick`, so the pane consumed most double-clicks as a zoom before they could bubble to `CanvasEmbed.tsx`'s navigate handler. `CanvasView` now passes `zoomOnDoubleClick={!readOnly}`. Verified: double-clicking an embedded canvas in a note navigates straight to `/canvas/:id`.
+- [x] 11.9 On the canvases list page, verify each card shows a thumbnail matching the actual canvas node layout; verify empty canvases show the placeholder
+- [x] 11.10 Type a canvas title in the sidebar search bar, verify the canvas appears in results with a canvas icon; clicking navigates to `/canvas/:id`
+- [x] 11.11 Place a NoteCardNode referencing a note, then delete that note via the API; reload the canvas and verify the card shows the "Note deleted" placeholder state
+
+**Also found and fixed, not part of the original checklist:** every toolbar-triggered "Add" (text/note/link/image/group) that isn't placed via right-click landed at the same fixed flow position (100, 100), so successive additions stacked exactly on top of each other — no data loss (dragging one aside revealed the other), but looked like data loss until you did. `CanvasEditor.tsx`'s `addNodeViaRef` now cascades each such add by 24px, wrapping after 8. Verified: two toolbar-added nodes now land visibly offset rather than stacked.

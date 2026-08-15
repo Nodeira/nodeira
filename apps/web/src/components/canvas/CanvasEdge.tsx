@@ -39,7 +39,13 @@ const STYLE_ICONS: Record<CanvasEdgeLineStyle, React.ReactNode> = {
   ),
   step: (
     <svg width="20" height="12" viewBox="0 0 20 12">
-      <path d="M2,10 L10,10 L10,2 L18,2" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+      <path
+        d="M2,10 L10,10 L10,2 L18,2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
 };
@@ -56,8 +62,12 @@ const ALL_STYLES: CanvasEdgeLineStyle[] = ["straight", "bezier", "smoothstep", "
 function getEdgePath(
   lineStyle: CanvasEdgeLineStyle,
   params: {
-    sourceX: number; sourceY: number; targetX: number; targetY: number;
-    sourcePosition: EdgeProps["sourcePosition"]; targetPosition: EdgeProps["targetPosition"];
+    sourceX: number;
+    sourceY: number;
+    targetX: number;
+    targetY: number;
+    sourcePosition: EdgeProps["sourcePosition"];
+    targetPosition: EdgeProps["targetPosition"];
   },
 ): [string, number, number, number, number] {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = params;
@@ -65,9 +75,24 @@ function getEdgePath(
     case "straight":
       return getStraightPath({ sourceX, sourceY, targetX, targetY });
     case "smoothstep":
-      return getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+      return getSmoothStepPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+      });
     case "step":
-      return getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 0 });
+      return getSmoothStepPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+        borderRadius: 0,
+      });
     default: // bezier
       return getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
   }
@@ -95,7 +120,12 @@ export function CanvasEdge({
   const lineStyle: CanvasEdgeLineStyle = edgeData.lineStyle ?? "bezier";
 
   const [edgePath, labelX, labelY] = getEdgePath(lineStyle, {
-    sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
   });
 
   const handleDoubleClick = useCallback(() => {
@@ -108,9 +138,12 @@ export function CanvasEdge({
     onDataChange?.(id, { label });
   }, [id, label, onDataChange]);
 
-  const handleStyleChange = useCallback((newStyle: CanvasEdgeLineStyle) => {
-    onDataChange?.(id, { lineStyle: newStyle });
-  }, [id, onDataChange]);
+  const handleStyleChange = useCallback(
+    (newStyle: CanvasEdgeLineStyle) => {
+      onDataChange?.(id, { lineStyle: newStyle });
+    },
+    [id, onDataChange],
+  );
 
   const handleDelete = useCallback(() => {
     void deleteElements({ edges: [{ id }] });
@@ -163,7 +196,14 @@ export function CanvasEdge({
                     </ActionIcon>
                   </Tooltip>
                 ))}
-                <div style={{ width: 1, height: 16, background: "var(--mantine-color-default-border)", margin: "0 2px" }} />
+                <div
+                  style={{
+                    width: 1,
+                    height: 16,
+                    background: "var(--mantine-color-default-border)",
+                    margin: "0 2px",
+                  }}
+                />
                 <Tooltip label="Delete edge" withArrow position="top" openDelay={400}>
                   <ActionIcon size="xs" variant="subtle" color="red" onClick={handleDelete}>
                     <IconTrash size={11} />
@@ -174,12 +214,16 @@ export function CanvasEdge({
           </div>
         )}
 
-        {/* Label — double-click to edit */}
+        {/* Label — double-click to edit. Kept to a minimum size even with no label yet:
+            an empty div has a 0×0 hit box, which would make a label impossible to ever
+            add in the first place. */}
         <div
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: "all",
+            minWidth: 16,
+            minHeight: 16,
           }}
           onDoubleClick={handleDoubleClick}
         >
@@ -188,7 +232,9 @@ export function CanvasEdge({
               value={label}
               onChange={(e) => setLabel(e.currentTarget.value)}
               onBlur={handleLabelBlur}
-              onKeyDown={(e) => { if (e.key === "Enter") handleLabelBlur(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLabelBlur();
+              }}
               autoFocus
               size="xs"
               styles={{ input: { fontSize: 11, height: 22, minHeight: 22 } }}
