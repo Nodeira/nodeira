@@ -127,6 +127,7 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onTogglePin = { id, pinned -> vm.setNotePinned(id, pinned) },
                 onRenameNote = { id, title -> vm.renameNote(id, title) },
                 onCreateFolder = { name, vaultId -> vm.createFolder(name, vaultId) },
+                onResolveConflict = { opId, keepLocal -> vm.resolveConflict(opId, keepLocal) },
             )
         }
 

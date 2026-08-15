@@ -11,6 +11,7 @@ import com.deranjer.nodeira.data.ReminderCache
 import com.deranjer.nodeira.data.SettingsStorage
 import com.deranjer.nodeira.data.net.NetworkModule
 import com.deranjer.nodeira.data.net.ReminderSocket
+import com.deranjer.nodeira.data.sync.WriteQueue
 import com.deranjer.nodeira.reminders.LocationGeofenceManager
 import com.deranjer.nodeira.reminders.ReminderScheduler
 import com.deranjer.nodeira.reminders.ReminderSync
@@ -56,8 +57,9 @@ class AppContainer(app: NodeiraApp) {
     val geofenceManager = LocationGeofenceManager(app)
     val reminderCache = ReminderCache(app)
     val offlineCache = OfflineCache(app)
+    val writeQueue = WriteQueue(app)
     private val network = NetworkModule(authStorage)
-    val repository = NodeiraRepository(authStorage, network, offlineCache)
+    val repository = NodeiraRepository(authStorage, network, offlineCache, writeQueue)
 
     val reminderSync = ReminderSync(repository, reminderScheduler, geofenceManager, reminderCache)
     val reminderSocket = ReminderSocket(app, authStorage, network.webSocketClient)

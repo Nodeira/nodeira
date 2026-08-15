@@ -106,4 +106,9 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("com.squareup.retrofit2:converter-kotlinx-serialization:2.11.0")
+
+    // JVM unit tests. Added for the offline write queue: ConflictResolver decides whether a
+    // queued change is applied, dropped or raised to the user, and getting that wrong loses
+    // someone's work silently. It is pure Kotlin, so it needs no instrumentation.
+    testImplementation("junit:junit:4.13.2")
 }
