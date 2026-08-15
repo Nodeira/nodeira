@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/Nodeira/nodeira/compare/v1.16.1...v1.16.2) (2026-08-15)
+
+
+### Bug Fixes
+
+* **reminders:** honour the reminder time zone when advancing recurrence ([72ee71e](https://github.com/Nodeira/nodeira/commit/72ee71e699efe546a7a091f429eb14329d1b6247))
+
 ## [1.16.1](https://github.com/Nodeira/nodeira/compare/v1.16.0...v1.16.1) (2026-08-11)
 
 
