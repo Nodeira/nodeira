@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { VaultRole, type Prisma } from "@prisma/client";
+import { Prisma, VaultRole } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service.js";
 import { orNotFound } from "../database/prisma-errors.js";
 import type { CreateNoteDto } from "./dto/create-note.dto.js";
@@ -8,6 +8,11 @@ import type { ReorderNoteItemDto } from "./dto/reorder-notes.dto.js";
 import { MarkdownConverterService } from "./markdown-converter.service.js";
 import { DocumentBridge } from "../sync/document-bridge.service.js";
 import { VaultAccessService } from "../vaults/vault-access.service.js";
+
+/** Prisma's "unique constraint failed" — here, a note id that is already taken. */
+function isUniqueViolation(err: unknown): boolean {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+}
 
 @Injectable()
 export class NotesService {
@@ -20,6 +25,21 @@ export class NotesService {
 
   async create(userId: string, dto: CreateNoteDto, vaultScope?: string | null) {
     await this.access.assertAccess(userId, dto.vaultId, VaultRole.EDITOR, vaultScope);
+
+    // A client-supplied id makes create idempotent, which is what lets the Android app
+    // replay a queued offline create without risking a duplicate when the original
+    // response was lost. Returning the existing note is the whole point: the caller
+    // cannot tell whether its first attempt landed, and either way the note now exists.
+    if (dto.id) {
+      const existing = await this.prisma.note.findUnique({ where: { id: dto.id } });
+      if (existing) {
+        // Reachability is decided by vault membership, so a note under someone else's
+        // vault must not be handed back — nor confirmed to exist. Conflict, not NotFound:
+        // the id is genuinely taken, and the caller chose it.
+        await this.access.assertAccess(userId, existing.vaultId, VaultRole.EDITOR, vaultScope);
+        return existing;
+      }
+    }
 
     if (dto.folderId) {
       const folder = await this.prisma.folder.findUnique({ where: { id: dto.folderId } });
@@ -38,17 +58,32 @@ export class NotesService {
       position = (agg._max.position ?? -1) + 1;
     }
 
-    return this.prisma.note.create({
-      data: {
-        title: dto.title ?? "Untitled",
-        type: dto.type ?? "note",
-        vaultId: dto.vaultId,
-        folderId: dto.folderId ?? null,
-        position,
-        ...(dto.kind !== undefined && { kind: dto.kind }),
-        ...(dto.kindMeta !== undefined && { kindMeta: dto.kindMeta as Prisma.InputJsonValue }),
-      },
-    });
+    try {
+      return await this.prisma.note.create({
+        data: {
+          ...(dto.id !== undefined && { id: dto.id }),
+          title: dto.title ?? "Untitled",
+          type: dto.type ?? "note",
+          vaultId: dto.vaultId,
+          folderId: dto.folderId ?? null,
+          position,
+          ...(dto.kind !== undefined && { kind: dto.kind }),
+          ...(dto.kindMeta !== undefined && { kindMeta: dto.kindMeta as Prisma.InputJsonValue }),
+        },
+      });
+    } catch (err) {
+      // Two replays of the same queued create racing each other: the loser sees the unique
+      // violation the findUnique above was too early to notice. Same answer as the hit
+      // above — the note exists, hand it back.
+      if (dto.id && isUniqueViolation(err)) {
+        const existing = await this.prisma.note.findUnique({ where: { id: dto.id } });
+        if (existing) {
+          await this.access.assertAccess(userId, existing.vaultId, VaultRole.EDITOR, vaultScope);
+          return existing;
+        }
+      }
+      throw err;
+    }
   }
 
   async findAll(userId: string, vaultId?: string, vaultScope?: string | null, tag?: string) {
