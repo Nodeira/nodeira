@@ -35,12 +35,16 @@ import {
   viewsPaneOpenAtom,
 } from "../store/atoms.js";
 import {
+  canvasKeys,
+  createCanvas,
   createFolder,
   createNote,
   createVault,
+  deleteCanvas,
   deleteFolder,
   deleteVault,
   foldersKeys,
+  getCanvases,
   getFolders,
   getNotes,
   getPlugins,
@@ -49,6 +53,7 @@ import {
   notesKeys,
   pluginsKeys,
   reorderNotes,
+  updateCanvas,
   updateFolderIcon,
   updateNoteIcon,
   updateNoteKind,
@@ -69,8 +74,14 @@ import { ServerIndicator } from "./ServerIndicator.js";
 import { NoteAsidePanel } from "./aside/NoteAsidePanel.js";
 import { CreateNamedItemModal } from "./modals/CreateNamedItemModal.js";
 import { DeleteConfirmModal, type DeleteTarget } from "./modals/DeleteConfirmModal.js";
-import { MoveNoteModal } from "./modals/MoveNoteModal.js";
+import { MoveItemModal, type MoveItemTarget } from "./modals/MoveItemModal.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
+
+/** Discriminates which mutation a pending "move to…" action should use on confirm. */
+interface MoveTarget {
+  kind: "note" | "canvas";
+  item: MoveItemTarget;
+}
 
 interface AppShellProps {
   children: ReactNode;
@@ -92,7 +103,7 @@ export function AppShell({ children }: AppShellProps) {
   const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
   const [newVaultOpen, { open: openNewVault, close: closeNewVault }] = useDisclosure(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
-  const [moveTarget, setMoveTarget] = useState<NoteMetadata | null>(null);
+  const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const navigate = useNavigate();
   const routerState = useRouterState();
@@ -249,6 +260,12 @@ export function AppShell({ children }: AppShellProps) {
     queryFn: () => getFolders(currentVaultId ?? undefined),
   });
 
+  const canvasesQueryKey = currentVaultId ? canvasKeys.byVault(currentVaultId) : canvasKeys.all;
+  const { data: canvases = [] } = useQuery({
+    queryKey: canvasesQueryKey,
+    queryFn: () => getCanvases(currentVaultId ? { vaultId: currentVaultId } : {}),
+  });
+
   const createNoteMutation = useMutation({
     mutationFn: createNote,
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
@@ -310,6 +327,39 @@ export function AppShell({ children }: AppShellProps) {
       folderId: string | null;
     }) => moveNote(id, { vaultId, folderId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
+  });
+  const createCanvasMutation = useMutation({
+    mutationFn: createCanvas,
+    onSuccess: () => qc.invalidateQueries({ queryKey: canvasKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't create canvas", color: "red" }),
+  });
+  const deleteCanvasMutation = useMutation({
+    mutationFn: deleteCanvas,
+    onSuccess: () => qc.invalidateQueries({ queryKey: canvasKeys.all }),
+    onError: () => notifications.show({ message: "Couldn't delete canvas", color: "red" }),
+  });
+  const canvasPinMutation = useMutation({
+    mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => updateCanvas(id, { pinned }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: canvasKeys.all }),
+  });
+  const canvasIconMutation = useMutation({
+    mutationFn: ({ id, icon }: { id: string; icon: string | null }) => updateCanvas(id, { icon }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: canvasKeys.all }),
+  });
+  const moveCanvasMutation = useMutation({
+    mutationFn: ({
+      id,
+      vaultId,
+      folderId,
+    }: {
+      id: string;
+      vaultId: string | null;
+      folderId: string | null;
+      // A canvas always belongs to a vault (unlike folderId, which can go back to null),
+      // so "No vault" in the move modal is a no-op for vaultId rather than a clearing write
+      // that would fail the server's not-null column.
+    }) => updateCanvas(id, { ...(vaultId ? { vaultId } : {}), folderId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: canvasKeys.all }),
   });
   const kindMutation = useMutation({
     mutationFn: ({ id, kind }: { id: string; kind: string | null }) => {
@@ -382,6 +432,21 @@ export function AppShell({ children }: AppShellProps) {
     }
   }
 
+  async function handleCreateCanvas(folderId?: string) {
+    if (!activeVaultId) {
+      notifications.show({
+        message: "No vault available yet — try again in a moment",
+        color: "red",
+      });
+      return;
+    }
+    const canvas = await createCanvasMutation.mutateAsync({
+      vaultId: activeVaultId,
+      ...(folderId ? { folderId } : {}),
+    });
+    await navigate({ to: "/canvas/$canvasId", params: { canvasId: canvas.id } });
+  }
+
   function handleOpenNewFolder(parentId?: string) {
     setNewFolderParentId(parentId ?? null);
     openNewFolder();
@@ -414,6 +479,11 @@ export function AppShell({ children }: AppShellProps) {
     if (deleteTarget.type === "note") {
       await deleteNoteMutation.mutateAsync(deleteTarget.id);
       if (activeNoteId === deleteTarget.id) await navigate({ to: "/" });
+    } else if (deleteTarget.type === "canvas") {
+      await deleteCanvasMutation.mutateAsync(deleteTarget.id);
+      if (routerState.location.pathname === `/canvas/${deleteTarget.id}`) {
+        await navigate({ to: "/" });
+      }
     } else if (deleteTarget.type === "folder") {
       await deleteFolderMutation.mutateAsync(deleteTarget.id);
     } else {
@@ -561,6 +631,7 @@ export function AppShell({ children }: AppShellProps) {
           <Sidebar
             vaults={vaults}
             notes={notes}
+            canvases={canvases}
             folders={folders}
             search={search}
             onSearchChange={setSearch}
@@ -569,16 +640,41 @@ export function AppShell({ children }: AppShellProps) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onCreateNote={handleCreateNote}
+            onCreateCanvas={(folderId) => void handleCreateCanvas(folderId)}
             onOpenNewFolder={handleOpenNewFolder}
             onOpenNewVault={openNewVault}
             onDeleteNote={(id, name) => setDeleteTarget({ type: "note", id, name })}
+            onDeleteCanvas={(id, name) => setDeleteTarget({ type: "canvas", id, name })}
             onDeleteFolder={(id, name) => setDeleteTarget({ type: "folder", id, name })}
             onDeleteVault={(id, name) => setDeleteTarget({ type: "vault", id, name })}
             onTogglePin={(id, pinned) => pinMutation.mutate({ id, pinned })}
+            onToggleCanvasPin={(id, pinned) => canvasPinMutation.mutate({ id, pinned })}
             onNoteIconChange={(id, icon) => noteIconMutation.mutate({ id, icon })}
+            onCanvasIconChange={(id, icon) => canvasIconMutation.mutate({ id, icon })}
             onFolderIconChange={(id, icon) => folderIconMutation.mutate({ id, icon })}
             onKindChange={(id, kind) => kindMutation.mutate({ id, kind })}
-            onMoveNote={(note) => setMoveTarget(note)}
+            onMoveNote={(note) =>
+              setMoveTarget({
+                kind: "note",
+                item: {
+                  id: note.id,
+                  vaultId: note.vaultId,
+                  folderId: note.folderId ?? null,
+                  label: note.title || "Untitled",
+                },
+              })
+            }
+            onMoveCanvas={(canvas) =>
+              setMoveTarget({
+                kind: "canvas",
+                item: {
+                  id: canvas.id,
+                  vaultId: canvas.vaultId,
+                  folderId: canvas.folderId,
+                  label: canvas.title || "Untitled Canvas",
+                },
+              })
+            }
           />
         </MantineAppShell.Navbar>
 
@@ -669,11 +765,14 @@ export function AppShell({ children }: AppShellProps) {
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />
-      <MoveNoteModal
-        note={moveTarget}
+      <MoveItemModal
+        target={moveTarget?.item ?? null}
+        itemLabel={moveTarget ? (moveTarget.kind === "canvas" ? "canvas" : "note") : "item"}
         onClose={() => setMoveTarget(null)}
-        onMove={(noteId, vaultId, folderId) =>
-          moveNoteMutation.mutate({ id: noteId, vaultId, folderId })
+        onMove={(id, vaultId, folderId) =>
+          moveTarget?.kind === "canvas"
+            ? moveCanvasMutation.mutate({ id, vaultId, folderId })
+            : moveNoteMutation.mutate({ id, vaultId, folderId })
         }
       />
     </>

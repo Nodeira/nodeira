@@ -173,13 +173,21 @@ function buildFlowNode(
 ): Node {
   const size = NODE_SIZE[type];
   return {
-    id: `node-${Date.now()}`,
+    // crypto.randomUUID(), not Date.now(): two nodes added within the same millisecond
+    // (e.g. two toolbar clicks in quick succession) would otherwise get the same id,
+    // and React Flow keys its internal node lookup by id, so the second silently wins.
+    id: `node-${crypto.randomUUID()}`,
     type,
     position: { x, y },
     style: { width: size.width, height: size.height },
     data: { ...NODE_DEFAULTS[type], ...extraData, readOnly },
   };
 }
+
+/** How far to nudge a new node, diagonally, when it would otherwise land exactly on
+ * top of an existing one — the toolbar always requests the same (100, 100) spot, so
+ * without this every toolbar-added node of the same type fully occludes the last. */
+const CASCADE_OFFSET = 32;
 
 export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function CanvasView(
   { initialData, onChange, readOnly = false },
@@ -223,7 +231,7 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function
         const newEdges = addEdge(
           {
             ...connection,
-            id: `e-${Date.now()}`,
+            id: `e-${crypto.randomUUID()}`,
             type: "canvas",
             markerEnd: { type: "arrowclosed" },
             data: { label: "", lineStyle: "bezier" as CanvasEdgeLineStyle, readOnly },
@@ -274,8 +282,14 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function
 
   const addNodeAt = useCallback(
     (type: AddNodeType, x: number, y: number, extraData: Record<string, unknown> = {}) => {
-      const newNode = buildFlowNode(type, x, y, extraData, readOnly);
       setNodes((nds) => {
+        let px = x;
+        let py = y;
+        while (nds.some((n) => n.position.x === px && n.position.y === py)) {
+          px += CASCADE_OFFSET;
+          py += CASCADE_OFFSET;
+        }
+        const newNode = buildFlowNode(type, px, py, extraData, readOnly);
         const updated = [...nds, newNode];
         onChange?.(flowToCanvasData(updated, edges));
         return updated;

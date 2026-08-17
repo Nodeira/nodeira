@@ -3,8 +3,8 @@ import {
   IconBolt,
   IconChevronDown,
   IconFile,
-  IconLayout,
   IconLayoutColumns,
+  IconLayoutGridAdd,
   IconLogout,
   IconNetwork,
   IconPlus,
@@ -22,6 +22,7 @@ import {
   Menu,
   NavLink,
   ScrollArea,
+  SegmentedControl,
   Stack,
   Text,
   TextInput,
@@ -37,21 +38,26 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import type { SensorDescriptor, SensorOptions } from "@dnd-kit/core";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { authUserAtom, currentVaultAtom, viewsPaneOpenAtom } from "../../store/atoms.js";
+import {
+  authUserAtom,
+  currentVaultAtom,
+  sidebarItemFilterAtom,
+  viewsPaneOpenAtom,
+} from "../../store/atoms.js";
 import { destroyAllYjsContexts } from "../../providers/YjsProvider.js";
 import { authStorage } from "../../lib/authStorage.js";
 import { clearAttachmentTicket } from "../../lib/attachments.js";
 import { pluginRegistry, pluginRegistryVersionAtom } from "../../lib/pluginRegistry.js";
 import { DynamicIcon } from "../DynamicIcon.js";
 import { SortableNoteItem } from "./SortableNoteItem.js";
+import { CanvasNavItem } from "./CanvasNavItem.js";
 import { FolderNavItem } from "./FolderNavItem.js";
-import type { Folder, NoteMetadata, Vault } from "@nodeira/shared-types";
-import { useQuery } from "@tanstack/react-query";
-import { canvasKeys, getCanvases } from "../../lib/api.js";
+import type { Canvas, Folder, NoteMetadata, Vault } from "@nodeira/shared-types";
 
 interface SidebarProps {
   vaults: Vault[];
   notes: NoteMetadata[];
+  canvases: Canvas[];
   folders: Folder[];
   search: string;
   onSearchChange: (val: string) => void;
@@ -60,21 +66,27 @@ interface SidebarProps {
   onDragStart: (event: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
   onCreateNote: (type: "note" | "quick", folderId?: string) => void;
+  onCreateCanvas: (folderId?: string) => void;
   onOpenNewFolder: (parentId?: string) => void;
   onOpenNewVault: () => void;
   onDeleteNote: (id: string, name: string) => void;
+  onDeleteCanvas: (id: string, name: string) => void;
   onDeleteFolder: (id: string, name: string) => void;
   onDeleteVault: (id: string, name: string) => void;
   onTogglePin: (id: string, pinned: boolean) => void;
+  onToggleCanvasPin: (id: string, pinned: boolean) => void;
   onNoteIconChange: (id: string, icon: string | null) => void;
+  onCanvasIconChange: (id: string, icon: string | null) => void;
   onFolderIconChange: (id: string, icon: string | null) => void;
   onKindChange: (id: string, kind: string | null) => void;
   onMoveNote: (note: NoteMetadata) => void;
+  onMoveCanvas: (canvas: Canvas) => void;
 }
 
 export function Sidebar({
   vaults,
   notes,
+  canvases,
   folders,
   search,
   onSearchChange,
@@ -83,19 +95,25 @@ export function Sidebar({
   onDragStart,
   onDragEnd,
   onCreateNote,
+  onCreateCanvas,
   onOpenNewFolder,
   onOpenNewVault,
   onDeleteNote,
+  onDeleteCanvas,
   onDeleteFolder,
   onDeleteVault,
   onTogglePin,
+  onToggleCanvasPin,
   onNoteIconChange,
+  onCanvasIconChange,
   onFolderIconChange,
   onKindChange,
   onMoveNote,
+  onMoveCanvas,
 }: SidebarProps) {
   const [currentVaultId, setCurrentVaultId] = useAtom(currentVaultAtom);
   const [viewsPaneOpen, setViewsPaneOpen] = useAtom(viewsPaneOpenAtom);
+  const [itemFilter, setItemFilter] = useAtom(sidebarItemFilterAtom);
   const routerState = useRouterState();
   useAtomValue(pluginRegistryVersionAtom);
   const pluginPages = pluginRegistry.getPages();
@@ -117,8 +135,15 @@ export function Sidebar({
   }
 
   const currentVault = vaults.find((v) => v.id === currentVaultId) ?? null;
-  const regularNotes = notes.filter((n) => n.type === "note");
+  // The Notes/Canvases/All toggle hides one type from the whole tree below — pinned,
+  // folders and unfoldered sections all read from these instead of the raw props, so
+  // there is exactly one place that decides what's visible.
+  const visibleNotes = itemFilter === "canvases" ? [] : notes;
+  const visibleCanvases = itemFilter === "notes" ? [] : canvases;
+
+  const regularNotes = visibleNotes.filter((n) => n.type === "note");
   const pinnedNotes = regularNotes.filter((n) => n.pinned);
+  const pinnedCanvases = visibleCanvases.filter((c) => c.pinned);
   const quickNoteCount = notes.filter((n) => n.type === "quick").length;
   const unfolderedNotes = regularNotes
     .filter(
@@ -128,20 +153,20 @@ export function Sidebar({
         (!search || n.title.toLowerCase().includes(search.toLowerCase())),
     )
     .sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime());
+  const unfolderedCanvases = visibleCanvases
+    .filter(
+      (c) =>
+        !c.folderId &&
+        !c.pinned &&
+        (!search || c.title.toLowerCase().includes(search.toLowerCase())),
+    )
+    .sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime());
 
   const isOnQuickNotes = routerState.location.pathname === "/quick-notes";
   const isOnGraph = routerState.location.pathname === "/graph";
   const isOnTags = routerState.location.pathname === "/tags";
-  const isOnCanvases = routerState.location.pathname.startsWith("/canvas");
   const isOnReminders = routerState.location.pathname === "/reminders";
   const isOnSettings = routerState.location.pathname === "/settings";
-
-  const { data: canvasResults = [] } = useQuery({
-    queryKey: canvasKeys.search(search),
-    queryFn: () =>
-      getCanvases({ ...(currentVaultId ? { vaultId: currentVaultId } : {}), q: search }),
-    enabled: search.length > 0,
-  });
 
   return (
     <Stack gap="xs" h="100%">
@@ -263,10 +288,25 @@ export function Sidebar({
         <Menu.Dropdown>
           <Menu.Item onClick={() => onCreateNote("note")}>New Note</Menu.Item>
           <Menu.Item onClick={() => onCreateNote("quick")}>New Quick Note</Menu.Item>
+          <Menu.Item leftSection={<IconLayoutGridAdd size={14} />} onClick={() => onCreateCanvas()}>
+            New Canvas
+          </Menu.Item>
           <Menu.Divider />
           <Menu.Item onClick={() => onOpenNewFolder()}>New Folder</Menu.Item>
         </Menu.Dropdown>
       </Menu>
+
+      <SegmentedControl
+        size="xs"
+        fullWidth
+        value={itemFilter}
+        onChange={(val) => setItemFilter(val as "all" | "notes" | "canvases")}
+        data={[
+          { label: "All", value: "all" },
+          { label: "Notes", value: "notes" },
+          { label: "Canvases", value: "canvases" },
+        ]}
+      />
 
       <Divider />
 
@@ -279,7 +319,7 @@ export function Sidebar({
         <ScrollArea flex={1} offsetScrollbars>
           <Stack gap={2}>
             {/* Pinned */}
-            {pinnedNotes.length > 0 && (
+            {(pinnedNotes.length > 0 || pinnedCanvases.length > 0) && (
               <>
                 <Text
                   size="xs"
@@ -309,6 +349,16 @@ export function Sidebar({
                     />
                   ))}
                 </SortableContext>
+                {pinnedCanvases.map((canvas) => (
+                  <CanvasNavItem
+                    key={canvas.id}
+                    canvas={canvas}
+                    onDelete={onDeleteCanvas}
+                    onTogglePin={onToggleCanvasPin}
+                    onIconChange={onCanvasIconChange}
+                    onMove={onMoveCanvas}
+                  />
+                ))}
                 <Divider my={4} />
               </>
             )}
@@ -352,16 +402,6 @@ export function Sidebar({
               />
             </Link>
 
-            {/* Canvases */}
-            <Link to="/canvases" style={{ textDecoration: "none" }}>
-              <NavLink
-                component="div"
-                label={<Text size="sm">Canvases</Text>}
-                leftSection={<IconLayout size={14} />}
-                active={isOnCanvases}
-              />
-            </Link>
-
             {/* Reminders */}
             <Link to="/reminders" style={{ textDecoration: "none" }}>
               <NavLink
@@ -371,38 +411,6 @@ export function Sidebar({
                 active={isOnReminders}
               />
             </Link>
-
-            {/* Canvas search results */}
-            {search && canvasResults.length > 0 && (
-              <>
-                <Text
-                  size="xs"
-                  fw={600}
-                  tt="uppercase"
-                  c="dimmed"
-                  px={8}
-                  pt={4}
-                  pb={2}
-                  style={{ letterSpacing: "0.08em" }}
-                >
-                  Canvases
-                </Text>
-                {canvasResults.map((canvas) => (
-                  <Link
-                    key={canvas.id}
-                    to="/canvas/$canvasId"
-                    params={{ canvasId: canvas.id }}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <NavLink
-                      component="div"
-                      label={<Text size="sm">{canvas.title}</Text>}
-                      leftSection={<IconLayout size={14} />}
-                    />
-                  </Link>
-                ))}
-              </>
-            )}
 
             {/* Plugin pages */}
             {pluginPages.map((page) => {
@@ -449,20 +457,26 @@ export function Sidebar({
                   folder={folder}
                   allFolders={folders}
                   notes={regularNotes}
+                  canvases={visibleCanvases}
                   search={search}
                   onCreateNote={(folderId) => onCreateNote("note", folderId)}
+                  onCreateCanvas={onCreateCanvas}
                   onCreateFolder={onOpenNewFolder}
                   onDelete={onDeleteFolder}
                   onDeleteNote={onDeleteNote}
+                  onDeleteCanvas={onDeleteCanvas}
                   onTogglePin={onTogglePin}
+                  onToggleCanvasPin={onToggleCanvasPin}
                   onNoteIconChange={onNoteIconChange}
+                  onCanvasIconChange={onCanvasIconChange}
                   onIconChange={onFolderIconChange}
                   onNoteKindChange={onKindChange}
                   onMoveNote={onMoveNote}
+                  onMoveCanvas={onMoveCanvas}
                 />
               ))}
 
-            {/* Unfoldered notes */}
+            {/* Unfoldered notes and canvases */}
             <SortableContext
               items={unfolderedNotes.map((n) => n.id)}
               strategy={verticalListSortingStrategy}
@@ -479,6 +493,16 @@ export function Sidebar({
                 />
               ))}
             </SortableContext>
+            {unfolderedCanvases.map((canvas) => (
+              <CanvasNavItem
+                key={canvas.id}
+                canvas={canvas}
+                onDelete={onDeleteCanvas}
+                onTogglePin={onToggleCanvasPin}
+                onIconChange={onCanvasIconChange}
+                onMove={onMoveCanvas}
+              />
+            ))}
           </Stack>
         </ScrollArea>
 

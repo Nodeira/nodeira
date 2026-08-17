@@ -562,7 +562,6 @@ function parseCanvas(raw: RawCanvas): Canvas {
 
 export const canvasKeys = {
   all: ["canvases"] as const,
-  search: (q: string) => ["canvases", "search", q] as const,
   byVault: (vaultId: string) => ["canvases", "vault", vaultId] as const,
   detail: (id: string) => ["canvases", id] as const,
 };
@@ -596,7 +595,14 @@ export async function createCanvas(body: {
 
 export async function updateCanvas(
   id: string,
-  body: { title?: string; data?: CanvasData; pinned?: boolean; icon?: string | null },
+  body: {
+    title?: string;
+    data?: CanvasData;
+    pinned?: boolean;
+    icon?: string | null;
+    folderId?: string | null;
+    vaultId?: string;
+  },
 ): Promise<Canvas> {
   const raw = await request<RawCanvas>(`/canvases/${id}`, {
     method: "PATCH",

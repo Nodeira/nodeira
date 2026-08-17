@@ -19,7 +19,6 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRemindersRouteImport } from './routes/_authenticated/reminders'
 import { Route as AuthenticatedQuickNotesRouteImport } from './routes/_authenticated/quick-notes'
 import { Route as AuthenticatedGraphRouteImport } from './routes/_authenticated/graph'
-import { Route as AuthenticatedCanvasesRouteImport } from './routes/_authenticated/canvases'
 import { Route as EmbedNoteNoteIdRouteImport } from './routes/embed/note.$noteId'
 import { Route as EmbedCanvasCanvasIdRouteImport } from './routes/embed/canvas.$canvasId'
 import { Route as AuthenticatedPluginsPluginIdRouteImport } from './routes/_authenticated/plugins/$pluginId'
@@ -75,11 +74,6 @@ const AuthenticatedGraphRoute = AuthenticatedGraphRouteImport.update({
   path: '/graph',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedCanvasesRoute = AuthenticatedCanvasesRouteImport.update({
-  id: '/canvases',
-  path: '/canvases',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const EmbedNoteNoteIdRoute = EmbedNoteNoteIdRouteImport.update({
   id: '/embed/note/$noteId',
   path: '/embed/note/$noteId',
@@ -114,7 +108,6 @@ export interface FileRoutesByFullPath {
   '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/canvases': typeof AuthenticatedCanvasesRoute
   '/graph': typeof AuthenticatedGraphRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
   '/reminders': typeof AuthenticatedRemindersRoute
@@ -130,7 +123,6 @@ export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/canvases': typeof AuthenticatedCanvasesRoute
   '/graph': typeof AuthenticatedGraphRoute
   '/quick-notes': typeof AuthenticatedQuickNotesRoute
   '/reminders': typeof AuthenticatedRemindersRoute
@@ -149,7 +141,6 @@ export interface FileRoutesById {
   '/connect': typeof ConnectRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/_authenticated/canvases': typeof AuthenticatedCanvasesRoute
   '/_authenticated/graph': typeof AuthenticatedGraphRoute
   '/_authenticated/quick-notes': typeof AuthenticatedQuickNotesRoute
   '/_authenticated/reminders': typeof AuthenticatedRemindersRoute
@@ -169,7 +160,6 @@ export interface FileRouteTypes {
     | '/connect'
     | '/login'
     | '/setup'
-    | '/canvases'
     | '/graph'
     | '/quick-notes'
     | '/reminders'
@@ -185,7 +175,6 @@ export interface FileRouteTypes {
     | '/connect'
     | '/login'
     | '/setup'
-    | '/canvases'
     | '/graph'
     | '/quick-notes'
     | '/reminders'
@@ -203,7 +192,6 @@ export interface FileRouteTypes {
     | '/connect'
     | '/login'
     | '/setup'
-    | '/_authenticated/canvases'
     | '/_authenticated/graph'
     | '/_authenticated/quick-notes'
     | '/_authenticated/reminders'
@@ -298,13 +286,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGraphRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/canvases': {
-      id: '/_authenticated/canvases'
-      path: '/canvases'
-      fullPath: '/canvases'
-      preLoaderRoute: typeof AuthenticatedCanvasesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/embed/note/$noteId': {
       id: '/embed/note/$noteId'
       path: '/embed/note/$noteId'
@@ -344,7 +325,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedCanvasesRoute: typeof AuthenticatedCanvasesRoute
   AuthenticatedGraphRoute: typeof AuthenticatedGraphRoute
   AuthenticatedQuickNotesRoute: typeof AuthenticatedQuickNotesRoute
   AuthenticatedRemindersRoute: typeof AuthenticatedRemindersRoute
@@ -357,7 +337,6 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedCanvasesRoute: AuthenticatedCanvasesRoute,
   AuthenticatedGraphRoute: AuthenticatedGraphRoute,
   AuthenticatedQuickNotesRoute: AuthenticatedQuickNotesRoute,
   AuthenticatedRemindersRoute: AuthenticatedRemindersRoute,
