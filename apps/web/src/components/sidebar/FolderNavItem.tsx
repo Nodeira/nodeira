@@ -1,11 +1,19 @@
-import { IconFilePlus, IconFolder, IconFolderPlus, IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+  IconFilePlus,
+  IconFolder,
+  IconFolderPlus,
+  IconLayoutGridAdd,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react";
 import { ActionIcon, Group, Menu, NavLink } from "@mantine/core";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DynamicIcon } from "../DynamicIcon.js";
 import { IconPicker } from "../IconPicker.js";
 import { SortableNoteItem } from "./SortableNoteItem.js";
-import type { Folder, NoteMetadata } from "@nodeira/shared-types";
+import { CanvasNavItem } from "./CanvasNavItem.js";
+import type { Canvas, Folder, NoteMetadata } from "@nodeira/shared-types";
 
 interface FolderNavItemProps {
   folder: Folder;
@@ -13,16 +21,23 @@ interface FolderNavItemProps {
   allFolders: Folder[];
   /** Full (non-quick) note list — each folder selects its own notes. */
   notes: NoteMetadata[];
+  /** Full canvas list — each folder selects its own canvases, same shape as notes. */
+  canvases: Canvas[];
   search: string;
   onCreateNote: (folderId: string) => void;
+  onCreateCanvas: (folderId: string) => void;
   onCreateFolder: (parentId: string) => void;
   onDelete: (id: string, name: string) => void;
   onDeleteNote: (id: string, name: string) => void;
+  onDeleteCanvas: (id: string, name: string) => void;
   onTogglePin: (id: string, pinned: boolean) => void;
+  onToggleCanvasPin: (id: string, pinned: boolean) => void;
   onNoteIconChange: (id: string, icon: string | null) => void;
+  onCanvasIconChange: (id: string, icon: string | null) => void;
   onIconChange: (id: string, icon: string | null) => void;
   onNoteKindChange: (id: string, kind: string | null) => void;
   onMoveNote: (note: NoteMetadata) => void;
+  onMoveCanvas: (canvas: Canvas) => void;
 }
 
 export function FolderNavItem(props: FolderNavItemProps) {
@@ -30,16 +45,22 @@ export function FolderNavItem(props: FolderNavItemProps) {
     folder,
     allFolders,
     notes,
+    canvases,
     search,
     onCreateNote,
+    onCreateCanvas,
     onCreateFolder,
     onDelete,
     onDeleteNote,
+    onDeleteCanvas,
     onTogglePin,
+    onToggleCanvasPin,
     onNoteIconChange,
+    onCanvasIconChange,
     onIconChange,
     onNoteKindChange,
     onMoveNote,
+    onMoveCanvas,
   } = props;
 
   const childFolders = allFolders.filter((f) => f.parentId === folder.id);
@@ -48,6 +69,11 @@ export function FolderNavItem(props: FolderNavItemProps) {
   const filtered = notes
     .filter((n) => n.folderId === folder.id && !n.pinned)
     .filter((n) => !search || n.title.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime());
+
+  const filteredCanvases = canvases
+    .filter((c) => c.folderId === folder.id && !c.pinned)
+    .filter((c) => !search || c.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime());
 
   const { setNodeRef, isOver } = useDroppable({ id: `folder-drop-${folder.id}` });
@@ -61,6 +87,13 @@ export function FolderNavItem(props: FolderNavItemProps) {
         n.title.toLowerCase().includes(search.toLowerCase()),
     );
     if (direct) return true;
+    const directCanvas = canvases.some(
+      (c) =>
+        c.folderId === folderId &&
+        !c.pinned &&
+        c.title.toLowerCase().includes(search.toLowerCase()),
+    );
+    if (directCanvas) return true;
     return allFolders.filter((f) => f.parentId === folderId).some((f) => subtreeHasMatch(f.id));
   }
 
@@ -126,6 +159,12 @@ export function FolderNavItem(props: FolderNavItemProps) {
                   New note
                 </Menu.Item>
                 <Menu.Item
+                  leftSection={<IconLayoutGridAdd size={14} />}
+                  onClick={() => onCreateCanvas(folder.id)}
+                >
+                  New canvas
+                </Menu.Item>
+                <Menu.Item
                   leftSection={<IconFolderPlus size={14} />}
                   onClick={() => onCreateFolder(folder.id)}
                 >
@@ -136,7 +175,7 @@ export function FolderNavItem(props: FolderNavItemProps) {
           </Group>
         }
       >
-        {/* Nested subfolders first, then this folder's notes */}
+        {/* Nested subfolders first, then this folder's notes and canvases */}
         {childFolders.map((child) => (
           <FolderNavItem key={child.id} {...props} folder={child} />
         ))}
@@ -153,6 +192,16 @@ export function FolderNavItem(props: FolderNavItemProps) {
             />
           ))}
         </SortableContext>
+        {filteredCanvases.map((canvas) => (
+          <CanvasNavItem
+            key={canvas.id}
+            canvas={canvas}
+            onDelete={onDeleteCanvas}
+            onTogglePin={onToggleCanvasPin}
+            onIconChange={onCanvasIconChange}
+            onMove={onMoveCanvas}
+          />
+        ))}
       </NavLink>
     </div>
   );

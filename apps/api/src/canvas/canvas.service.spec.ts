@@ -183,6 +183,44 @@ describe("CanvasService", () => {
         service.update(owner.userId, "00000000-0000-0000-0000-000000000000", { title: "x" }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it("moves a canvas into a folder in the same vault", async () => {
+      const canvas = await service.create(owner.userId, { vaultId: owner.vaultId });
+      const folder = await prisma.folder.create({
+        data: { name: "Folder", vaultId: owner.vaultId },
+      });
+      const updated = await service.update(owner.userId, canvas.id, { folderId: folder.id });
+      expect(updated.folderId).toBe(folder.id);
+    });
+
+    it("clears folderId when moved back to null", async () => {
+      const folder = await prisma.folder.create({
+        data: { name: "Folder", vaultId: owner.vaultId },
+      });
+      const canvas = await service.create(owner.userId, {
+        vaultId: owner.vaultId,
+        folderId: folder.id,
+      });
+      const updated = await service.update(owner.userId, canvas.id, { folderId: null });
+      expect(updated.folderId).toBeNull();
+    });
+
+    it("throws NotFoundException when the folder belongs to a different vault", async () => {
+      const canvas = await service.create(owner.userId, { vaultId: owner.vaultId });
+      const otherVault = await prisma.vault.create({
+        data: {
+          name: "Other",
+          ownerId: owner.userId,
+          members: { create: { userId: owner.userId, role: "OWNER" } },
+        },
+      });
+      const foreignFolder = await prisma.folder.create({
+        data: { name: "Foreign", vaultId: otherVault.id },
+      });
+      await expect(
+        service.update(owner.userId, canvas.id, { folderId: foreignFolder.id }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe("remove", () => {

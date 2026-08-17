@@ -218,6 +218,7 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
         opened={addNoteOpen}
         onClose={() => setAddNoteOpen(false)}
         onSelect={handleNoteSelect}
+        {...(canvas.vaultId ? { vaultId: canvas.vaultId } : {})}
       />
       <AddLinkModal
         opened={addLinkOpen}

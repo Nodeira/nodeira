@@ -59,6 +59,24 @@ export class CanvasService {
 
   async update(userId: string, id: string, dto: UpdateCanvasDto, vaultScope?: string | null) {
     const canvas = await this.findOne(userId, id, vaultScope, VaultRole.EDITOR);
+
+    // Moving a canvas into another vault requires write access to the destination too,
+    // otherwise a member of vault A could push canvases into vault B. Mirrors notes.service.
+    if (dto.vaultId !== undefined) {
+      await this.access.assertAccess(userId, dto.vaultId, VaultRole.EDITOR, vaultScope);
+    }
+
+    if (dto.folderId) {
+      const folder = await this.prisma.folder.findUnique({ where: { id: dto.folderId } });
+      if (!folder) throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      // A folder belongs to exactly one vault; moving a canvas into a folder from another
+      // vault would silently detach it from the vault membership that authorizes it.
+      const targetVaultId = dto.vaultId ?? canvas.vaultId;
+      if (folder.vaultId !== targetVaultId) {
+        throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      }
+    }
+
     return this.prisma.canvas.update({
       where: { id: canvas.id },
       data: {
@@ -67,6 +85,8 @@ export class CanvasService {
         ...(dto.pinned !== undefined && { pinned: dto.pinned }),
         ...(dto.icon !== undefined && { icon: dto.icon }),
         ...(dto.position !== undefined && { position: dto.position }),
+        ...(dto.folderId !== undefined && { folderId: dto.folderId }),
+        ...(dto.vaultId !== undefined && { vaultId: dto.vaultId }),
       },
     });
   }

@@ -1,18 +1,25 @@
 import { Button, Group, Modal, Select, Stack } from "@mantine/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { foldersKeys, getFolders, getVaults, vaultsKeys } from "../../lib/api.js";
-import type { NoteMetadata } from "@nodeira/shared-types";
 
-interface MoveNoteContentProps {
-  note: NoteMetadata;
-  onClose: () => void;
-  onMove: (noteId: string, vaultId: string | null, folderId: string | null) => void;
+/** The subset of a note or canvas this modal needs — kept type-agnostic so both share it. */
+export interface MoveItemTarget {
+  id: string;
+  vaultId: string | null;
+  folderId: string | null;
+  label: string;
 }
 
-function MoveNoteContent({ note, onClose, onMove }: MoveNoteContentProps) {
-  const [selectedVaultId, setSelectedVaultId] = useState<string | null>(note.vaultId ?? null);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(note.folderId ?? null);
+interface MoveItemContentProps {
+  target: MoveItemTarget;
+  onClose: () => void;
+  onMove: (id: string, vaultId: string | null, folderId: string | null) => void;
+}
+
+function MoveItemContent({ target, onClose, onMove }: MoveItemContentProps) {
+  const [selectedVaultId, setSelectedVaultId] = useState<string | null>(target.vaultId);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(target.folderId);
 
   const { data: vaults = [] } = useQuery({ queryKey: vaultsKeys.all, queryFn: getVaults });
   const { data: allFolders = [] } = useQuery({
@@ -74,7 +81,7 @@ function MoveNoteContent({ note, onClose, onMove }: MoveNoteContentProps) {
         </Button>
         <Button
           onClick={() => {
-            onMove(note.id, selectedVaultId, selectedFolderId);
+            onMove(target.id, selectedVaultId, selectedFolderId);
             onClose();
           }}
         >
@@ -85,18 +92,38 @@ function MoveNoteContent({ note, onClose, onMove }: MoveNoteContentProps) {
   );
 }
 
-export function MoveNoteModal({
-  note,
+/** Shared "move to folder/vault" modal for both notes and canvases. */
+export function MoveItemModal({
+  target,
+  itemLabel = "item",
   onClose,
   onMove,
 }: {
-  note: NoteMetadata | null;
+  target: MoveItemTarget | null;
+  itemLabel?: string;
   onClose: () => void;
-  onMove: (noteId: string, vaultId: string | null, folderId: string | null) => void;
+  onMove: (id: string, vaultId: string | null, folderId: string | null) => void;
 }) {
+  // Same reasoning as DeleteConfirmModal: Mantine keeps rendering this modal's children
+  // during its own closing transition, after `target` has already gone back to null —
+  // without this, the dialog visibly blanks out (and its title reverts to the generic
+  // fallback) for the fade's duration. Sticking with the last non-null value fixes both.
+  const [lastTarget, setLastTarget] = useState<MoveItemTarget | null>(null);
+  const [lastLabel, setLastLabel] = useState(itemLabel);
+  useEffect(() => {
+    if (target) {
+      setLastTarget(target);
+      setLastLabel(itemLabel);
+    }
+  }, [target, itemLabel]);
+  const display = target ?? lastTarget;
+  const displayLabel = target ? itemLabel : lastLabel;
+
   return (
-    <Modal opened={note !== null} onClose={onClose} title="Move note" size="sm">
-      {note && <MoveNoteContent key={note.id} note={note} onClose={onClose} onMove={onMove} />}
+    <Modal opened={target !== null} onClose={onClose} title={`Move ${displayLabel}`} size="sm">
+      {display && (
+        <MoveItemContent key={display.id} target={display} onClose={onClose} onMove={onMove} />
+      )}
     </Modal>
   );
 }

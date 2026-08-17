@@ -29,4 +29,8 @@ export const fullscreenPaneAtom = atom<"left" | "browse" | "right" | "editor" | 
 // Currently authenticated user (seeded from localStorage on load)
 export const authUserAtom = atom<StoredUser | null>(authStorage.getUser());
 
-// ID of the currently open canvas (null = none)
+// Which item types the sidebar tree shows: notes only, canvases only, or both
+export const sidebarItemFilterAtom = atomWithStorage<"all" | "notes" | "canvases">(
+  "nodeira:sidebar-item-filter",
+  "all",
+);

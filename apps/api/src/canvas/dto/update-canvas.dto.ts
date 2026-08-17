@@ -1,4 +1,12 @@
-import { IsBoolean, IsInt, IsObject, IsOptional, IsString, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+} from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UpdateCanvasDto {
@@ -7,6 +15,20 @@ export class UpdateCanvasDto {
   @IsOptional()
   @MinLength(1)
   title?: string;
+
+  @ApiPropertyOptional({ description: "UUID of the vault to move the canvas into" })
+  @IsUUID()
+  @IsOptional()
+  vaultId?: string;
+
+  // IsOptional() short-circuits the rest for null too, not just undefined — that's what
+  // lets a client send `folderId: null` to un-file a canvas back to the vault root.
+  @ApiPropertyOptional({
+    description: "UUID of the folder to move the canvas into, or null to un-file it",
+  })
+  @IsUUID()
+  @IsOptional()
+  folderId?: string | null;
 
   @ApiPropertyOptional({ description: "Full canvas JSON data (nodes and edges)" })
   @IsObject()
