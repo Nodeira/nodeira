@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/Nodeira/nodeira/compare/v1.20.0...v1.21.0) (2026-08-17)
+
+
+### Features
+
+* **mobile:** canvases live in folders alongside notes, with New canvas ([aa6c704](https://github.com/Nodeira/nodeira/commit/aa6c70408c024e3cb8c7643cf160e4600ffd9d17))
+
 # [1.20.0](https://github.com/Nodeira/nodeira/compare/v1.19.0...v1.20.0) (2026-08-17)
 
 
