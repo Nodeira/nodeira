@@ -3,6 +3,7 @@ package com.deranjer.nodeira.ui.notes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deranjer.nodeira.data.NodeiraRepository
+import com.deranjer.nodeira.data.net.CanvasDto
 import com.deranjer.nodeira.data.net.FolderDto
 import com.deranjer.nodeira.data.net.NoteDto
 import com.deranjer.nodeira.data.net.VaultDto
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 data class NotesUiState(
     val loading: Boolean = true,
     val notes: List<NoteDto> = emptyList(),
+    val canvases: List<CanvasDto> = emptyList(),
     val vaults: List<VaultDto> = emptyList(),
     val folders: List<FolderDto> = emptyList(),
     val error: String? = null,
@@ -30,8 +32,8 @@ data class NotesUiState(
 )
 
 /**
- * Shared across Home / Recents / Quick notes — loads the full note list once and each
- * screen derives its own view (filter/search/sort) locally. Owned at the nav-graph level.
+ * Shared across Home / Recents / Quick notes — loads the full note (and canvas) list once and
+ * each screen derives its own view (filter/search/sort) locally. Owned at the nav-graph level.
  */
 class NotesViewModel(
     private val repository: NodeiraRepository,
@@ -53,6 +55,7 @@ class NotesViewModel(
         _state.update {
             it.copy(
                 notes = repository.cachedNotes(),
+                canvases = repository.cachedCanvases(),
                 vaults = repository.cachedVaults(),
                 folders = repository.cachedFolders(),
                 lastSyncedAt = repository.lastSyncedAt(),
@@ -65,15 +68,18 @@ class NotesViewModel(
         viewModelScope.launch {
             try {
                 val notes = repository.getNotes()
-                // Vaults and folders power the Home switcher and the folder tree; treat their
-                // failure as non-fatal so the note list still renders if either is unavailable.
+                // Vaults, folders and canvases power the Home switcher and the folder tree;
+                // treat their failure as non-fatal so the note list still renders if any of
+                // them is unavailable.
                 val vaults = runCatching { repository.getVaults() }.getOrDefault(emptyList())
                 val folders = runCatching { repository.getFolders() }.getOrDefault(emptyList())
+                val canvases = runCatching { repository.getCanvases() }.getOrDefault(emptyList())
                 repository.markSynced()
                 _state.update {
                     it.copy(
                         loading = false,
                         notes = notes,
+                        canvases = canvases,
                         vaults = vaults,
                         folders = folders,
                         offline = false,
@@ -94,6 +100,7 @@ class NotesViewModel(
                     it.copy(
                         loading = false,
                         notes = if (haveCache) repository.cachedNotes() else it.notes,
+                        canvases = if (haveCache) repository.cachedCanvases() else it.canvases,
                         offline = haveCache,
                         error = if (haveCache) null else e.message ?: "Failed to load notes",
                         pendingWrites = repository.pendingWriteCount(),
@@ -128,6 +135,58 @@ class NotesViewModel(
                 onCreated(note.id)
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "Failed to create note") }
+            }
+        }
+    }
+
+    /** Creates a canvas in [vaultId] (or the default vault) and invokes [onCreated] with its id. */
+    fun createCanvas(vaultId: String?, onCreated: (String) -> Unit) {
+        val targetVault = resolveVaultId(vaultId)
+        if (targetVault == null) {
+            _state.update { it.copy(error = "No vault available yet — pull to refresh and try again") }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val canvas = repository.createCanvas(vaultId = targetVault)
+                refresh()
+                onCreated(canvas.id)
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to create canvas") }
+            }
+        }
+    }
+
+    fun deleteCanvas(id: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteCanvas(id)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to delete canvas") }
+            }
+        }
+    }
+
+    fun renameCanvas(id: String, title: String) {
+        val trimmed = title.trim().ifEmpty { "Untitled" }
+        viewModelScope.launch {
+            try {
+                repository.renameCanvas(id, trimmed)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to rename canvas") }
+            }
+        }
+    }
+
+    fun setCanvasPinned(id: String, pinned: Boolean) {
+        viewModelScope.launch {
+            try {
+                repository.setCanvasPinned(id, pinned)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to update canvas") }
             }
         }
     }

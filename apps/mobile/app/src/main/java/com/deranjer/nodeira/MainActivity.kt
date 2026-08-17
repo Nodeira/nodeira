@@ -22,8 +22,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.deranjer.nodeira.editor.EditorWebViewActivity
-import com.deranjer.nodeira.ui.canvases.CanvasesScreen
-import com.deranjer.nodeira.ui.canvases.CanvasesViewModel
 import com.deranjer.nodeira.ui.graph.GraphScreen
 import com.deranjer.nodeira.ui.graph.GraphViewModel
 import com.deranjer.nodeira.ui.home.HomeScreen
@@ -128,6 +126,11 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onRenameNote = { id, title -> vm.renameNote(id, title) },
                 onCreateFolder = { name, vaultId -> vm.createFolder(name, vaultId) },
                 onResolveConflict = { opId, keepLocal -> vm.resolveConflict(opId, keepLocal) },
+                onOpenCanvas = { openCanvas(navController, container, it) },
+                onCreateCanvas = { vaultId, onCreated -> vm.createCanvas(vaultId, onCreated) },
+                onDeleteCanvas = { id -> vm.deleteCanvas(id) },
+                onToggleCanvasPin = { id, pinned -> vm.setCanvasPinned(id, pinned) },
+                onRenameCanvas = { id, title -> vm.renameCanvas(id, title) },
             )
         }
 
@@ -155,18 +158,6 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onNavigate = { navController.navigateTopLevel(it) },
                 onLogout = { logout(navController, container) },
                 onCreateNote = { onCreated -> vm.createNote("quick", null, onCreated) },
-            )
-        }
-
-        composable(AppDestination.CANVASES.route) {
-            val vm = sharedViewModel(navController, "canvases") {
-                CanvasesViewModel(container.repository)
-            }
-            CanvasesScreen(
-                viewModel = vm,
-                onOpenCanvas = { openCanvas(navController, container, it) },
-                onNavigate = { navController.navigateTopLevel(it) },
-                onLogout = { logout(navController, container) },
             )
         }
 

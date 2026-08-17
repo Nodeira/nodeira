@@ -332,8 +332,19 @@ class NodeiraRepository(
     suspend fun getCanvases(): List<com.deranjer.nodeira.data.net.CanvasDto> =
         requireApi().getCanvases().also(cache::saveCanvases).sortedByDescending { it.updatedAt ?: "" }
 
-    suspend fun createCanvas(title: String): com.deranjer.nodeira.data.net.CanvasDto =
-        requireApi().createCanvas(com.deranjer.nodeira.data.net.CreateCanvasBody(title = title))
+    suspend fun createCanvas(
+        vaultId: String,
+        folderId: String? = null,
+        title: String? = null,
+    ): com.deranjer.nodeira.data.net.CanvasDto = requireApi().createCanvas(
+        com.deranjer.nodeira.data.net.CreateCanvasBody(title = title, vaultId = vaultId, folderId = folderId),
+    )
+
+    suspend fun renameCanvas(id: String, title: String): com.deranjer.nodeira.data.net.CanvasDto =
+        requireApi().updateCanvas(id, com.deranjer.nodeira.data.net.UpdateCanvasBody(title = title))
+
+    suspend fun setCanvasPinned(id: String, pinned: Boolean): com.deranjer.nodeira.data.net.CanvasDto =
+        requireApi().updateCanvas(id, com.deranjer.nodeira.data.net.UpdateCanvasBody(pinned = pinned))
 
     suspend fun deleteCanvas(id: String) = requireApi().deleteCanvas(id)
 }
