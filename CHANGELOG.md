@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/Nodeira/nodeira/compare/v1.18.0...v1.19.0) (2026-08-17)
+
+
+### Features
+
+* **web:** canvases live in folders alongside notes, with a type filter ([d4f73d4](https://github.com/Nodeira/nodeira/commit/d4f73d4aabc7d934796dd0e8bd146371bf5ffe8c)), closes [#56](https://github.com/Nodeira/nodeira/issues/56)
+
 # [1.18.0](https://github.com/Nodeira/nodeira/compare/v1.17.0...v1.18.0) (2026-08-15)
 
 
