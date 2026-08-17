@@ -25,6 +25,7 @@ import {
   useContext,
   useImperativeHandle,
   useRef,
+  useState,
 } from "react";
 import { CanvasEdge, type CanvasEdgeData } from "./CanvasEdge.js";
 import { GroupNode } from "./nodes/GroupNode.js";
@@ -146,6 +147,8 @@ interface CanvasViewProps {
   initialData: CanvasData;
   onChange?: (data: CanvasData) => void;
   readOnly?: boolean;
+  /** Called with dropped image files and the screen position they were dropped at. */
+  onImageDrop?: (files: File[], screenX: number, screenY: number) => void;
 }
 
 const NODE_DEFAULTS: Record<AddNodeType, Record<string, unknown>> = {
@@ -190,7 +193,7 @@ function buildFlowNode(
 const CASCADE_OFFSET = 32;
 
 export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function CanvasView(
-  { initialData, onChange, readOnly = false },
+  { initialData, onChange, readOnly = false, onImageDrop },
   ref,
 ) {
   const { nodes: initNodes, edges: initEdges } = canvasDataToFlow(initialData, readOnly);
@@ -312,6 +315,49 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function
     [addNodeAt, reactFlow],
   );
 
+  // Counts nested dragenter/dragleave pairs — a dragleave fires when the pointer crosses
+  // into a child element, not just when it exits the pane, so a plain boolean flickers.
+  const dragCounter = useRef(0);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  const onDragEnter = useCallback(
+    (event: React.DragEvent) => {
+      if (readOnly || !onImageDrop || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      dragCounter.current += 1;
+      setIsDraggingFile(true);
+    },
+    [readOnly, onImageDrop],
+  );
+
+  const onDragOver = useCallback(
+    (event: React.DragEvent) => {
+      if (readOnly || !onImageDrop || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    },
+    [readOnly, onImageDrop],
+  );
+
+  const onDragLeave = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    dragCounter.current = Math.max(0, dragCounter.current - 1);
+    if (dragCounter.current === 0) setIsDraggingFile(false);
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      dragCounter.current = 0;
+      setIsDraggingFile(false);
+      if (readOnly || !onImageDrop) return;
+      const files = Array.from(event.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+      if (files.length === 0) return;
+      event.preventDefault();
+      onImageDrop(files, event.clientX, event.clientY);
+    },
+    [readOnly, onImageDrop],
+  );
+
   return (
     <EdgeDataChangeContext.Provider value={handleEdgeDataChange}>
       <NodeDataChangeContext.Provider value={handleNodeDataChange}>
@@ -338,10 +384,33 @@ export const CanvasView = forwardRef<CanvasViewHandle, CanvasViewProps>(function
           zoomOnDoubleClick={!readOnly}
           panOnDrag={true}
           style={{ background: "var(--mantine-color-body)" }}
+          onDragEnter={onDragEnter}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
         >
           <Background />
           {!readOnly && <Controls />}
           {!readOnly && <MiniMap />}
+          {isDraggingFile && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 20,
+                pointerEvents: "none",
+                border: "2px dashed var(--mantine-color-blue-5)",
+                background: "var(--mantine-color-blue-light)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 600,
+                color: "var(--mantine-color-blue-7)",
+              }}
+            >
+              Drop image to add to canvas
+            </div>
+          )}
         </ReactFlow>
       </NodeDataChangeContext.Provider>
     </EdgeDataChangeContext.Provider>

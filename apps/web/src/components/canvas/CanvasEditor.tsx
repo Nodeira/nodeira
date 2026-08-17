@@ -122,6 +122,18 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
     [addNodeViaRef],
   );
 
+  const handleImageDrop = useCallback(
+    (files: File[], screenX: number, screenY: number) => {
+      files.forEach((file, i) => {
+        // Cascade multi-file drops so they don't all land in the exact same spot.
+        void uploadImage(file).then(({ url }) => {
+          addNodeViaRef("image", { url }, screenX + i * 24, screenY + i * 24);
+        });
+      });
+    },
+    [addNodeViaRef],
+  );
+
   const handleNoteSelect = (note: NoteMetadata) => {
     const hasScreenPos = pendingPos.x !== 0 || pendingPos.y !== 0;
     addNodeViaRef(
@@ -201,7 +213,12 @@ export function CanvasEditor({ canvasId }: { canvasId: string }) {
         <CanvasToolbar saveStatus={saveStatus} onAddNode={(type) => handleAdd(type)} />
 
         <ReactFlowProvider>
-          <CanvasView ref={canvasViewRef} initialData={canvas.data} onChange={scheduleSave} />
+          <CanvasView
+            ref={canvasViewRef}
+            initialData={canvas.data}
+            onChange={scheduleSave}
+            onImageDrop={handleImageDrop}
+          />
         </ReactFlowProvider>
 
         {contextMenu && (
