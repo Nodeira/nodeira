@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/Nodeira/nodeira/compare/v1.19.0...v1.20.0) (2026-08-17)
+
+
+### Features
+
+* **web:** drag and drop images onto the canvas ([c7c1190](https://github.com/Nodeira/nodeira/commit/c7c11904d21a5cbfed1de0c80edf9eede9158201))
+
 # [1.19.0](https://github.com/Nodeira/nodeira/compare/v1.18.0...v1.19.0) (2026-08-17)
 
 
