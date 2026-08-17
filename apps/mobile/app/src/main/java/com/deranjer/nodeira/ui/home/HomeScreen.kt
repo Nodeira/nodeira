@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
@@ -50,9 +51,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.deranjer.nodeira.data.net.CanvasDto
 import com.deranjer.nodeira.data.net.FolderDto
 import com.deranjer.nodeira.data.net.NoteDto
 import com.deranjer.nodeira.data.net.VaultDto
+import com.deranjer.nodeira.ui.canvases.CanvasListItem
 import com.deranjer.nodeira.ui.components.BrandSearchBar
 import com.deranjer.nodeira.ui.components.NBadge
 import com.deranjer.nodeira.ui.components.SectionLabel
@@ -79,6 +82,11 @@ fun HomeScreen(
     onTogglePin: (id: String, pinned: Boolean) -> Unit,
     onRenameNote: (id: String, title: String) -> Unit,
     onResolveConflict: (opId: String, keepLocal: Boolean) -> Unit = { _, _ -> },
+    onOpenCanvas: (String) -> Unit,
+    onCreateCanvas: (vaultId: String?, onCreated: (String) -> Unit) -> Unit,
+    onDeleteCanvas: (String) -> Unit,
+    onToggleCanvasPin: (id: String, pinned: Boolean) -> Unit,
+    onRenameCanvas: (id: String, title: String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var selectedVaultId by remember { mutableStateOf<String?>(null) }
@@ -129,13 +137,18 @@ fun HomeScreen(
                     )
                 else -> {
                     val scoped = state.notes.filter { selectedVaultId == null || it.vaultId == selectedVaultId }
+                    val scopedCanvases = state.canvases.filter { selectedVaultId == null || it.vaultId == selectedVaultId }
                     val scopedFolders = state.folders.filter { selectedVaultId == null || it.vaultId == selectedVaultId }
                     val visible = scoped.filter { query.isBlank() || it.title.contains(query, ignoreCase = true) }
+                    val visibleCanvases = scopedCanvases.filter { query.isBlank() || it.title.contains(query, ignoreCase = true) }
                     val searching = query.isNotBlank()
 
                     val pinned = visible.filter { it.pinned }
+                    val pinnedCanvases = visibleCanvases.filter { it.pinned }
                     val notesByFolder = visible.groupBy { it.folderId }
+                    val canvasesByFolder = visibleCanvases.groupBy { it.folderId }
                     val rootNotes = notesByFolder[null].orEmpty()
+                    val rootCanvases = canvasesByFolder[null].orEmpty()
                     // Folders grouped by parent so the tree can render recursively.
                     val foldersByParent = scopedFolders.groupBy { it.parentId }
                     val rootFolders = foldersByParent[null].orEmpty()
@@ -165,7 +178,7 @@ fun HomeScreen(
                             )
                         }
 
-                        if (pinned.isNotEmpty()) {
+                        if (pinned.isNotEmpty() || pinnedCanvases.isNotEmpty()) {
                             item("pinned-label") { SectionLabel("Pinned") }
                             items(pinned, key = { "pin-${it.id}" }) { note ->
                                 NoteListItem(
@@ -177,14 +190,24 @@ fun HomeScreen(
                                     onRename = { onRenameNote(note.id, it) },
                                 )
                             }
+                            items(pinnedCanvases, key = { "pin-c-${it.id}" }) { canvas ->
+                                CanvasListItem(
+                                    canvas = canvas,
+                                    onClick = { onOpenCanvas(canvas.id) },
+                                    showPinTrailing = true,
+                                    onDelete = { onDeleteCanvas(canvas.id) },
+                                    onTogglePin = { onToggleCanvasPin(canvas.id, !canvas.pinned) },
+                                    onRename = { onRenameCanvas(canvas.id, it) },
+                                )
+                            }
                         }
 
                         item("files-label") { SectionLabel("Files") }
 
                         val anyFolderVisible = rootFolders.any {
-                            !searching || subtreeHasNotes(it.id, notesByFolder, foldersByParent)
+                            !searching || subtreeHasNotes(it.id, notesByFolder, canvasesByFolder, foldersByParent)
                         }
-                        if (!anyFolderVisible && rootNotes.isEmpty()) {
+                        if (!anyFolderVisible && rootNotes.isEmpty() && rootCanvases.isEmpty()) {
                             item("empty") {
                                 Text(
                                     if (searching) "No matching notes" else "No notes yet",
@@ -197,12 +220,17 @@ fun HomeScreen(
                                 parentId = null,
                                 depth = 0,
                                 notesByFolder = notesByFolder,
+                                canvasesByFolder = canvasesByFolder,
                                 foldersByParent = foldersByParent,
                                 expandedFolders = expandedFolders,
                                 searching = searching,
                                 onDeleteNote = onDeleteNote,
                                 onTogglePin = onTogglePin,
                                 onRenameNote = onRenameNote,
+                                onOpenCanvas = onOpenCanvas,
+                                onDeleteCanvas = onDeleteCanvas,
+                                onToggleCanvasPin = onToggleCanvasPin,
+                                onRenameCanvas = onRenameCanvas,
                                 onToggle = { id ->
                                     expandedFolders[id] = !(expandedFolders[id] == true)
                                 },
@@ -217,6 +245,16 @@ fun HomeScreen(
                                     onDelete = { onDeleteNote(note.id) },
                                     onTogglePin = { onTogglePin(note.id, !note.pinned) },
                                     onRename = { onRenameNote(note.id, it) },
+                                )
+                            }
+
+                            items(rootCanvases, key = { it.id }) { canvas ->
+                                CanvasListItem(
+                                    canvas = canvas,
+                                    onClick = { onOpenCanvas(canvas.id) },
+                                    onDelete = { onDeleteCanvas(canvas.id) },
+                                    onTogglePin = { onToggleCanvasPin(canvas.id, !canvas.pinned) },
+                                    onRename = { onRenameCanvas(canvas.id, it) },
                                 )
                             }
                         }
@@ -236,6 +274,10 @@ fun HomeScreen(
             onNewQuickNote = {
                 showNewMenu = false
                 onCreateNote("quick", selectedVaultId, onOpenNote)
+            },
+            onNewCanvas = {
+                showNewMenu = false
+                onCreateCanvas(selectedVaultId, onOpenCanvas)
             },
             onNewFolder = {
                 showNewMenu = false
@@ -329,12 +371,14 @@ private fun VaultRow(
 
 /**
  * Recursively emits a folder and its descendants into the LazyColumn. Subfolders render
- * before the folder's own notes, each level indented one step deeper.
+ * first, then the folder's own notes, then its canvases — each level indented one step
+ * deeper. Mirrors the web sidebar's ordering (notes, then canvases, at every level).
  */
 private fun LazyListScope.folderTree(
     parentId: String?,
     depth: Int,
     notesByFolder: Map<String?, List<NoteDto>>,
+    canvasesByFolder: Map<String?, List<CanvasDto>>,
     foldersByParent: Map<String?, List<FolderDto>>,
     expandedFolders: Map<String, Boolean>,
     searching: Boolean,
@@ -343,27 +387,33 @@ private fun LazyListScope.folderTree(
     onDeleteNote: (String) -> Unit,
     onTogglePin: (id: String, pinned: Boolean) -> Unit,
     onRenameNote: (id: String, title: String) -> Unit,
+    onOpenCanvas: (String) -> Unit,
+    onDeleteCanvas: (String) -> Unit,
+    onToggleCanvasPin: (id: String, pinned: Boolean) -> Unit,
+    onRenameCanvas: (id: String, title: String) -> Unit,
 ) {
     foldersByParent[parentId].orEmpty().forEach { folder ->
-        // While searching, hide folders whose subtree has no matching note.
-        if (searching && !subtreeHasNotes(folder.id, notesByFolder, foldersByParent)) return@forEach
+        // While searching, hide folders whose subtree has no matching note or canvas.
+        if (searching && !subtreeHasNotes(folder.id, notesByFolder, canvasesByFolder, foldersByParent)) return@forEach
         val folderNotes = notesByFolder[folder.id].orEmpty()
+        val folderCanvases = canvasesByFolder[folder.id].orEmpty()
         val expanded = searching || expandedFolders[folder.id] == true
         item("folder-${folder.id}") {
             FolderRow(
                 name = folder.name,
-                count = folderNotes.size,
+                count = folderNotes.size + folderCanvases.size,
                 expanded = expanded,
                 depth = depth,
                 onToggle = { onToggle(folder.id) },
             )
         }
         if (expanded) {
-            // Nested subfolders first, then this folder's notes.
+            // Nested subfolders first, then this folder's notes, then its canvases.
             folderTree(
                 parentId = folder.id,
                 depth = depth + 1,
                 notesByFolder = notesByFolder,
+                canvasesByFolder = canvasesByFolder,
                 foldersByParent = foldersByParent,
                 expandedFolders = expandedFolders,
                 searching = searching,
@@ -372,6 +422,10 @@ private fun LazyListScope.folderTree(
                 onDeleteNote = onDeleteNote,
                 onTogglePin = onTogglePin,
                 onRenameNote = onRenameNote,
+                onOpenCanvas = onOpenCanvas,
+                onDeleteCanvas = onDeleteCanvas,
+                onToggleCanvasPin = onToggleCanvasPin,
+                onRenameCanvas = onRenameCanvas,
             )
             items(folderNotes, key = { "f-${folder.id}-${it.id}" }) { note ->
                 Box(modifier = Modifier.padding(start = (24 + depth * 16).dp)) {
@@ -385,29 +439,42 @@ private fun LazyListScope.folderTree(
                     )
                 }
             }
+            items(folderCanvases, key = { "f-c-${folder.id}-${it.id}" }) { canvas ->
+                Box(modifier = Modifier.padding(start = (24 + depth * 16).dp)) {
+                    CanvasListItem(
+                        canvas = canvas,
+                        onClick = { onOpenCanvas(canvas.id) },
+                        onDelete = { onDeleteCanvas(canvas.id) },
+                        onTogglePin = { onToggleCanvasPin(canvas.id, !canvas.pinned) },
+                        onRename = { onRenameCanvas(canvas.id, it) },
+                    )
+                }
+            }
         }
     }
 }
 
-/** True if [folderId] or any descendant folder holds at least one (already-filtered) note. */
+/** True if [folderId] or any descendant folder holds at least one (already-filtered) note or canvas. */
 private fun subtreeHasNotes(
     folderId: String,
     notesByFolder: Map<String?, List<NoteDto>>,
+    canvasesByFolder: Map<String?, List<CanvasDto>>,
     foldersByParent: Map<String?, List<FolderDto>>,
 ): Boolean {
     if (notesByFolder[folderId]?.isNotEmpty() == true) return true
+    if (canvasesByFolder[folderId]?.isNotEmpty() == true) return true
     return foldersByParent[folderId].orEmpty().any {
-        subtreeHasNotes(it.id, notesByFolder, foldersByParent)
+        subtreeHasNotes(it.id, notesByFolder, canvasesByFolder, foldersByParent)
     }
 }
 
-/** Expandable folder row: folder icon, name, note count, and a rotating expand chevron. */
+/** Expandable folder row: folder icon, name, item count, and a rotating expand chevron. */
 @Composable
 private fun FolderRow(name: String, count: Int, expanded: Boolean, depth: Int, onToggle: () -> Unit) {
     ListItem(
         modifier = Modifier.clickable(onClick = onToggle).padding(start = (depth * 16).dp),
         headlineContent = { Text(name.ifBlank { "Untitled folder" }) },
-        supportingContent = { Text("$count notes") },
+        supportingContent = { Text(if (count == 1) "1 item" else "$count items") },
         leadingContent = {
             Icon(
                 Icons.Filled.Folder,
@@ -424,13 +491,14 @@ private fun FolderRow(name: String, count: Int, expanded: Boolean, depth: Int, o
     )
 }
 
-/** Slides up from the FAB: create a note, quick note, or folder. */
+/** Slides up from the FAB: create a note, quick note, canvas, or folder. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewItemSheet(
     onDismiss: () -> Unit,
     onNewNote: () -> Unit,
     onNewQuickNote: () -> Unit,
+    onNewCanvas: () -> Unit,
     onNewFolder: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -446,6 +514,11 @@ private fun NewItemSheet(
             headlineContent = { Text("New quick note") },
             leadingContent = { Icon(Icons.Filled.Bolt, contentDescription = null) },
             modifier = Modifier.clickable(onClick = onNewQuickNote),
+        )
+        ListItem(
+            headlineContent = { Text("New canvas") },
+            leadingContent = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+            modifier = Modifier.clickable(onClick = onNewCanvas),
         )
         ListItem(
             headlineContent = { Text("New folder") },

@@ -64,6 +64,9 @@ interface NodeiraApi {
     @POST("canvases")
     suspend fun createCanvas(@Body body: CreateCanvasBody): CanvasDto
 
+    @PATCH("canvases/{id}")
+    suspend fun updateCanvas(@Path("id") id: String, @Body body: UpdateCanvasBody): CanvasDto
+
     @DELETE("canvases/{id}")
     suspend fun deleteCanvas(@Path("id") id: String)
 }

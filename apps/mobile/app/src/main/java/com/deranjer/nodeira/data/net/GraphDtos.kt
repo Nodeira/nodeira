@@ -17,11 +17,22 @@ data class CanvasDto(
     val pinned: Boolean = false,
     val icon: String? = null,
     val updatedAt: String? = null,
+    val vaultId: String? = null,
+    val folderId: String? = null,
 )
 
 @Serializable
 data class CreateCanvasBody(
     val title: String? = null,
+    val vaultId: String? = null,
+    val folderId: String? = null,
+)
+
+/** Partial canvas update — mirrors [UpdateNoteBody]; omitted fields are left untouched. */
+@Serializable
+data class UpdateCanvasBody(
+    val title: String? = null,
+    val pinned: Boolean? = null,
     val vaultId: String? = null,
     val folderId: String? = null,
 )
