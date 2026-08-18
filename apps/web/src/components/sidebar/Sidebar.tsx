@@ -3,6 +3,7 @@ import {
   IconBolt,
   IconChevronDown,
   IconFile,
+  IconLayout,
   IconLayoutColumns,
   IconLayoutGridAdd,
   IconLogout,
@@ -63,6 +64,7 @@ interface SidebarProps {
   onSearchChange: (val: string) => void;
   sensors: SensorDescriptor<SensorOptions>[];
   activeDragNote: NoteMetadata | null;
+  activeDragCanvas: Canvas | null;
   onDragStart: (event: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
   onCreateNote: (type: "note" | "quick", folderId?: string) => void;
@@ -92,6 +94,7 @@ export function Sidebar({
   onSearchChange,
   sensors,
   activeDragNote,
+  activeDragCanvas,
   onDragStart,
   onDragEnd,
   onCreateNote,
@@ -507,7 +510,7 @@ export function Sidebar({
         </ScrollArea>
 
         <DragOverlay>
-          {activeDragNote ? (
+          {activeDragNote || activeDragCanvas ? (
             <Box
               style={{
                 padding: "6px 10px",
@@ -519,8 +522,12 @@ export function Sidebar({
               }}
             >
               <Group gap={6}>
-                <IconFile size={14} />
-                <Text size="sm">{activeDragNote.title || "Untitled"}</Text>
+                {activeDragCanvas ? <IconLayout size={14} /> : <IconFile size={14} />}
+                <Text size="sm">
+                  {(activeDragCanvas
+                    ? activeDragCanvas.title || "Untitled Canvas"
+                    : activeDragNote?.title) || "Untitled"}
+                </Text>
               </Group>
             </Box>
           ) : null}

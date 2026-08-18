@@ -8,6 +8,8 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { ActionIcon, Divider, Menu, NavLink, Paper } from "@mantine/core";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { DynamicIcon } from "../DynamicIcon.js";
 import { IconPicker } from "../IconPicker.js";
@@ -53,9 +55,11 @@ function CtxItem({
 }
 
 /**
- * Sidebar tree entry for a canvas — the same shape as `SortableNoteItem` minus dnd-kit
- * sortable wiring, since canvases don't yet support drag-to-reorder (only move-to-folder
- * via the menu).
+ * Sidebar tree entry for a canvas — the same shape as `SortableNoteItem`, but plain
+ * `useDraggable` rather than `useSortable`: canvases can be dragged onto a folder to move
+ * them (like notes), but don't yet support drag-to-reorder among themselves. The id is
+ * prefixed so `AppShell.handleDragEnd` can tell a dragged canvas apart from a dragged note
+ * without the two id spaces ever colliding.
  */
 export function CanvasNavItem({
   canvas,
@@ -74,6 +78,10 @@ export function CanvasNavItem({
   const isActive = routerState.location.pathname === `/canvas/${canvas.id}`;
   const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null);
 
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `canvas-${canvas.id}`,
+  });
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -86,7 +94,18 @@ export function CanvasNavItem({
 
   return (
     <>
-      <div onContextMenu={handleContextMenu}>
+      <div
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+        onContextMenu={handleContextMenu}
+        style={{
+          transform: CSS.Translate.toString(transform),
+          opacity: isDragging ? 0 : 1,
+          cursor: "grab",
+          touchAction: "none",
+        }}
+      >
         <Link
           to="/canvas/$canvasId"
           params={{ canvasId: canvas.id }}
