@@ -392,6 +392,8 @@ export function AppShell({ children }: AppShellProps) {
   const activeNoteId = noteIdFromPath(routerState.location.pathname);
   const activeNote = notes.find((n) => n.id === activeNoteId) ?? null;
   const activeDragNote = notes.find((n) => n.id === activeDragId) ?? null;
+  const activeDragCanvas =
+    canvases.find((c) => activeDragId != null && activeDragId === `canvas-${c.id}`) ?? null;
 
   function handleStatusChange(id: string, status: string) {
     const note = notes.find((n) => n.id === id);
@@ -504,7 +506,24 @@ export function AppShell({ children }: AppShellProps) {
     setActiveDragId(null);
     if (!over || active.id === over.id) return;
 
-    const activeNoteItem = notes.find((n) => n.id === String(active.id));
+    const activeIdStr = String(active.id);
+
+    // Canvases are draggable but not sortable (see CanvasNavItem) — the only drop that
+    // does anything is onto a folder header. Their id is prefixed so it can't collide
+    // with a note id in the lookup below.
+    if (activeIdStr.startsWith("canvas-")) {
+      const canvasId = activeIdStr.replace("canvas-", "");
+      const canvas = canvases.find((c) => c.id === canvasId);
+      if (!canvas) return;
+      const overIdStr = String(over.id);
+      if (!overIdStr.startsWith("folder-drop-")) return;
+      const targetFolderId = overIdStr.replace("folder-drop-", "");
+      if ((canvas.folderId ?? null) === targetFolderId) return;
+      moveCanvasMutation.mutate({ id: canvas.id, vaultId: null, folderId: targetFolderId });
+      return;
+    }
+
+    const activeNoteItem = notes.find((n) => n.id === activeIdStr);
     if (!activeNoteItem) return;
 
     const overIdStr = String(over.id);
@@ -637,6 +656,7 @@ export function AppShell({ children }: AppShellProps) {
             onSearchChange={setSearch}
             sensors={sensors}
             activeDragNote={activeDragNote}
+            activeDragCanvas={activeDragCanvas}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onCreateNote={handleCreateNote}
