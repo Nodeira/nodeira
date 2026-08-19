@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/Nodeira/nodeira/compare/v1.21.0...v1.21.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **web:** drag canvases into folders, like notes ([12d0c4e](https://github.com/Nodeira/nodeira/commit/12d0c4e21b087e5161afa0a4af40b49c8b5c175c))
+
 # [1.21.0](https://github.com/Nodeira/nodeira/compare/v1.20.0...v1.21.0) (2026-08-17)
 
 
