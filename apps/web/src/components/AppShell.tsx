@@ -25,6 +25,7 @@ import { useMantineColorScheme } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { networkStatusAtom } from "../store/networkStatusAtom.js";
 import "../lib/electronAPI.js";
+import { UpdateAvailableModal } from "./modals/UpdateAvailableModal.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   asidePanelOpenAtom,
@@ -595,6 +596,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <>
+      <UpdateAvailableModal />
       <MantineAppShell
         header={{ height: 48 }}
         navbar={{
