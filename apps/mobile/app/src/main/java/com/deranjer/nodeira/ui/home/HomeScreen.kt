@@ -1,6 +1,8 @@
 package com.deranjer.nodeira.ui.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,11 +23,13 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -78,6 +83,7 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onCreateNote: (type: String, vaultId: String?, onCreated: (String) -> Unit) -> Unit,
     onCreateFolder: (name: String, vaultId: String?) -> Unit,
+    onDeleteFolder: (String) -> Unit,
     onDeleteNote: (String) -> Unit,
     onTogglePin: (id: String, pinned: Boolean) -> Unit,
     onRenameNote: (id: String, title: String) -> Unit,
@@ -224,6 +230,7 @@ fun HomeScreen(
                                 foldersByParent = foldersByParent,
                                 expandedFolders = expandedFolders,
                                 searching = searching,
+                                onDeleteFolder = onDeleteFolder,
                                 onDeleteNote = onDeleteNote,
                                 onTogglePin = onTogglePin,
                                 onRenameNote = onRenameNote,
@@ -384,6 +391,7 @@ private fun LazyListScope.folderTree(
     searching: Boolean,
     onToggle: (String) -> Unit,
     onOpenNote: (String) -> Unit,
+    onDeleteFolder: (String) -> Unit,
     onDeleteNote: (String) -> Unit,
     onTogglePin: (id: String, pinned: Boolean) -> Unit,
     onRenameNote: (id: String, title: String) -> Unit,
@@ -405,6 +413,7 @@ private fun LazyListScope.folderTree(
                 expanded = expanded,
                 depth = depth,
                 onToggle = { onToggle(folder.id) },
+                onDelete = { onDeleteFolder(folder.id) },
             )
         }
         if (expanded) {
@@ -419,6 +428,7 @@ private fun LazyListScope.folderTree(
                 searching = searching,
                 onToggle = onToggle,
                 onOpenNote = onOpenNote,
+                onDeleteFolder = onDeleteFolder,
                 onDeleteNote = onDeleteNote,
                 onTogglePin = onTogglePin,
                 onRenameNote = onRenameNote,
@@ -468,27 +478,98 @@ private fun subtreeHasNotes(
     }
 }
 
-/** Expandable folder row: folder icon, name, item count, and a rotating expand chevron. */
+/**
+ * Expandable folder row: folder icon, name, item count, and a rotating expand chevron.
+ * Long-pressing opens a Delete action — folders previously had no way to be removed from
+ * the phone at all.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun FolderRow(name: String, count: Int, expanded: Boolean, depth: Int, onToggle: () -> Unit) {
-    ListItem(
-        modifier = Modifier.clickable(onClick = onToggle).padding(start = (depth * 16).dp),
-        headlineContent = { Text(name.ifBlank { "Untitled folder" }) },
-        supportingContent = { Text(if (count == 1) "1 item" else "$count items") },
-        leadingContent = {
-            Icon(
-                Icons.Filled.Folder,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        },
-        trailingContent = {
-            Icon(
-                if (expanded) Icons.Filled.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = if (expanded) "Collapse" else "Expand",
-            )
-        },
-    )
+private fun FolderRow(
+    name: String,
+    count: Int,
+    expanded: Boolean,
+    depth: Int,
+    onToggle: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    val displayName = name.ifBlank { "Untitled folder" }
+
+    // ListItem and its DropdownMenu must share one layout node — see the matching comment
+    // in NoteListItem for why the menu would otherwise open at the viewport's top-left.
+    Box {
+        ListItem(
+            modifier = if (onDelete != null) {
+                Modifier
+                    .combinedClickable(onClick = onToggle, onLongClick = { menuOpen = true })
+                    .padding(start = (depth * 16).dp)
+            } else {
+                Modifier.clickable(onClick = onToggle).padding(start = (depth * 16).dp)
+            },
+            headlineContent = { Text(displayName) },
+            supportingContent = { Text(if (count == 1) "1 item" else "$count items") },
+            leadingContent = {
+                Icon(
+                    Icons.Filled.Folder,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            },
+            trailingContent = {
+                Icon(
+                    if (expanded) Icons.Filled.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                )
+            },
+        )
+
+        if (onDelete != null) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error),
+                    onClick = {
+                        menuOpen = false
+                        confirmDelete = true
+                    },
+                )
+            }
+        }
+    }
+
+    if (confirmDelete && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete folder?") },
+            text = {
+                Text(
+                    "\"$displayName\" and everything inside it — notes, canvases, and " +
+                        "subfolders — will be moved to trash.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    onClick = {
+                        confirmDelete = false
+                        onDelete()
+                    },
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 /** Slides up from the FAB: create a note, quick note, canvas, or folder. */

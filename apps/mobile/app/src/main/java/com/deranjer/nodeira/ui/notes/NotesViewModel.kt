@@ -207,6 +207,17 @@ class NotesViewModel(
         }
     }
 
+    fun deleteFolder(id: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteFolder(id)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to delete folder") }
+            }
+        }
+    }
+
     /** Deletes a note. The app could create and read notes but never remove one. */
     fun deleteNote(id: String) {
         viewModelScope.launch {

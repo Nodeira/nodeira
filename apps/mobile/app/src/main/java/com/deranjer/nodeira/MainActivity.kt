@@ -37,6 +37,8 @@ import com.deranjer.nodeira.ui.reminders.RemindersScreen
 import com.deranjer.nodeira.ui.reminders.RemindersViewModel
 import com.deranjer.nodeira.ui.settings.SettingsScreen
 import com.deranjer.nodeira.ui.theme.NodeiraTheme
+import com.deranjer.nodeira.ui.trash.TrashScreen
+import com.deranjer.nodeira.ui.trash.TrashViewModel
 
 private const val ROUTE_MAIN = "main"
 private const val ROUTE_REMINDER_EDITOR = "reminder_editor"
@@ -125,6 +127,7 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onTogglePin = { id, pinned -> vm.setNotePinned(id, pinned) },
                 onRenameNote = { id, title -> vm.renameNote(id, title) },
                 onCreateFolder = { name, vaultId -> vm.createFolder(name, vaultId) },
+                onDeleteFolder = { id -> vm.deleteFolder(id) },
                 onResolveConflict = { opId, keepLocal -> vm.resolveConflict(opId, keepLocal) },
                 onOpenCanvas = { openCanvas(navController, container, it) },
                 onCreateCanvas = { vaultId, onCreated -> vm.createCanvas(vaultId, onCreated) },
@@ -189,6 +192,19 @@ private fun NavGraphBuilder.authenticatedGraph(
                 viewModel = vm,
                 onDone = { navController.popBackStack() },
                 onCancel = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppDestination.TRASH.route) {
+            val vm = sharedViewModel(navController, "trash") { TrashViewModel(container.repository) }
+            val state by vm.state.collectAsStateWithLifecycle()
+            TrashScreen(
+                state = state,
+                onNavigate = { navController.navigateTopLevel(it) },
+                onLogout = { logout(navController, container) },
+                onRestore = vm::restore,
+                onPurge = vm::purge,
+                onRefresh = vm::refresh,
             )
         }
 
