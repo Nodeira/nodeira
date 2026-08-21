@@ -55,11 +55,10 @@ function CtxItem({
 }
 
 /**
- * Sidebar tree entry for a canvas — the same shape as `SortableNoteItem`, but plain
- * `useDraggable` rather than `useSortable`: canvases can be dragged onto a folder to move
- * them (like notes), but don't yet support drag-to-reorder among themselves. The id is
- * prefixed so `AppShell.handleDragEnd` can tell a dragged canvas apart from a dragged note
- * without the two id spaces ever colliding.
+ * Sidebar tree entry for a canvas — the same shape as `SortableNoteItem` but using
+ * `useDraggable` rather than `useSortable`: canvases can be dragged onto a folder's
+ * drop zone (moving them into that folder) but don't yet support drag-to-reorder
+ * within a folder — that still goes through the "Move to…" menu.
  */
 export function CanvasNavItem({
   canvas,
@@ -79,7 +78,7 @@ export function CanvasNavItem({
   const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `canvas-${canvas.id}`,
+    id: canvas.id,
   });
 
   const handleContextMenu = (e: React.MouseEvent) => {
