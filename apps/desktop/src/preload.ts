@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 
 const SERVER_URL = (ipcRenderer.sendSync("settings:getServerUrl") as string) ?? "";
 const WS_URL = SERVER_URL.replace(/^http/, "ws");
+const APP_VERSION = ipcRenderer.sendSync("app:getVersion") as string;
 
 contextBridge.exposeInMainWorld("electronAPI", {
   /** Base URL for REST API calls — used by apps/web api.ts instead of relative /api/... */
@@ -9,6 +10,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   /** Base URL for WebSocket sync — used by YjsProvider instead of window.location.host */
   wsBaseUrl: WS_URL,
+
+  /** Packaged app version (app.getVersion()), read once at preload time. */
+  appVersion: APP_VERSION,
 
   // ── Settings ──────────────────────────────────────────────────────────────
   settings: {
@@ -48,6 +52,48 @@ contextBridge.exposeInMainWorld("electronAPI", {
     },
     setCachedBundle(source: string, bundle: string): Promise<void> {
       return ipcRenderer.invoke("plugin:setCachedBundle", source, bundle) as Promise<void>;
+    },
+  },
+
+  // ── Auto-update ────────────────────────────────────────────────────────────
+  update: {
+    check(): Promise<void> {
+      return ipcRenderer.invoke("update:check") as Promise<void>;
+    },
+    download(): Promise<void> {
+      return ipcRenderer.invoke("update:download") as Promise<void>;
+    },
+    install(): Promise<void> {
+      return ipcRenderer.invoke("update:install") as Promise<void>;
+    },
+    onAvailable(callback: (info: { version: string; notes: string }) => void): () => void {
+      const listener = (_event: unknown, info: { version: string; notes: string }) =>
+        callback(info);
+      ipcRenderer.on("update:available", listener);
+      return () => {
+        ipcRenderer.removeListener("update:available", listener);
+      };
+    },
+    onNotAvailable(callback: () => void): () => void {
+      const listener = () => callback();
+      ipcRenderer.on("update:not-available", listener);
+      return () => {
+        ipcRenderer.removeListener("update:not-available", listener);
+      };
+    },
+    onDownloaded(callback: () => void): () => void {
+      const listener = () => callback();
+      ipcRenderer.on("update:downloaded", listener);
+      return () => {
+        ipcRenderer.removeListener("update:downloaded", listener);
+      };
+    },
+    onError(callback: (message: string) => void): () => void {
+      const listener = (_event: unknown, message: string) => callback(message);
+      ipcRenderer.on("update:error", listener);
+      return () => {
+        ipcRenderer.removeListener("update:error", listener);
+      };
     },
   },
 

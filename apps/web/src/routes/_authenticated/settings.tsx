@@ -100,6 +100,7 @@ function GeneralTab() {
     .map((p) => ({ value: `plugin:${p.pluginId}`, label: p.label }));
 
   const startupViewOptions = [...BUILTIN_STARTUP_VIEWS, ...pluginOptions];
+  const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
 
   return (
     <Stack gap="md" style={{ maxWidth: 500 }}>
@@ -110,6 +111,21 @@ function GeneralTab() {
         value={prefs?.startupView ?? "home"}
         onChange={(v) => v && mutation.mutate(v)}
       />
+      {isElectron && (
+        <Stack gap="xs">
+          <Text size="sm" fw={500}>
+            About
+          </Text>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Version {window.electronAPI?.appVersion}
+            </Text>
+            <Button size="xs" variant="default" onClick={() => window.electronAPI?.update.check()}>
+              Check for Updates
+            </Button>
+          </Group>
+        </Stack>
+      )}
     </Stack>
   );
 }

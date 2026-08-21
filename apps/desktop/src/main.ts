@@ -1,5 +1,6 @@
 import {
   app,
+  autoUpdater,
   BrowserWindow,
   Menu,
   Notification,
@@ -237,6 +238,60 @@ function registerGlobalShortcuts(): Record<KeybindAction, boolean> {
   return result;
 }
 
+// ── Auto-update ───────────────────────────────────────────────────────────────
+
+// update.electronjs.org reads GitHub Releases directly; it has no concept of a Linux
+// package feed, so the built-in autoUpdater simply isn't usable on that platform.
+const UPDATE_SUPPORTED = process.platform !== "linux";
+const UPDATE_FEED_BASE = "https://update.electronjs.org/Nodeira/nodeira";
+const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+
+function updateFeedUrl(): string {
+  return `${UPDATE_FEED_BASE}/${process.platform}-${process.arch}/${app.getVersion()}`;
+}
+
+/**
+ * Peeks at the update feed's JSON without downloading anything. autoUpdater itself has no
+ * "available but not yet downloading" state — checkForUpdates() starts pulling the update
+ * immediately — so a plain fetch against the same feed URL is how we learn the version to
+ * show the user before they've committed to a download.
+ */
+async function checkForUpdate(): Promise<void> {
+  if (!UPDATE_SUPPORTED || !app.isPackaged || !mainWindow) return;
+  try {
+    const response = await fetch(updateFeedUrl());
+    if (response.status === 204) {
+      mainWindow.webContents.send("update:not-available");
+      return;
+    }
+    if (!response.ok) throw new Error(`Update feed returned ${response.status}`);
+    const body = (await response.json()) as { name?: string; notes?: string };
+    mainWindow.webContents.send("update:available", {
+      version: body.name ?? "",
+      notes: body.notes ?? "",
+    });
+  } catch (error) {
+    mainWindow.webContents.send("update:error", (error as Error).message);
+  }
+}
+
+/** Kicks off the real Squirrel-backed download; resolves once started, not once finished. */
+function startUpdateDownload(): void {
+  if (!UPDATE_SUPPORTED || !app.isPackaged) return;
+  autoUpdater.setFeedURL({ url: updateFeedUrl() });
+  autoUpdater.checkForUpdates();
+}
+
+function registerAutoUpdaterListeners(): void {
+  if (!UPDATE_SUPPORTED) return;
+  autoUpdater.on("update-downloaded", () => {
+    mainWindow?.webContents.send("update:downloaded");
+  });
+  autoUpdater.on("error", (error) => {
+    mainWindow?.webContents.send("update:error", error.message);
+  });
+}
+
 // ── IPC handlers ──────────────────────────────────────────────────────────────
 
 function registerIpcHandlers(): void {
@@ -303,6 +358,15 @@ function registerIpcHandlers(): void {
     setCachedBundle(source, bundle),
   );
 
+  // Auto-update
+  ipcMain.on("app:getVersion", (event) => {
+    event.returnValue = app.getVersion();
+  });
+
+  ipcMain.handle("update:check", () => checkForUpdate());
+  ipcMain.handle("update:download", () => startUpdateDownload());
+  ipcMain.handle("update:install", () => autoUpdater.quitAndInstall());
+
   // Native reminder notification — shows even when minimized to tray; clicking
   // it brings the window forward.
   ipcMain.handle("notification:show", (_, payload: { title: string; body?: string }) => {
@@ -344,6 +408,12 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   createTray();
   registerGlobalShortcuts();
+  registerAutoUpdaterListeners();
+  if (UPDATE_SUPPORTED && app.isPackaged) {
+    // Delay the first check past startup so it doesn't contend with window/DB init.
+    setTimeout(() => void checkForUpdate(), 10_000);
+    setInterval(() => void checkForUpdate(), UPDATE_CHECK_INTERVAL_MS);
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
