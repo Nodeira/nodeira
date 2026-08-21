@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@nodeira/shared-types": "workspace:*",
-    "better-sqlite3": "^11.3.0"
+    "better-sqlite3": "^11.3.0",
+    "electron-squirrel-startup": "^1.0.1"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.7.0",
@@ -30,6 +31,7 @@
     "@electron/rebuild": "^3.7.0",
     "@nodeira/eslint-config": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
+    "@types/electron-squirrel-startup": "^1.0.2",
     "@types/node": "^22.9.0",
     "archiver": "^7.0.1",
     "electron": "^33.2.0",

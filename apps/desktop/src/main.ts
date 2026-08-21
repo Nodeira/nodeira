@@ -23,9 +23,13 @@ import {
   setSetting,
 } from "./db/database.js";
 import type { NoteMetadata } from "@nodeira/shared-types";
+import started from "electron-squirrel-startup";
 
-// Handle Squirrel events on Windows (installer lifecycle)
-if (process.platform === "win32" && process.argv.some((a) => a.startsWith("--squirrel"))) {
+// electron-squirrel-startup creates/removes the Start Menu & Desktop shortcuts
+// for --squirrel-install/-updated/-uninstall/-obsolete and quits for those.
+// It does NOT match --squirrel-firstrun, which is how Setup.exe launches the
+// app immediately after a fresh install — that launch must run normally.
+if (started) {
   app.quit();
   process.exit(0);
 }
