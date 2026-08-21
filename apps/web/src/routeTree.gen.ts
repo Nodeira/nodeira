@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedTrashRouteImport } from './routes/_authenticated/trash'
 import { Route as AuthenticatedTagsRouteImport } from './routes/_authenticated/tags'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRemindersRouteImport } from './routes/_authenticated/reminders'
@@ -47,6 +48,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTrashRoute = AuthenticatedTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTagsRoute = AuthenticatedTagsRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/reminders': typeof AuthenticatedRemindersRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tags': typeof AuthenticatedTagsRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
   '/plugins/$pluginId': typeof AuthenticatedPluginsPluginIdRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/reminders': typeof AuthenticatedRemindersRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tags': typeof AuthenticatedTagsRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/': typeof AuthenticatedIndexRoute
   '/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_authenticated/reminders': typeof AuthenticatedRemindersRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tags': typeof AuthenticatedTagsRoute
+  '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/canvas/$canvasId': typeof AuthenticatedCanvasCanvasIdRoute
   '/_authenticated/notes/$noteId': typeof AuthenticatedNotesNoteIdRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/settings'
     | '/tags'
+    | '/trash'
     | '/canvas/$canvasId'
     | '/notes/$noteId'
     | '/plugins/$pluginId'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/settings'
     | '/tags'
+    | '/trash'
     | '/'
     | '/canvas/$canvasId'
     | '/notes/$noteId'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reminders'
     | '/_authenticated/settings'
     | '/_authenticated/tags'
+    | '/_authenticated/trash'
     | '/_authenticated/'
     | '/_authenticated/canvas/$canvasId'
     | '/_authenticated/notes/$noteId'
@@ -249,6 +261,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/trash': {
+      id: '/_authenticated/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof AuthenticatedTrashRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tags': {
@@ -330,6 +349,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRemindersRoute: typeof AuthenticatedRemindersRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTagsRoute: typeof AuthenticatedTagsRoute
+  AuthenticatedTrashRoute: typeof AuthenticatedTrashRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedCanvasCanvasIdRoute: typeof AuthenticatedCanvasCanvasIdRoute
   AuthenticatedNotesNoteIdRoute: typeof AuthenticatedNotesNoteIdRoute
@@ -342,6 +362,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRemindersRoute: AuthenticatedRemindersRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTagsRoute: AuthenticatedTagsRoute,
+  AuthenticatedTrashRoute: AuthenticatedTrashRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedCanvasCanvasIdRoute: AuthenticatedCanvasCanvasIdRoute,
   AuthenticatedNotesNoteIdRoute: AuthenticatedNotesNoteIdRoute,

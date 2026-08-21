@@ -53,6 +53,7 @@ import {
   notesKeys,
   pluginsKeys,
   reorderNotes,
+  trashKeys,
   updateCanvas,
   updateFolderIcon,
   updateNoteIcon,
@@ -300,6 +301,8 @@ export function AppShell({ children }: AppShellProps) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: foldersQueryKey });
       qc.invalidateQueries({ queryKey: notesKeys.all });
+      qc.invalidateQueries({ queryKey: canvasKeys.all });
+      qc.invalidateQueries({ queryKey: trashKeys.all });
     },
     onError: () => notifications.show({ message: "Couldn't delete folder", color: "red" }),
   });
@@ -335,7 +338,10 @@ export function AppShell({ children }: AppShellProps) {
   });
   const deleteCanvasMutation = useMutation({
     mutationFn: deleteCanvas,
-    onSuccess: () => qc.invalidateQueries({ queryKey: canvasKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: canvasKeys.all });
+      qc.invalidateQueries({ queryKey: trashKeys.all });
+    },
     onError: () => notifications.show({ message: "Couldn't delete canvas", color: "red" }),
   });
   const canvasPinMutation = useMutation({
