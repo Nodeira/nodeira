@@ -54,7 +54,17 @@ async function bootstrap() {
   // Swagger serves the full API surface, unauthenticated, and its UI needs inline scripts —
   // which is why CSP was disabled globally. Neither belongs in production.
   const exposeSwagger = process.env["NODE_ENV"] !== "production";
-  app.use(exposeSwagger ? helmet({ contentSecurityPolicy: false }) : helmet());
+  // helmet's default Cross-Origin-Resource-Policy is "same-origin", which blocks the desktop
+  // app (file://) and the Android WebView (https://appassets.androidplatform.net) from loading
+  // attachments as <img> subresources — those are legitimately cross-origin clients of this
+  // API by design, and the attachment route is already gated behind a short-lived ticket, so
+  // relaxing this to "cross-origin" doesn't widen what an attacker could actually fetch.
+  const helmetOptions = { crossOriginResourcePolicy: { policy: "cross-origin" as const } };
+  app.use(
+    exposeSwagger
+      ? helmet({ ...helmetOptions, contentSecurityPolicy: false })
+      : helmet(helmetOptions),
+  );
 
   if (exposeSwagger) {
     const swaggerConfig = new DocumentBuilder()
