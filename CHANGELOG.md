@@ -1,3 +1,13 @@
+## [1.22.1](https://github.com/Nodeira/nodeira/compare/v1.22.0...v1.22.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **api:** allow cross-origin loading of attachments for desktop/Android ([f39f0f7](https://github.com/Nodeira/nodeira/commit/f39f0f7ec1eabd18dc69e212b720395723618036))
+* **desktop:** allow the desktop CSP to load attachment images too ([b56c813](https://github.com/Nodeira/nodeira/commit/b56c813fad6e1907197c6570c78c3ef0b44e9462))
+* **desktop:** use electron-squirrel-startup for installer lifecycle ([545b014](https://github.com/Nodeira/nodeira/commit/545b014ad98056373ccb3885be7ae5bdb0809fd2))
+* **web:** stop prefixing canvas drag ids, disambiguate by note lookup ([e86edd3](https://github.com/Nodeira/nodeira/commit/e86edd392ececc8c5ee040d415f6ba3b7206f413))
+
 # [1.22.0](https://github.com/Nodeira/nodeira/compare/v1.21.1...v1.22.0) (2026-08-21)
 
 
