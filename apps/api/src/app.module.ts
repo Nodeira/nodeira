@@ -20,6 +20,7 @@ import { VaultsModule } from "./vaults/vaults.module.js";
 import { PluginsModule } from "./plugins/plugins.module.js";
 import { CanvasModule } from "./canvas/canvas.module.js";
 import { RemindersModule } from "./reminders/reminders.module.js";
+import { TrashModule } from "./trash/trash.module.js";
 
 const webDistPath = join(process.cwd(), "public");
 
@@ -58,6 +59,7 @@ const webDistPath = join(process.cwd(), "public");
     PluginsModule,
     CanvasModule,
     RemindersModule,
+    TrashModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

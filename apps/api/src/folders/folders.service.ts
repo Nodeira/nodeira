@@ -11,7 +11,10 @@ export class FoldersService {
     private readonly access: VaultAccessService,
   ) {}
 
-  /** Loads a folder and authorizes the caller against its vault. */
+  /**
+   * Loads a folder and authorizes the caller against its vault. A trashed folder reads
+   * as not-found here — only the trash endpoints (TrashService) can see it.
+   */
   private async findAuthorized(
     userId: string,
     id: string,
@@ -19,7 +22,7 @@ export class FoldersService {
     vaultScope?: string | null,
   ) {
     const folder = await this.prisma.folder.findUnique({ where: { id } });
-    if (!folder) throw new NotFoundException(`Folder ${id} not found`);
+    if (!folder || folder.deletedAt) throw new NotFoundException(`Folder ${id} not found`);
     await this.access.assertAccessToVaultOf(userId, folder, minRole, vaultScope);
     return folder;
   }
@@ -45,7 +48,7 @@ export class FoldersService {
     const ids = await this.access.accessibleVaultIds(userId, vaultScope);
     const scoped = vaultId ? ids.filter((id) => id === vaultId) : ids;
     return this.prisma.folder.findMany({
-      where: { vaultId: { in: scoped } },
+      where: { vaultId: { in: scoped }, deletedAt: null },
       orderBy: { name: "asc" },
     });
   }
@@ -58,10 +61,5 @@ export class FoldersService {
   ) {
     await this.findAuthorized(userId, id, VaultRole.EDITOR, vaultScope);
     return this.prisma.folder.update({ where: { id }, data });
-  }
-
-  async remove(userId: string, id: string, vaultScope?: string | null) {
-    await this.findAuthorized(userId, id, VaultRole.EDITOR, vaultScope);
-    return this.prisma.folder.delete({ where: { id } });
   }
 }

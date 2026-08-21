@@ -118,17 +118,12 @@ describe("FoldersService", () => {
     });
   });
 
-  describe("remove", () => {
-    it("deletes a folder", async () => {
+  describe("findAll", () => {
+    it("excludes trashed folders", async () => {
       const folder = await service.create(owner.userId, { name: "Temp", vaultId: owner.vaultId });
-      await service.remove(owner.userId, folder.id);
-      expect(await prisma.folder.findUnique({ where: { id: folder.id } })).toBeNull();
-    });
-
-    it("refuses to delete a folder in another user's vault", async () => {
-      const other = await createOwnerWithVault(prisma);
-      const theirs = await service.create(other.userId, { name: "T", vaultId: other.vaultId });
-      await expect(service.remove(owner.userId, theirs.id)).rejects.toThrow(NotFoundException);
+      await prisma.folder.update({ where: { id: folder.id }, data: { deletedAt: new Date() } });
+      const all = await service.findAll(owner.userId, owner.vaultId);
+      expect(all.find((f) => f.id === folder.id)).toBeUndefined();
     });
   });
 });

@@ -218,17 +218,11 @@ describe("NotesService", () => {
     });
   });
 
-  describe("remove", () => {
-    it("deletes a note by id", async () => {
+  describe("findOne", () => {
+    it("treats a trashed note as not found", async () => {
       const note = await service.create(owner.userId, { vaultId: owner.vaultId });
-      await service.remove(owner.userId, note.id);
+      await prisma.note.update({ where: { id: note.id }, data: { deletedAt: new Date() } });
       await expect(service.findOne(owner.userId, note.id)).rejects.toThrow(NotFoundException);
-    });
-
-    it("throws NotFoundException for unknown id", async () => {
-      await expect(
-        service.remove(owner.userId, "00000000-0000-0000-0000-000000000000"),
-      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -253,6 +247,15 @@ describe("NotesService", () => {
       await expect(service.updateYjsState(note.id, state)).resolves.toBe(1);
       const updated = await service.findOne(owner.userId, note.id);
       expect(updated.yjsState).toEqual(state);
+    });
+
+    it("reports 0 rows written for a trashed note, so a stale open connection cannot overwrite trashed content", async () => {
+      const note = await service.create(owner.userId, { vaultId: owner.vaultId, title: "My note" });
+      await prisma.note.update({ where: { id: note.id }, data: { deletedAt: new Date() } });
+      const state = new Uint8Array([9, 9, 9, 9]);
+      await expect(service.updateYjsState(note.id, state)).resolves.toBe(0);
+      const stillTrashed = await prisma.note.findUniqueOrThrow({ where: { id: note.id } });
+      expect(stillTrashed.yjsState).toBeNull();
     });
   });
 });

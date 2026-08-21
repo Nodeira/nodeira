@@ -43,7 +43,9 @@ export class NotesService {
 
     if (dto.folderId) {
       const folder = await this.prisma.folder.findUnique({ where: { id: dto.folderId } });
-      if (!folder) throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      if (!folder || folder.deletedAt) {
+        throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      }
       if (folder.vaultId !== dto.vaultId) {
         throw new BadRequestException("Folder belongs to a different vault");
       }
@@ -92,6 +94,7 @@ export class NotesService {
     const notes = await this.prisma.note.findMany({
       where: {
         vaultId: { in: scoped },
+        deletedAt: null,
         ...(tag ? { tags: { has: tag } } : {}),
       },
       select: {
@@ -128,7 +131,9 @@ export class NotesService {
     minRole: VaultRole = VaultRole.VIEWER,
   ) {
     const note = await this.prisma.note.findUnique({ where: { id } });
-    if (!note) throw new NotFoundException(`Note ${id} not found`);
+    // A trashed note reads as not-found everywhere except the trash endpoints themselves
+    // (TrashService has its own lookup that can see it).
+    if (!note || note.deletedAt) throw new NotFoundException(`Note ${id} not found`);
     await this.access.assertAccessToVaultOf(userId, note, minRole, vaultScope);
     return note;
   }
@@ -190,17 +195,18 @@ export class NotesService {
     );
   }
 
-  async remove(userId: string, id: string, vaultScope?: string | null) {
-    await this.findOne(userId, id, vaultScope, VaultRole.EDITOR);
-    return orNotFound(this.prisma.note.delete({ where: { id } }), `Note ${id} not found`);
-  }
-
-  /** Returns the number of rows written — 0 means the note no longer exists. */
+  /** Returns the number of rows written — 0 means the note no longer exists or is trashed. */
   async updateYjsState(id: string, yjsState: Uint8Array<ArrayBuffer>): Promise<number> {
     // updateMany affects 0 rows (no throw) when the note was deleted, so a still-open
-    // editor connection can never resurrect a deleted note as an orphaned ghost.
+    // editor connection can never resurrect a deleted note as an orphaned ghost. The
+    // deletedAt: null guard extends that to soft-deleted notes too — without it, a
+    // connection still open when a note is trashed could silently overwrite its content
+    // during the retention window, corrupting what a later restore would show.
     // Real notes are always created via POST /notes (with a vaultId) before sync runs.
-    const { count } = await this.prisma.note.updateMany({ where: { id }, data: { yjsState } });
+    const { count } = await this.prisma.note.updateMany({
+      where: { id, deletedAt: null },
+      data: { yjsState },
+    });
     return count;
   }
 

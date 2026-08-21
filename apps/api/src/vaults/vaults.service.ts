@@ -84,6 +84,10 @@ export class VaultsService {
   async remove(userId: string, id: string, vaultScope?: string | null) {
     await this.access.assertAccess(userId, id, VaultRole.OWNER, vaultScope);
 
+    // Deliberately not filtering out trashed rows here: a vault whose only remaining
+    // content is sitting in trash still counts as non-empty. The user must empty (restore
+    // or purge) trash first, same as any other content, rather than have a vault delete
+    // silently take unexpired trash with it.
     const [notes, folders, canvases] = await Promise.all([
       this.prisma.note.count({ where: { vaultId: id } }),
       this.prisma.folder.count({ where: { vaultId: id } }),

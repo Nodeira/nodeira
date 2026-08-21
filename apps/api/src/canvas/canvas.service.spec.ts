@@ -223,17 +223,11 @@ describe("CanvasService", () => {
     });
   });
 
-  describe("remove", () => {
-    it("deletes a canvas by id", async () => {
+  describe("findOne", () => {
+    it("treats a trashed canvas as not found", async () => {
       const canvas = await service.create(owner.userId, { vaultId: owner.vaultId });
-      await service.remove(owner.userId, canvas.id);
+      await prisma.canvas.update({ where: { id: canvas.id }, data: { deletedAt: new Date() } });
       await expect(service.findOne(owner.userId, canvas.id)).rejects.toThrow(NotFoundException);
-    });
-
-    it("throws NotFoundException for unknown id", async () => {
-      await expect(
-        service.remove(owner.userId, "00000000-0000-0000-0000-000000000000"),
-      ).rejects.toThrow(NotFoundException);
     });
   });
 });

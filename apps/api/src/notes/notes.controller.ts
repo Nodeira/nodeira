@@ -13,6 +13,7 @@ import {
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import type { RequestWithUser } from "../auth/request-with-user.js";
+import { TrashService } from "../trash/trash.service.js";
 import { CreateNoteDto } from "./dto/create-note.dto.js";
 import { UpdateNoteDto } from "./dto/update-note.dto.js";
 import { ReorderNotesDto } from "./dto/reorder-notes.dto.js";
@@ -22,7 +23,10 @@ import { NotesService } from "./notes.service.js";
 @UseGuards(JwtAuthGuard)
 @Controller("notes")
 export class NotesController {
-  constructor(private readonly notesService: NotesService) {}
+  constructor(
+    private readonly notesService: NotesService,
+    private readonly trash: TrashService,
+  ) {}
 
   @Post()
   create(@Request() req: RequestWithUser, @Body() dto: CreateNoteDto) {
@@ -68,7 +72,7 @@ export class NotesController {
 
   @Delete(":id")
   remove(@Request() req: RequestWithUser, @Param("id") id: string) {
-    return this.notesService.remove(req.user.id, id, req.user.vaultScope);
+    return this.trash.trashNote(req.user.id, id, req.user.vaultScope);
   }
 
   @Get(":id/backlinks")

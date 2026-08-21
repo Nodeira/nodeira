@@ -12,13 +12,17 @@ import {
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import type { RequestWithUser } from "../auth/request-with-user.js";
+import { TrashService } from "../trash/trash.service.js";
 import { FoldersService } from "./folders.service.js";
 import { CreateFolderDto } from "./dto/create-folder.dto.js";
 
 @UseGuards(JwtAuthGuard)
 @Controller("folders")
 export class FoldersController {
-  constructor(private readonly foldersService: FoldersService) {}
+  constructor(
+    private readonly foldersService: FoldersService,
+    private readonly trash: TrashService,
+  ) {}
 
   @Post()
   create(@Request() req: RequestWithUser, @Body() dto: CreateFolderDto) {
@@ -41,6 +45,6 @@ export class FoldersController {
 
   @Delete(":id")
   remove(@Request() req: RequestWithUser, @Param("id") id: string) {
-    return this.foldersService.remove(req.user.id, id, req.user.vaultScope);
+    return this.trash.trashFolder(req.user.id, id, req.user.vaultScope);
   }
 }
