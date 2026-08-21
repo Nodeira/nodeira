@@ -106,7 +106,7 @@ function setupCSP(): void {
             "default-src 'self' file: http://localhost:* https://localhost:*",
             `script-src 'self' 'unsafe-eval' ${isDev ? "'unsafe-inline'" : ""} https://cdn.jsdelivr.net`,
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob: file: http://localhost:*",
+            `img-src 'self' data: blob: file: http://localhost:* ${serverUrl}`.trimEnd(),
             "font-src 'self' data:",
             `connect-src 'self' file: http://localhost:* ws://localhost:* wss://localhost:* https://cdn.jsdelivr.net ${serverUrl} ${wsUrl}`.trimEnd(),
           ].join("; "),
