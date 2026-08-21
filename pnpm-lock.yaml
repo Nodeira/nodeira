@@ -230,6 +230,9 @@ importers:
       better-sqlite3:
         specifier: ^11.3.0
         version: 11.10.0
+      electron-squirrel-startup:
+        specifier: ^1.0.1
+        version: 1.0.1
     devDependencies:
       '@electron-forge/cli':
         specifier: ^7.7.0
@@ -258,6 +261,9 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.12
         version: 7.6.13
+      '@types/electron-squirrel-startup':
+        specifier: ^1.0.2
+        version: 1.0.2
       '@types/node':
         specifier: ^22.9.0
         version: 22.19.18
@@ -4221,6 +4227,9 @@ packages:
   '@types/dockerode@4.0.1':
     resolution: {integrity: sha512-cmUpB+dPN955PxBEuXE3f6lKO1hHiIGYJA46IVF3BJpNsZGvtBDcRnlrHYHtOH/B6vtDOyl2kZ2ShAu3mgc27Q==}
 
+  '@types/electron-squirrel-startup@1.0.2':
+    resolution: {integrity: sha512-AzxnvBzNh8K/0SmxMmZtpJf1/IWoGXLP+pQDuUaVkPyotI8ryvAtBSqgxR/qOSvxWHYWrxkeNsJ+Ca5xOuUxJQ==}
+
   '@types/eslint-scope@3.7.7':
     resolution: {integrity: sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg==}
 
@@ -6041,6 +6050,9 @@ packages:
     resolution: {integrity: sha512-qOa1aAQdX57C+vzhDk3549dd/PRlNL4F8y736MTD1a43qptD+PvHY97Bo9gSf+OZ8iUWE7BrYSpk/FgLUe40EA==}
     engines: {node: '>= 16'}
     hasBin: true
+
+  electron-squirrel-startup@1.0.1:
+    resolution: {integrity: sha512-sTfFIHGku+7PsHLJ7v0dRcZNkALrV+YEozINTW8X1nM//e5O3L+rfYuvSW00lmGHnYmUjARZulD8F2V8ISI9RA==}
 
   electron-to-chromium@1.5.353:
     resolution: {integrity: sha512-kOrWphBi8TOZyiJZqsgqIle0lw+tzmnQK83pV9dZUd01Nm2POECSyFQMAuarzZdYqQW7FH9RaYOuaRo3h+bQ3w==}
@@ -16880,6 +16892,8 @@ snapshots:
       '@types/node': 22.19.18
       '@types/ssh2': 1.15.5
 
+  '@types/electron-squirrel-startup@1.0.2': {}
+
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 9.6.1
@@ -18965,6 +18979,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
     optional: true
+
+  electron-squirrel-startup@1.0.1:
+    dependencies:
+      debug: 2.6.9
+    transitivePeerDependencies:
+      - supports-color
 
   electron-to-chromium@1.5.353: {}
 
