@@ -522,12 +522,17 @@ export function Sidebar({
               }}
             >
               <Group gap={6}>
-                {activeDragCanvas ? <IconLayout size={14} /> : <IconFile size={14} />}
-                <Text size="sm">
-                  {(activeDragCanvas
-                    ? activeDragCanvas.title || "Untitled Canvas"
-                    : activeDragNote?.title) || "Untitled"}
-                </Text>
+                {activeDragNote ? (
+                  <>
+                    <IconFile size={14} />
+                    <Text size="sm">{activeDragNote.title || "Untitled"}</Text>
+                  </>
+                ) : (
+                  <>
+                    <IconLayout size={14} />
+                    <Text size="sm">{activeDragCanvas?.title || "Untitled Canvas"}</Text>
+                  </>
+                )}
               </Group>
             </Box>
           ) : null}
