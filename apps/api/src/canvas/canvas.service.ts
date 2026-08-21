@@ -20,6 +20,7 @@ export class CanvasService {
     return this.prisma.canvas.findMany({
       where: {
         vaultId: { in: scoped },
+        deletedAt: null,
         ...(q ? { title: { contains: q, mode: "insensitive" } } : {}),
       },
       orderBy: [{ position: "asc" }, { createdAt: "asc" }],
@@ -33,13 +34,25 @@ export class CanvasService {
     minRole: VaultRole = VaultRole.VIEWER,
   ) {
     const canvas = await this.prisma.canvas.findUnique({ where: { id } });
-    if (!canvas) throw new NotFoundException(`Canvas ${id} not found`);
+    // A trashed canvas reads as not-found everywhere except the trash endpoints
+    // themselves (TrashService has its own lookup that can see it).
+    if (!canvas || canvas.deletedAt) throw new NotFoundException(`Canvas ${id} not found`);
     await this.access.assertAccessToVaultOf(userId, canvas, minRole, vaultScope);
     return canvas;
   }
 
   async create(userId: string, dto: CreateCanvasDto, vaultScope?: string | null) {
     await this.access.assertAccess(userId, dto.vaultId, VaultRole.EDITOR, vaultScope);
+
+    if (dto.folderId) {
+      const folder = await this.prisma.folder.findUnique({ where: { id: dto.folderId } });
+      if (!folder || folder.deletedAt) {
+        throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      }
+      if (folder.vaultId !== dto.vaultId) {
+        throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      }
+    }
 
     const agg = await this.prisma.canvas.aggregate({
       where: { vaultId: dto.vaultId },
@@ -68,7 +81,9 @@ export class CanvasService {
 
     if (dto.folderId) {
       const folder = await this.prisma.folder.findUnique({ where: { id: dto.folderId } });
-      if (!folder) throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      if (!folder || folder.deletedAt) {
+        throw new NotFoundException(`Folder ${dto.folderId} not found`);
+      }
       // A folder belongs to exactly one vault; moving a canvas into a folder from another
       // vault would silently detach it from the vault membership that authorizes it.
       const targetVaultId = dto.vaultId ?? canvas.vaultId;
@@ -89,11 +104,6 @@ export class CanvasService {
         ...(dto.vaultId !== undefined && { vaultId: dto.vaultId }),
       },
     });
-  }
-
-  async remove(userId: string, id: string, vaultScope?: string | null) {
-    await this.findOne(userId, id, vaultScope, VaultRole.EDITOR);
-    await this.prisma.canvas.delete({ where: { id } });
   }
 
   async fetchUrlPreview(url: string): Promise<OgPreview> {

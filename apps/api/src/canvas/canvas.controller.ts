@@ -14,6 +14,7 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import type { RequestWithUser } from "../auth/request-with-user.js";
+import { TrashService } from "../trash/trash.service.js";
 import { CanvasService } from "./canvas.service.js";
 import { CreateCanvasDto } from "./dto/create-canvas.dto.js";
 import { UpdateCanvasDto } from "./dto/update-canvas.dto.js";
@@ -24,7 +25,10 @@ import { PreviewUrlDto } from "./dto/preview-url.dto.js";
 @UseGuards(JwtAuthGuard)
 @Controller("canvases")
 export class CanvasController {
-  constructor(private readonly canvasService: CanvasService) {}
+  constructor(
+    private readonly canvasService: CanvasService,
+    private readonly trash: TrashService,
+  ) {}
 
   @Get()
   findAll(
@@ -60,6 +64,6 @@ export class CanvasController {
   @Delete(":id")
   @HttpCode(204)
   remove(@Request() req: RequestWithUser, @Param("id") id: string) {
-    return this.canvasService.remove(req.user.id, id, req.user.vaultScope);
+    return this.trash.trashCanvas(req.user.id, id, req.user.vaultScope);
   }
 }
