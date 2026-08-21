@@ -717,3 +717,46 @@ export async function registerDevice(body: {
 }): Promise<Device> {
   return request<Device>("/devices", { method: "POST", body: JSON.stringify(body) });
 }
+
+// ── Trash ─────────────────────────────────────────────────────────────────────
+
+export type TrashItemType = "note" | "folder" | "canvas";
+
+export interface TrashItem {
+  type: TrashItemType;
+  id: string;
+  title: string;
+  vaultId: string;
+  deletedAt: Date;
+  /** Notes/canvases/subfolders nested inside — folders only. */
+  itemCount?: number;
+}
+
+type RawTrashItem = Omit<TrashItem, "deletedAt"> & { deletedAt: string };
+
+function parseTrashItem(raw: RawTrashItem): TrashItem {
+  return { ...raw, deletedAt: new Date(raw.deletedAt) };
+}
+
+// A separate top-level key family, not nested under notesKeys/foldersKeys/canvasKeys:
+// the trash list is one unified endpoint mixing all three types, so nesting it under any
+// single entity's key would be misleading. Any mutation that trashes/restores/purges
+// something must invalidate both trashKeys.all and the relevant entity's own .all key.
+export const trashKeys = {
+  all: ["trash"] as const,
+  byVault: (vaultId: string) => ["trash", "vault", vaultId] as const,
+};
+
+export async function getTrash(vaultId?: string): Promise<TrashItem[]> {
+  const path = vaultId ? `/trash?vaultId=${vaultId}` : "/trash";
+  const raw = await request<RawTrashItem[]>(path);
+  return raw.map(parseTrashItem);
+}
+
+export async function restoreTrashItem(type: TrashItemType, id: string): Promise<void> {
+  await request(`/trash/${type}/${id}/restore`, { method: "POST" });
+}
+
+export async function purgeTrashItem(type: TrashItemType, id: string): Promise<void> {
+  await request(`/trash/${type}/${id}`, { method: "DELETE" });
+}

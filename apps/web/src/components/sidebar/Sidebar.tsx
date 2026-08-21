@@ -169,6 +169,7 @@ export function Sidebar({
   const isOnGraph = routerState.location.pathname === "/graph";
   const isOnTags = routerState.location.pathname === "/tags";
   const isOnReminders = routerState.location.pathname === "/reminders";
+  const isOnTrash = routerState.location.pathname === "/trash";
   const isOnSettings = routerState.location.pathname === "/settings";
 
   return (
@@ -412,6 +413,16 @@ export function Sidebar({
                 label={<Text size="sm">Reminders</Text>}
                 leftSection={<IconBell size={14} />}
                 active={isOnReminders}
+              />
+            </Link>
+
+            {/* Trash */}
+            <Link to="/trash" style={{ textDecoration: "none" }}>
+              <NavLink
+                component="div"
+                label={<Text size="sm">Trash</Text>}
+                leftSection={<IconTrash size={14} />}
+                active={isOnTrash}
               />
             </Link>
 

@@ -11,10 +11,13 @@ export function DeleteConfirmModal({
   target,
   onClose,
   onConfirm,
+  /** true for a "Delete forever" action out of Trash — permanent, no trash safety net. */
+  permanent = false,
 }: {
   target: DeleteTarget | null;
   onClose: () => void;
   onConfirm: () => void;
+  permanent?: boolean;
 }) {
   // Mantine keeps rendering the modal's children during its own closing transition, after
   // `target` has already gone back to null — without this, the dialog visibly flashes
@@ -29,14 +32,25 @@ export function DeleteConfirmModal({
   return (
     <Modal opened={target !== null} onClose={onClose} title={`Delete ${label}?`} size="sm">
       <Stack>
-        <Text size="sm">
-          Are you sure you want to delete &ldquo;{display?.name}&rdquo;?
-          {display?.type === "folder" && <> Notes inside will be moved to the root.</>}
-          {display?.type === "vault" && (
-            <> The vault must be empty — move or delete its notes and folders first.</>
-          )}{" "}
-          This cannot be undone.
-        </Text>
+        {permanent ? (
+          <Text size="sm">
+            This will permanently delete &ldquo;{display?.name}&rdquo;. This cannot be undone.
+          </Text>
+        ) : (
+          <Text size="sm">
+            Move &ldquo;{display?.name}&rdquo; to trash?
+            {display?.type === "folder" && (
+              <>
+                {" "}
+                Everything inside — notes, canvases, and subfolders — will be moved to trash too.
+              </>
+            )}
+            {display?.type === "vault" && (
+              <> The vault must be empty — move or delete its notes and folders first.</>
+            )}
+            {display?.type !== "vault" && <> You can restore it from Trash within 30 days.</>}
+          </Text>
+        )}
         <Group justify="flex-end">
           <Button variant="default" onClick={onClose}>
             Cancel
