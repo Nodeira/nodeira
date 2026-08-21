@@ -3,18 +3,22 @@ package com.deranjer.nodeira.ui.canvases
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,66 +53,77 @@ fun CanvasListItem(
     val accent = if (canvas.pinned) MaterialTheme.colorScheme.primary
     else MaterialTheme.colorScheme.onSurfaceVariant
 
-    ListItem(
-        modifier = if (hasActions) {
-            androidx.compose.ui.Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
-        } else {
-            androidx.compose.ui.Modifier.clickable(onClick = onClick)
-        },
-        headlineContent = {
-            Text(
-                canvas.title.ifBlank { "Untitled canvas" },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        leadingContent = {
-            Icon(Icons.Filled.Dashboard, contentDescription = null, tint = accent)
-        },
-        trailingContent = if (showPinTrailing && canvas.pinned) {
-            {
-                Icon(
-                    Icons.Filled.PushPin,
-                    contentDescription = "Pinned",
-                    tint = MaterialTheme.colorScheme.primary,
+    // See the matching comment in NoteListItem: ListItem and DropdownMenu must share one
+    // layout node or the Popup anchors to the viewport's top-left instead of the tapped row.
+    Box(modifier = androidx.compose.ui.Modifier.fillMaxWidth()) {
+        ListItem(
+            modifier = if (hasActions) {
+                androidx.compose.ui.Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
+            } else {
+                androidx.compose.ui.Modifier.clickable(onClick = onClick)
+            },
+            headlineContent = {
+                Text(
+                    canvas.title.ifBlank { "Untitled canvas" },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-            }
-        } else null,
-        colors = ListItemDefaults.colors(),
-    )
+            },
+            leadingContent = {
+                Icon(Icons.Filled.Dashboard, contentDescription = null, tint = accent)
+            },
+            trailingContent = if (showPinTrailing && canvas.pinned) {
+                {
+                    Icon(
+                        Icons.Filled.PushPin,
+                        contentDescription = "Pinned",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else null,
+            colors = ListItemDefaults.colors(),
+        )
 
-    if (hasActions) {
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            onTogglePin?.let {
-                DropdownMenuItem(
-                    text = { Text(if (canvas.pinned) "Unpin" else "Pin") },
-                    leadingIcon = { Icon(Icons.Filled.PushPin, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        it()
-                    },
-                )
-            }
-            onRename?.let {
-                DropdownMenuItem(
-                    text = { Text("Rename") },
-                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        renameValue = canvas.title
-                        renaming = true
-                    },
-                )
-            }
-            onDelete?.let {
-                DropdownMenuItem(
-                    text = { Text("Delete") },
-                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        confirmDelete = true
-                    },
-                )
+        if (hasActions) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                onTogglePin?.let {
+                    DropdownMenuItem(
+                        text = { Text(if (canvas.pinned) "Unpin" else "Pin") },
+                        leadingIcon = { Icon(Icons.Filled.PushPin, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            it()
+                        },
+                    )
+                }
+                onRename?.let {
+                    DropdownMenuItem(
+                        text = { Text("Rename") },
+                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            renameValue = canvas.title
+                            renaming = true
+                        },
+                    )
+                }
+                onDelete?.let {
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error),
+                        onClick = {
+                            menuOpen = false
+                            confirmDelete = true
+                        },
+                    )
+                }
             }
         }
     }
@@ -117,12 +132,15 @@ fun CanvasListItem(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete canvas?") },
-            text = { Text("\"${canvas.title.ifBlank { "Untitled canvas" }}\" will be deleted. This cannot be undone.") },
+            text = { Text("\"${canvas.title.ifBlank { "Untitled canvas" }}\" will be moved to trash.") },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    onDelete()
-                }) { Text("Delete") }
+                TextButton(
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    onClick = {
+                        confirmDelete = false
+                        onDelete()
+                    },
+                ) { Text("Delete") }
             },
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }

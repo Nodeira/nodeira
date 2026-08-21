@@ -43,6 +43,9 @@ interface NodeiraApi {
     @POST("folders")
     suspend fun createFolder(@Body body: CreateFolderBody): FolderDto
 
+    @DELETE("folders/{id}")
+    suspend fun deleteFolder(@Path("id") id: String)
+
     @GET("reminders")
     suspend fun getReminders(): List<ReminderDto>
 
@@ -69,4 +72,13 @@ interface NodeiraApi {
 
     @DELETE("canvases/{id}")
     suspend fun deleteCanvas(@Path("id") id: String)
+
+    @GET("trash")
+    suspend fun getTrash(@Query("vaultId") vaultId: String? = null): List<TrashItemDto>
+
+    @POST("trash/{type}/{id}/restore")
+    suspend fun restoreTrashItem(@Path("type") type: String, @Path("id") id: String)
+
+    @DELETE("trash/{type}/{id}")
+    suspend fun purgeTrashItem(@Path("type") type: String, @Path("id") id: String)
 }

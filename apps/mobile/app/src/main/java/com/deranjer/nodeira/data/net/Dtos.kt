@@ -98,3 +98,15 @@ data class CreateFolderBody(
     val name: String,
     val vaultId: String,
 )
+
+/** One row in Trash — a note, folder, or canvas soft-deleted and awaiting purge or restore. */
+@Serializable
+data class TrashItemDto(
+    val type: String,
+    val id: String,
+    val title: String = "",
+    val vaultId: String? = null,
+    val deletedAt: String,
+    /** Notes/canvases/subfolders nested inside — folders only. */
+    val itemCount: Int? = null,
+)

@@ -2,6 +2,7 @@ package com.deranjer.nodeira.ui.nav
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Notifications
@@ -23,6 +24,7 @@ enum class AppDestination(
     QUICK_NOTES("quicknotes", "Quick notes", Icons.Filled.Bolt),
     GRAPH("graph", "Graph", Icons.Filled.Hub),
     REMINDERS("reminders", "Reminders", Icons.Filled.Notifications),
+    TRASH("trash", "Trash", Icons.Filled.Delete),
     SETTINGS("settings", "Settings", Icons.Filled.Settings);
 
     companion object {
@@ -32,7 +34,7 @@ enum class AppDestination(
         val bottomNav = listOf(HOME, RECENTS, QUICK_NOTES, REMINDERS)
 
         /** Secondary destinations reached from the navigation drawer (menu icon). */
-        val drawerOnly = listOf(GRAPH, SETTINGS)
+        val drawerOnly = listOf(GRAPH, TRASH, SETTINGS)
     }
 }
 

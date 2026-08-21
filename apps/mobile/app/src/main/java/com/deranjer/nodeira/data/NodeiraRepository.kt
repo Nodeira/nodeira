@@ -317,6 +317,8 @@ class NodeiraRepository(
         com.deranjer.nodeira.data.net.CreateFolderBody(name = name, vaultId = vaultId),
     )
 
+    suspend fun deleteFolder(id: String) = requireApi().deleteFolder(id)
+
     suspend fun getReminders(): List<ReminderDto> = requireApi().getReminders()
 
     suspend fun createReminder(body: com.deranjer.nodeira.data.net.CreateReminderBody): ReminderDto =
@@ -347,4 +349,10 @@ class NodeiraRepository(
         requireApi().updateCanvas(id, com.deranjer.nodeira.data.net.UpdateCanvasBody(pinned = pinned))
 
     suspend fun deleteCanvas(id: String) = requireApi().deleteCanvas(id)
+
+    suspend fun getTrash(): List<com.deranjer.nodeira.data.net.TrashItemDto> = requireApi().getTrash()
+
+    suspend fun restoreTrashItem(type: String, id: String) = requireApi().restoreTrashItem(type, id)
+
+    suspend fun purgeTrashItem(type: String, id: String) = requireApi().purgeTrashItem(type, id)
 }

@@ -18,9 +18,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
@@ -68,77 +70,91 @@ fun NoteListItem(
     val hasActions = onDelete != null || onTogglePin != null || onRename != null
     val accent = if (note.pinned) MaterialTheme.colorScheme.primary
     else MaterialTheme.colorScheme.onSurfaceVariant
-    ListItem(
-        modifier = if (hasActions) {
-            Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
-        } else {
-            Modifier.clickable(onClick = onClick)
-        },
-        headlineContent = {
-            Text(
-                note.title.ifBlank { "Untitled" },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        supportingContent = supporting?.let {
-            {
-                Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            }
-        },
-        leadingContent = {
-            Icon(Icons.Filled.Description, contentDescription = null, tint = accent)
-        },
-        trailingContent = if (showPinTrailing && note.pinned) {
-            {
-                Icon(
-                    Icons.Filled.PushPin,
-                    contentDescription = "Pinned",
-                    tint = MaterialTheme.colorScheme.primary,
+    // ListItem and its DropdownMenu must share one layout node — a Popup anchors to its
+    // nearest enclosing composable, and inside a LazyColumn items{} lambda, two unwrapped
+    // siblings lose that anchor and the menu opens at the viewport's top-left instead of
+    // over the tapped row. Wrapping here fixes every call site at once, whether or not the
+    // caller happens to wrap this in its own Box for other reasons (e.g. indentation).
+    Box(modifier = Modifier.fillMaxWidth()) {
+        ListItem(
+            modifier = if (hasActions) {
+                Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
+            } else {
+                Modifier.clickable(onClick = onClick)
+            },
+            headlineContent = {
+                Text(
+                    note.title.ifBlank { "Untitled" },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-            }
-        } else null,
-        colors = if (selected) {
-            ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                headlineColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                supportingColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-        } else ListItemDefaults.colors(),
-    )
+            },
+            supportingContent = supporting?.let {
+                {
+                    Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            },
+            leadingContent = {
+                Icon(Icons.Filled.Description, contentDescription = null, tint = accent)
+            },
+            trailingContent = if (showPinTrailing && note.pinned) {
+                {
+                    Icon(
+                        Icons.Filled.PushPin,
+                        contentDescription = "Pinned",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else null,
+            colors = if (selected) {
+                ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    headlineColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    supportingColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            } else ListItemDefaults.colors(),
+        )
 
-    if (hasActions) {
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            onTogglePin?.let {
-                DropdownMenuItem(
-                    text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                    leadingIcon = { Icon(Icons.Filled.PushPin, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        it()
-                    },
-                )
-            }
-            onRename?.let {
-                DropdownMenuItem(
-                    text = { Text("Rename") },
-                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        renameValue = note.title
-                        renaming = true
-                    },
-                )
-            }
-            onDelete?.let {
-                DropdownMenuItem(
-                    text = { Text("Delete") },
-                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        confirmDelete = true
-                    },
-                )
+        if (hasActions) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                onTogglePin?.let {
+                    DropdownMenuItem(
+                        text = { Text(if (note.pinned) "Unpin" else "Pin") },
+                        leadingIcon = { Icon(Icons.Filled.PushPin, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            it()
+                        },
+                    )
+                }
+                onRename?.let {
+                    DropdownMenuItem(
+                        text = { Text("Rename") },
+                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            renameValue = note.title
+                            renaming = true
+                        },
+                    )
+                }
+                onDelete?.let {
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error),
+                        onClick = {
+                            menuOpen = false
+                            confirmDelete = true
+                        },
+                    )
+                }
             }
         }
     }
@@ -147,12 +163,15 @@ fun NoteListItem(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete note?") },
-            text = { Text("\"${note.title.ifBlank { "Untitled" }}\" will be deleted. This cannot be undone.") },
+            text = { Text("\"${note.title.ifBlank { "Untitled" }}\" will be moved to trash.") },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    onDelete()
-                }) { Text("Delete") }
+                TextButton(
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    onClick = {
+                        confirmDelete = false
+                        onDelete()
+                    },
+                ) { Text("Delete") }
             },
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
