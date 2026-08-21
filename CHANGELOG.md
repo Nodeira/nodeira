@@ -1,3 +1,11 @@
+# [1.22.0](https://github.com/Nodeira/nodeira/compare/v1.21.1...v1.22.0) (2026-08-21)
+
+
+### Features
+
+* **api:** soft-delete notes/folders/canvases into a 30-day trash ([b4901c0](https://github.com/Nodeira/nodeira/commit/b4901c0bbb69164dce3d6ec8138e2c6a271513e5))
+* **desktop:** in-app auto-update ([cd1e1d9](https://github.com/Nodeira/nodeira/commit/cd1e1d9773f518c918729ebcb86a08b6c3c8355a))
+
 ## [1.21.1](https://github.com/Nodeira/nodeira/compare/v1.21.0...v1.21.1) (2026-08-19)
 
 
