@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -60,85 +61,110 @@ fun NoteListItem(
     onDelete: (() -> Unit)? = null,
     onTogglePin: (() -> Unit)? = null,
     onRename: ((String) -> Unit)? = null,
+    onMove: (() -> Unit)? = null,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     var renameValue by remember(note.id) { mutableStateOf(note.title) }
-    val hasActions = onDelete != null || onTogglePin != null || onRename != null
+    val hasActions = onDelete != null || onTogglePin != null || onRename != null || onMove != null
     val accent = if (note.pinned) MaterialTheme.colorScheme.primary
     else MaterialTheme.colorScheme.onSurfaceVariant
-    ListItem(
-        modifier = if (hasActions) {
-            Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
-        } else {
-            Modifier.clickable(onClick = onClick)
-        },
-        headlineContent = {
-            Text(
-                note.title.ifBlank { "Untitled" },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        supportingContent = supporting?.let {
-            {
-                Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            }
-        },
-        leadingContent = {
-            Icon(Icons.Filled.Description, contentDescription = null, tint = accent)
-        },
-        trailingContent = if (showPinTrailing && note.pinned) {
-            {
-                Icon(
-                    Icons.Filled.PushPin,
-                    contentDescription = "Pinned",
-                    tint = MaterialTheme.colorScheme.primary,
+    // ListItem and its DropdownMenu must share this Box as their anchor — a DropdownMenu's
+    // Popup positions itself relative to the nearest shared parent layout node. Root-level
+    // items (no wrapping Box from the caller) used to anchor at (0,0) — top-left of the
+    // screen — because ListItem and DropdownMenu were unrelated top-level siblings here.
+    Box {
+        ListItem(
+            modifier = if (hasActions) {
+                Modifier.combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
+            } else {
+                Modifier.clickable(onClick = onClick)
+            },
+            headlineContent = {
+                Text(
+                    note.title.ifBlank { "Untitled" },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-            }
-        } else null,
-        colors = if (selected) {
-            ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                headlineColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                supportingColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-        } else ListItemDefaults.colors(),
-    )
+            },
+            supportingContent = supporting?.let {
+                {
+                    Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            },
+            leadingContent = {
+                Icon(Icons.Filled.Description, contentDescription = null, tint = accent)
+            },
+            trailingContent = if (showPinTrailing && note.pinned) {
+                {
+                    Icon(
+                        Icons.Filled.PushPin,
+                        contentDescription = "Pinned",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else null,
+            colors = if (selected) {
+                ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    headlineColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    supportingColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            } else ListItemDefaults.colors(),
+        )
 
-    if (hasActions) {
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            onTogglePin?.let {
-                DropdownMenuItem(
-                    text = { Text(if (note.pinned) "Unpin" else "Pin") },
-                    leadingIcon = { Icon(Icons.Filled.PushPin, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        it()
-                    },
-                )
-            }
-            onRename?.let {
-                DropdownMenuItem(
-                    text = { Text("Rename") },
-                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        renameValue = note.title
-                        renaming = true
-                    },
-                )
-            }
-            onDelete?.let {
-                DropdownMenuItem(
-                    text = { Text("Delete") },
-                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        confirmDelete = true
-                    },
-                )
+        if (hasActions) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                onTogglePin?.let {
+                    DropdownMenuItem(
+                        text = { Text(if (note.pinned) "Unpin" else "Pin") },
+                        leadingIcon = { Icon(Icons.Filled.PushPin, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            it()
+                        },
+                    )
+                }
+                onRename?.let {
+                    DropdownMenuItem(
+                        text = { Text("Rename") },
+                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            renameValue = note.title
+                            renaming = true
+                        },
+                    )
+                }
+                onMove?.let {
+                    DropdownMenuItem(
+                        text = { Text("Move to…") },
+                        leadingIcon = {
+                            Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null)
+                        },
+                        onClick = {
+                            menuOpen = false
+                            it()
+                        },
+                    )
+                }
+                onDelete?.let {
+                    DropdownMenuItem(
+                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = {
+                            menuOpen = false
+                            confirmDelete = true
+                        },
+                    )
+                }
             }
         }
     }

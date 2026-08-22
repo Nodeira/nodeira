@@ -124,6 +124,7 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onDeleteNote = { id -> vm.deleteNote(id) },
                 onTogglePin = { id, pinned -> vm.setNotePinned(id, pinned) },
                 onRenameNote = { id, title -> vm.renameNote(id, title) },
+                onMoveNote = { id, vaultId, folderId -> vm.moveNote(id, vaultId, folderId) },
                 onCreateFolder = { name, vaultId -> vm.createFolder(name, vaultId) },
                 onResolveConflict = { opId, keepLocal -> vm.resolveConflict(opId, keepLocal) },
                 onOpenCanvas = { openCanvas(navController, container, it) },
@@ -131,6 +132,10 @@ private fun NavGraphBuilder.authenticatedGraph(
                 onDeleteCanvas = { id -> vm.deleteCanvas(id) },
                 onToggleCanvasPin = { id, pinned -> vm.setCanvasPinned(id, pinned) },
                 onRenameCanvas = { id, title -> vm.renameCanvas(id, title) },
+                onMoveCanvas = { id, vaultId, folderId -> vm.moveCanvas(id, vaultId, folderId) },
+                onRenameFolder = { id, name -> vm.renameFolder(id, name) },
+                onDeleteFolder = { id -> vm.deleteFolder(id) },
+                onMoveFolder = { id, vaultId, parentId -> vm.moveFolder(id, vaultId, parentId) },
             )
         }
 

@@ -98,3 +98,28 @@ data class CreateFolderBody(
     val name: String,
     val vaultId: String,
 )
+
+/** Partial folder rename/re-icon. Deliberately excludes vaultId/parentId — see [MoveFolderBody]. */
+@Serializable
+data class UpdateFolderBody(
+    val name: String? = null,
+    val icon: String? = null,
+)
+
+/**
+ * Move-only bodies, encoded through [NetworkModule]'s `explicitNulls = true` JSON
+ * instance rather than the default one. Every field here is one the caller genuinely
+ * intends to set — including an explicit `null` for "move to vault root/no folder" —
+ * so nothing here should ever be silently dropped the way a null field is dropped under
+ * the default `explicitNulls = false` config. Kept as narrow, dedicated types (rather
+ * than reusing [UpdateNoteBody] etc.) so this alternate encoding can never accidentally
+ * apply to a rename/pin call and wipe out fields the caller didn't mean to touch.
+ */
+@Serializable
+data class MoveNoteBody(val vaultId: String?, val folderId: String?)
+
+@Serializable
+data class MoveCanvasBody(val vaultId: String?, val folderId: String?)
+
+@Serializable
+data class MoveFolderBody(val vaultId: String?, val parentId: String?)

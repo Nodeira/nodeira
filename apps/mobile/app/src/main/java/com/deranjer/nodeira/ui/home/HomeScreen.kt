@@ -1,6 +1,8 @@
 package com.deranjer.nodeira.ui.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Add
@@ -21,6 +24,8 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
@@ -57,6 +62,7 @@ import com.deranjer.nodeira.data.net.NoteDto
 import com.deranjer.nodeira.data.net.VaultDto
 import com.deranjer.nodeira.ui.canvases.CanvasListItem
 import com.deranjer.nodeira.ui.components.BrandSearchBar
+import com.deranjer.nodeira.ui.components.MoveToDialog
 import com.deranjer.nodeira.ui.components.NBadge
 import com.deranjer.nodeira.ui.components.SectionLabel
 import com.deranjer.nodeira.ui.nav.AppDestination
@@ -67,6 +73,16 @@ import com.deranjer.nodeira.ui.notes.NotesUiState
 import com.deranjer.nodeira.ui.notes.OfflineBanner
 import com.deranjer.nodeira.ui.notes.PendingWritesBanner
 import com.deranjer.nodeira.ui.notes.formatTimestamp
+
+/** What [MoveToDialog] is currently open for — lifted to HomeScreen since the dialog needs the full, unfiltered vault/folder lists. */
+private data class MoveTarget(
+    val id: String,
+    val kind: String, // "note" | "canvas" | "folder"
+    val vaultId: String?,
+    val folderId: String?,
+    val label: String,
+    val excludeFolderId: String? = null,
+)
 
 @Composable
 fun HomeScreen(
@@ -81,17 +97,23 @@ fun HomeScreen(
     onDeleteNote: (String) -> Unit,
     onTogglePin: (id: String, pinned: Boolean) -> Unit,
     onRenameNote: (id: String, title: String) -> Unit,
+    onMoveNote: (id: String, vaultId: String?, folderId: String?) -> Unit,
     onResolveConflict: (opId: String, keepLocal: Boolean) -> Unit = { _, _ -> },
     onOpenCanvas: (String) -> Unit,
     onCreateCanvas: (vaultId: String?, onCreated: (String) -> Unit) -> Unit,
     onDeleteCanvas: (String) -> Unit,
     onToggleCanvasPin: (id: String, pinned: Boolean) -> Unit,
     onRenameCanvas: (id: String, title: String) -> Unit,
+    onMoveCanvas: (id: String, vaultId: String?, folderId: String?) -> Unit,
+    onRenameFolder: (id: String, name: String) -> Unit,
+    onDeleteFolder: (id: String) -> Unit,
+    onMoveFolder: (id: String, vaultId: String?, parentId: String?) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var selectedVaultId by remember { mutableStateOf<String?>(null) }
     var showNewMenu by remember { mutableStateOf(false) }
     var showFolderDialog by remember { mutableStateOf(false) }
+    var moveTarget by remember { mutableStateOf<MoveTarget?>(null) }
     // Per-folder expand/collapse, keyed by folder id (default collapsed).
     val expandedFolders = remember { mutableStateMapOf<String, Boolean>() }
 
@@ -188,6 +210,9 @@ fun HomeScreen(
                                     onDelete = { onDeleteNote(note.id) },
                                     onTogglePin = { onTogglePin(note.id, !note.pinned) },
                                     onRename = { onRenameNote(note.id, it) },
+                                    onMove = {
+                                        moveTarget = MoveTarget(note.id, "note", note.vaultId, note.folderId, note.title.ifBlank { "Untitled" })
+                                    },
                                 )
                             }
                             items(pinnedCanvases, key = { "pin-c-${it.id}" }) { canvas ->
@@ -198,6 +223,9 @@ fun HomeScreen(
                                     onDelete = { onDeleteCanvas(canvas.id) },
                                     onTogglePin = { onToggleCanvasPin(canvas.id, !canvas.pinned) },
                                     onRename = { onRenameCanvas(canvas.id, it) },
+                                    onMove = {
+                                        moveTarget = MoveTarget(canvas.id, "canvas", canvas.vaultId, canvas.folderId, canvas.title.ifBlank { "Untitled canvas" })
+                                    },
                                 )
                             }
                         }
@@ -227,10 +255,24 @@ fun HomeScreen(
                                 onDeleteNote = onDeleteNote,
                                 onTogglePin = onTogglePin,
                                 onRenameNote = onRenameNote,
+                                onMoveNote = { note ->
+                                    moveTarget = MoveTarget(note.id, "note", note.vaultId, note.folderId, note.title.ifBlank { "Untitled" })
+                                },
                                 onOpenCanvas = onOpenCanvas,
                                 onDeleteCanvas = onDeleteCanvas,
                                 onToggleCanvasPin = onToggleCanvasPin,
                                 onRenameCanvas = onRenameCanvas,
+                                onMoveCanvas = { canvas ->
+                                    moveTarget = MoveTarget(canvas.id, "canvas", canvas.vaultId, canvas.folderId, canvas.title.ifBlank { "Untitled canvas" })
+                                },
+                                onRenameFolder = onRenameFolder,
+                                onDeleteFolder = onDeleteFolder,
+                                onMoveFolder = { folder ->
+                                    moveTarget = MoveTarget(
+                                        folder.id, "folder", folder.vaultId, folder.parentId,
+                                        folder.name.ifBlank { "Untitled folder" }, excludeFolderId = folder.id,
+                                    )
+                                },
                                 onToggle = { id ->
                                     expandedFolders[id] = !(expandedFolders[id] == true)
                                 },
@@ -245,6 +287,9 @@ fun HomeScreen(
                                     onDelete = { onDeleteNote(note.id) },
                                     onTogglePin = { onTogglePin(note.id, !note.pinned) },
                                     onRename = { onRenameNote(note.id, it) },
+                                    onMove = {
+                                        moveTarget = MoveTarget(note.id, "note", note.vaultId, note.folderId, note.title.ifBlank { "Untitled" })
+                                    },
                                 )
                             }
 
@@ -255,6 +300,9 @@ fun HomeScreen(
                                     onDelete = { onDeleteCanvas(canvas.id) },
                                     onTogglePin = { onToggleCanvasPin(canvas.id, !canvas.pinned) },
                                     onRename = { onRenameCanvas(canvas.id, it) },
+                                    onMove = {
+                                        moveTarget = MoveTarget(canvas.id, "canvas", canvas.vaultId, canvas.folderId, canvas.title.ifBlank { "Untitled canvas" })
+                                    },
                                 )
                             }
                         }
@@ -292,6 +340,25 @@ fun HomeScreen(
             onConfirm = { name ->
                 showFolderDialog = false
                 onCreateFolder(name, selectedVaultId)
+            },
+        )
+    }
+
+    moveTarget?.let { target ->
+        MoveToDialog(
+            itemLabel = target.label,
+            currentVaultId = target.vaultId,
+            currentFolderId = target.folderId,
+            vaults = state.vaults,
+            folders = state.folders,
+            excludeFolderId = target.excludeFolderId,
+            onDismiss = { moveTarget = null },
+            onConfirm = { vaultId, folderId ->
+                when (target.kind) {
+                    "note" -> onMoveNote(target.id, vaultId, folderId)
+                    "canvas" -> onMoveCanvas(target.id, vaultId, folderId)
+                    "folder" -> onMoveFolder(target.id, vaultId, folderId)
+                }
             },
         )
     }
@@ -387,10 +454,15 @@ private fun LazyListScope.folderTree(
     onDeleteNote: (String) -> Unit,
     onTogglePin: (id: String, pinned: Boolean) -> Unit,
     onRenameNote: (id: String, title: String) -> Unit,
+    onMoveNote: (NoteDto) -> Unit,
     onOpenCanvas: (String) -> Unit,
     onDeleteCanvas: (String) -> Unit,
     onToggleCanvasPin: (id: String, pinned: Boolean) -> Unit,
     onRenameCanvas: (id: String, title: String) -> Unit,
+    onMoveCanvas: (CanvasDto) -> Unit,
+    onRenameFolder: (id: String, name: String) -> Unit,
+    onDeleteFolder: (id: String) -> Unit,
+    onMoveFolder: (FolderDto) -> Unit,
 ) {
     foldersByParent[parentId].orEmpty().forEach { folder ->
         // While searching, hide folders whose subtree has no matching note or canvas.
@@ -405,6 +477,9 @@ private fun LazyListScope.folderTree(
                 expanded = expanded,
                 depth = depth,
                 onToggle = { onToggle(folder.id) },
+                onRename = { onRenameFolder(folder.id, it) },
+                onDelete = { onDeleteFolder(folder.id) },
+                onMove = { onMoveFolder(folder) },
             )
         }
         if (expanded) {
@@ -422,10 +497,15 @@ private fun LazyListScope.folderTree(
                 onDeleteNote = onDeleteNote,
                 onTogglePin = onTogglePin,
                 onRenameNote = onRenameNote,
+                onMoveNote = onMoveNote,
                 onOpenCanvas = onOpenCanvas,
                 onDeleteCanvas = onDeleteCanvas,
                 onToggleCanvasPin = onToggleCanvasPin,
                 onRenameCanvas = onRenameCanvas,
+                onMoveCanvas = onMoveCanvas,
+                onRenameFolder = onRenameFolder,
+                onDeleteFolder = onDeleteFolder,
+                onMoveFolder = onMoveFolder,
             )
             items(folderNotes, key = { "f-${folder.id}-${it.id}" }) { note ->
                 Box(modifier = Modifier.padding(start = (24 + depth * 16).dp)) {
@@ -436,6 +516,7 @@ private fun LazyListScope.folderTree(
                         onDelete = { onDeleteNote(note.id) },
                         onTogglePin = { onTogglePin(note.id, !note.pinned) },
                         onRename = { onRenameNote(note.id, it) },
+                        onMove = { onMoveNote(note) },
                     )
                 }
             }
@@ -447,6 +528,7 @@ private fun LazyListScope.folderTree(
                         onDelete = { onDeleteCanvas(canvas.id) },
                         onTogglePin = { onToggleCanvasPin(canvas.id, !canvas.pinned) },
                         onRename = { onRenameCanvas(canvas.id, it) },
+                        onMove = { onMoveCanvas(canvas) },
                     )
                 }
             }
@@ -468,27 +550,144 @@ private fun subtreeHasNotes(
     }
 }
 
-/** Expandable folder row: folder icon, name, item count, and a rotating expand chevron. */
+/**
+ * Expandable folder row: folder icon, name, item count, and a rotating expand chevron.
+ * Long-press opens a Rename/Delete/Move overflow menu when any of those callbacks are
+ * supplied — same convention as [com.deranjer.nodeira.ui.notes.NoteListItem].
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun FolderRow(name: String, count: Int, expanded: Boolean, depth: Int, onToggle: () -> Unit) {
-    ListItem(
-        modifier = Modifier.clickable(onClick = onToggle).padding(start = (depth * 16).dp),
-        headlineContent = { Text(name.ifBlank { "Untitled folder" }) },
-        supportingContent = { Text(if (count == 1) "1 item" else "$count items") },
-        leadingContent = {
-            Icon(
-                Icons.Filled.Folder,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        },
-        trailingContent = {
-            Icon(
-                if (expanded) Icons.Filled.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = if (expanded) "Collapse" else "Expand",
-            )
-        },
-    )
+private fun FolderRow(
+    name: String,
+    count: Int,
+    expanded: Boolean,
+    depth: Int,
+    onToggle: () -> Unit,
+    onRename: ((String) -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+    onMove: (() -> Unit)? = null,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    var renameValue by remember(name) { mutableStateOf(name) }
+    val hasActions = onRename != null || onDelete != null || onMove != null
+    val displayName = name.ifBlank { "Untitled folder" }
+
+    // ListItem and its DropdownMenu must share this Box as their anchor — see the identical
+    // comment in NoteListItem for why a root-level (unwrapped) item would otherwise anchor
+    // its long-press menu at the screen's top-left corner.
+    Box {
+        ListItem(
+            modifier = if (hasActions) {
+                Modifier.combinedClickable(onClick = onToggle, onLongClick = { menuOpen = true })
+            } else {
+                Modifier.clickable(onClick = onToggle)
+            }.padding(start = (depth * 16).dp),
+            headlineContent = { Text(displayName) },
+            supportingContent = { Text(if (count == 1) "1 item" else "$count items") },
+            leadingContent = {
+                Icon(
+                    Icons.Filled.Folder,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            },
+            trailingContent = {
+                Icon(
+                    if (expanded) Icons.Filled.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                )
+            },
+        )
+
+        if (hasActions) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                onRename?.let {
+                    DropdownMenuItem(
+                        text = { Text("Rename") },
+                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            renameValue = name
+                            renaming = true
+                        },
+                    )
+                }
+                onMove?.let {
+                    DropdownMenuItem(
+                        text = { Text("Move to…") },
+                        leadingIcon = {
+                            Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null)
+                        },
+                        onClick = {
+                            menuOpen = false
+                            it()
+                        },
+                    )
+                }
+                onDelete?.let {
+                    DropdownMenuItem(
+                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = {
+                            menuOpen = false
+                            confirmDelete = true
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    if (confirmDelete && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete folder?") },
+            text = {
+                Text("\"$displayName\" and everything inside it — subfolders, notes, and canvases — will be moved to Trash.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDelete()
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (renaming && onRename != null) {
+        AlertDialog(
+            onDismissRequest = { renaming = false },
+            title = { Text("Rename folder") },
+            text = {
+                OutlinedTextField(
+                    value = renameValue,
+                    onValueChange = { renameValue = it },
+                    singleLine = true,
+                    label = { Text("Name") },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    renaming = false
+                    onRename(renameValue)
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renaming = false }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 /** Slides up from the FAB: create a note, quick note, canvas, or folder. */

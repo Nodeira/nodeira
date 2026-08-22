@@ -3,6 +3,7 @@ import { VaultRole } from "@prisma/client";
 import { PrismaService } from "../database/prisma.service.js";
 import { VaultAccessService } from "../vaults/vault-access.service.js";
 import type { CreateFolderDto } from "./dto/create-folder.dto.js";
+import type { UpdateFolderDto } from "./dto/update-folder.dto.js";
 
 @Injectable()
 export class FoldersService {
@@ -53,13 +54,53 @@ export class FoldersService {
     });
   }
 
-  async update(
-    userId: string,
-    id: string,
-    data: { icon?: string | null },
-    vaultScope?: string | null,
-  ) {
-    await this.findAuthorized(userId, id, VaultRole.EDITOR, vaultScope);
-    return this.prisma.folder.update({ where: { id }, data });
+  async update(userId: string, id: string, dto: UpdateFolderDto, vaultScope?: string | null) {
+    const folder = await this.findAuthorized(userId, id, VaultRole.EDITOR, vaultScope);
+    const targetVaultId = dto.vaultId ?? folder.vaultId;
+
+    // Moving a folder into another vault requires write access to the destination too,
+    // otherwise a member of vault A could push folders (and, by extension, everything
+    // moved into them later) into vault B. Mirrors NotesService.update.
+    if (dto.vaultId !== undefined) {
+      await this.access.assertAccess(userId, dto.vaultId, VaultRole.EDITOR, vaultScope);
+    }
+
+    if (dto.parentId !== undefined && dto.parentId !== null) {
+      // A parent in another vault would put the child somewhere the caller may not even
+      // be able to see, and would let a folder tree span vaults. Mirrors create().
+      const parent = await this.findAuthorized(userId, dto.parentId, VaultRole.EDITOR, vaultScope);
+      if (parent.vaultId !== targetVaultId) {
+        throw new BadRequestException("Parent folder belongs to a different vault");
+      }
+
+      // Cycle check: walk up from the proposed new parent; if the walk reaches `id`, this
+      // folder would become its own ancestor. create() never needs this — a brand-new
+      // folder can't already have descendants — but update() is the first place a cycle
+      // becomes possible.
+      let cursorId: string | null = parent.id;
+      const seen = new Set<string>();
+      while (cursorId) {
+        if (cursorId === id) {
+          throw new BadRequestException("Cannot move a folder into its own subtree");
+        }
+        if (seen.has(cursorId)) break; // defensive against bad data; avoids an infinite loop
+        seen.add(cursorId);
+        const next: { parentId: string | null } | null = await this.prisma.folder.findUnique({
+          where: { id: cursorId },
+          select: { parentId: true },
+        });
+        cursorId = next?.parentId ?? null;
+      }
+    }
+
+    return this.prisma.folder.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.icon !== undefined && { icon: dto.icon }),
+        ...(dto.vaultId !== undefined && { vaultId: dto.vaultId }),
+        ...(dto.parentId !== undefined && { parentId: dto.parentId ?? null }),
+      },
+    });
   }
 }

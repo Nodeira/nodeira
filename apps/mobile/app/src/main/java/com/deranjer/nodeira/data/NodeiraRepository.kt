@@ -88,6 +88,10 @@ class NodeiraRepository(
     private fun requireApi() =
         network.apiFor(auth.serverUrl ?: error("No server configured"))
 
+    /** See [com.deranjer.nodeira.data.net.NodeiraMoveApi] for why moves use a separate client. */
+    private fun requireMoveApi() =
+        network.moveApiFor(auth.serverUrl ?: error("No server configured"))
+
     /**
      * Fetches the note list and, if the phone is back online with queued changes, replays them
      * first so the list returned reflects the merged result rather than a stale local echo.
@@ -173,10 +177,18 @@ class NodeiraRepository(
         optimistic = { existing -> (existing ?: NoteDto(id = id)).copy(pinned = pinned) },
     )
 
-    suspend fun moveNote(id: String, vaultId: String?, folderId: String?): NoteDto = mutateNote(
-        id = id,
-        body = UpdateNoteBody(vaultId = vaultId, folderId = folderId),
-        write = { existing ->
+    // Uses requireMoveApi()/MoveNoteBody rather than mutateNote()'s UpdateNoteBody — a
+    // "move to vault root" clears folderId to null, which the default JSON encoder would
+    // silently omit (and the server would then leave the note's folder untouched). See
+    // MoveNoteBody's doc comment.
+    suspend fun moveNote(id: String, vaultId: String?, folderId: String?): NoteDto = try {
+        requireMoveApi().moveNote(id, com.deranjer.nodeira.data.net.MoveNoteBody(vaultId = vaultId, folderId = folderId))
+            .also(::upsertCache)
+    } catch (e: IOException) {
+        val existing = cache.loadNotes().find { it.id == id }
+        val note = (existing ?: NoteDto(id = id)).copy(vaultId = vaultId ?: existing?.vaultId, folderId = folderId)
+        upsertCache(note)
+        writeQueue.enqueue(
             PendingWrite(
                 opId = UUID.randomUUID().toString(),
                 kind = WriteKind.MOVE,
@@ -185,12 +197,10 @@ class NodeiraRepository(
                 baseUpdatedAt = existing?.updatedAt,
                 vaultId = vaultId,
                 folderId = folderId,
-            )
-        },
-        optimistic = { existing ->
-            (existing ?: NoteDto(id = id)).copy(vaultId = vaultId ?: existing?.vaultId, folderId = folderId)
-        },
-    )
+            ),
+        )
+        note
+    }
 
     suspend fun deleteNote(id: String) {
         try {
@@ -305,7 +315,10 @@ class NodeiraRepository(
             WriteKind.RENAME -> api.updateNote(write.noteId, UpdateNoteBody(title = write.title))
             WriteKind.PIN -> api.updateNote(write.noteId, UpdateNoteBody(pinned = write.pinned))
             WriteKind.MOVE ->
-                api.updateNote(write.noteId, UpdateNoteBody(vaultId = write.vaultId, folderId = write.folderId))
+                requireMoveApi().moveNote(
+                    write.noteId,
+                    com.deranjer.nodeira.data.net.MoveNoteBody(vaultId = write.vaultId, folderId = write.folderId),
+                )
             WriteKind.DELETE -> api.deleteNote(write.noteId)
         }
     }
@@ -316,6 +329,16 @@ class NodeiraRepository(
     ): com.deranjer.nodeira.data.net.FolderDto = requireApi().createFolder(
         com.deranjer.nodeira.data.net.CreateFolderBody(name = name, vaultId = vaultId),
     )
+
+    suspend fun renameFolder(id: String, name: String): com.deranjer.nodeira.data.net.FolderDto =
+        requireApi().updateFolder(id, com.deranjer.nodeira.data.net.UpdateFolderBody(name = name))
+
+    suspend fun deleteFolder(id: String) = requireApi().deleteFolder(id)
+
+    // See moveNote's comment — folders need the same explicit-null-capable encoder for
+    // "move to vault root" (parentId = null).
+    suspend fun moveFolder(id: String, vaultId: String?, parentId: String?): com.deranjer.nodeira.data.net.FolderDto =
+        requireMoveApi().moveFolder(id, com.deranjer.nodeira.data.net.MoveFolderBody(vaultId = vaultId, parentId = parentId))
 
     suspend fun getReminders(): List<ReminderDto> = requireApi().getReminders()
 
@@ -347,4 +370,9 @@ class NodeiraRepository(
         requireApi().updateCanvas(id, com.deranjer.nodeira.data.net.UpdateCanvasBody(pinned = pinned))
 
     suspend fun deleteCanvas(id: String) = requireApi().deleteCanvas(id)
+
+    // See moveNote's comment — canvases need the same explicit-null-capable encoder for
+    // "move to no folder" (folderId = null).
+    suspend fun moveCanvas(id: String, vaultId: String?, folderId: String?): com.deranjer.nodeira.data.net.CanvasDto =
+        requireMoveApi().moveCanvas(id, com.deranjer.nodeira.data.net.MoveCanvasBody(vaultId = vaultId, folderId = folderId))
 }

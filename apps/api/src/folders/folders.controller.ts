@@ -15,6 +15,7 @@ import type { RequestWithUser } from "../auth/request-with-user.js";
 import { TrashService } from "../trash/trash.service.js";
 import { FoldersService } from "./folders.service.js";
 import { CreateFolderDto } from "./dto/create-folder.dto.js";
+import { UpdateFolderDto } from "./dto/update-folder.dto.js";
 
 @UseGuards(JwtAuthGuard)
 @Controller("folders")
@@ -35,12 +36,8 @@ export class FoldersController {
   }
 
   @Patch(":id")
-  update(
-    @Request() req: RequestWithUser,
-    @Param("id") id: string,
-    @Body() body: { icon?: string | null },
-  ) {
-    return this.foldersService.update(req.user.id, id, body, req.user.vaultScope);
+  update(@Request() req: RequestWithUser, @Param("id") id: string, @Body() dto: UpdateFolderDto) {
+    return this.foldersService.update(req.user.id, id, dto, req.user.vaultScope);
   }
 
   @Delete(":id")

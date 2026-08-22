@@ -116,6 +116,86 @@ describe("FoldersService", () => {
         service.update(owner.userId, "00000000-0000-0000-0000-000000000000", { icon: null }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it("renames a folder", async () => {
+      const folder = await service.create(owner.userId, { name: "F", vaultId: owner.vaultId });
+      const updated = await service.update(owner.userId, folder.id, { name: "Renamed" });
+      expect(updated.name).toBe("Renamed");
+    });
+
+    it("moves a folder to a different parent in the same vault", async () => {
+      const parent = await service.create(owner.userId, { name: "Parent", vaultId: owner.vaultId });
+      const child = await service.create(owner.userId, { name: "Child", vaultId: owner.vaultId });
+      const updated = await service.update(owner.userId, child.id, { parentId: parent.id });
+      expect(updated.parentId).toBe(parent.id);
+    });
+
+    it("moves a folder back to the vault root with an explicit null parentId", async () => {
+      const parent = await service.create(owner.userId, { name: "Parent", vaultId: owner.vaultId });
+      const child = await service.create(owner.userId, {
+        name: "Child",
+        vaultId: owner.vaultId,
+        parentId: parent.id,
+      });
+      const updated = await service.update(owner.userId, child.id, { parentId: null });
+      expect(updated.parentId).toBeNull();
+    });
+
+    it("refuses a new parent from a different vault", async () => {
+      const other = await createOwnerWithVault(prisma);
+      const theirParent = await service.create(other.userId, {
+        name: "Theirs",
+        vaultId: other.vaultId,
+      });
+      await prisma.vaultMember.create({
+        data: { vaultId: other.vaultId, userId: owner.userId, role: "EDITOR" },
+      });
+      const folder = await service.create(owner.userId, { name: "F", vaultId: owner.vaultId });
+
+      await expect(
+        service.update(owner.userId, folder.id, { parentId: theirParent.id }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("refuses to move a folder into its own subtree", async () => {
+      const parent = await service.create(owner.userId, { name: "Parent", vaultId: owner.vaultId });
+      const child = await service.create(owner.userId, {
+        name: "Child",
+        vaultId: owner.vaultId,
+        parentId: parent.id,
+      });
+
+      await expect(service.update(owner.userId, parent.id, { parentId: child.id })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("refuses to move a folder into itself", async () => {
+      const folder = await service.create(owner.userId, { name: "F", vaultId: owner.vaultId });
+      await expect(
+        service.update(owner.userId, folder.id, { parentId: folder.id }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("moves a folder into another vault the caller can write to", async () => {
+      const other = await createOwnerWithVault(prisma);
+      await prisma.vaultMember.create({
+        data: { vaultId: other.vaultId, userId: owner.userId, role: "EDITOR" },
+      });
+      const folder = await service.create(owner.userId, { name: "F", vaultId: owner.vaultId });
+
+      const updated = await service.update(owner.userId, folder.id, { vaultId: other.vaultId });
+      expect(updated.vaultId).toBe(other.vaultId);
+    });
+
+    it("refuses to move a folder into a vault the caller cannot write to", async () => {
+      const other = await createOwnerWithVault(prisma);
+      const folder = await service.create(owner.userId, { name: "F", vaultId: owner.vaultId });
+
+      await expect(
+        service.update(owner.userId, folder.id, { vaultId: other.vaultId }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe("findAll", () => {
