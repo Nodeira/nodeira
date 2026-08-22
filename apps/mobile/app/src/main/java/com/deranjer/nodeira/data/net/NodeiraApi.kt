@@ -43,6 +43,12 @@ interface NodeiraApi {
     @POST("folders")
     suspend fun createFolder(@Body body: CreateFolderBody): FolderDto
 
+    @PATCH("folders/{id}")
+    suspend fun updateFolder(@Path("id") id: String, @Body body: UpdateFolderBody): FolderDto
+
+    @DELETE("folders/{id}")
+    suspend fun deleteFolder(@Path("id") id: String)
+
     @GET("reminders")
     suspend fun getReminders(): List<ReminderDto>
 
@@ -69,4 +75,22 @@ interface NodeiraApi {
 
     @DELETE("canvases/{id}")
     suspend fun deleteCanvas(@Path("id") id: String)
+}
+
+/**
+ * The same PATCH routes as [NodeiraApi]'s `updateNote`/`updateCanvas`/`updateFolder`, but
+ * built against [NetworkModule]'s `explicitNulls = true` converter (see [MoveNoteBody] for
+ * why moves need their own encoder) and restricted to the narrow move-only body types so
+ * this alternate encoding can never reach a rename/pin call by accident.
+ */
+interface NodeiraMoveApi {
+
+    @PATCH("notes/{id}")
+    suspend fun moveNote(@Path("id") id: String, @Body body: MoveNoteBody): NoteDto
+
+    @PATCH("canvases/{id}")
+    suspend fun moveCanvas(@Path("id") id: String, @Body body: MoveCanvasBody): CanvasDto
+
+    @PATCH("folders/{id}")
+    suspend fun moveFolder(@Path("id") id: String, @Body body: MoveFolderBody): FolderDto
 }

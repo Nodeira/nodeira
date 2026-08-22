@@ -27,6 +27,21 @@ class NetworkModule(private val auth: AuthStorage) {
         encodeDefaults = true
     }
 
+    /**
+     * Used only for [NodeiraMoveApi]'s move-only bodies ([MoveNoteBody] etc.), which need
+     * "no folder"/"vault root" sent as an explicit JSON `null` rather than an omitted key.
+     * [json] above stays `explicitNulls = false` for everything else — flipping that
+     * globally would make every existing partial-update call (rename, pin toggle, ...)
+     * start sending its other, untouched nullable fields as explicit nulls too, and the
+     * server treats a present `null` as "clear this field," not "leave it alone." See
+     * [MoveNoteBody]'s doc comment.
+     */
+    private val moveJson = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = true
+        encodeDefaults = true
+    }
+
     private val _unauthorized = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     /** Emits when a request gets a 401 (expired/invalid token); the UI routes to login. */
     val unauthorized: SharedFlow<Unit> = _unauthorized
@@ -72,6 +87,7 @@ class NetworkModule(private val auth: AuthStorage) {
         .build()
 
     private val cache = mutableMapOf<String, NodeiraApi>()
+    private val moveCache = mutableMapOf<String, NodeiraMoveApi>()
 
     /** Returns an API bound to `<serverUrl>/api/v1/`. */
     fun apiFor(serverUrl: String): NodeiraApi {
@@ -83,6 +99,19 @@ class NetworkModule(private val auth: AuthStorage) {
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .build()
                 .create(NodeiraApi::class.java)
+        }
+    }
+
+    /** Returns a [NodeiraMoveApi] bound to `<serverUrl>/api/v1/` — see [moveJson]. */
+    fun moveApiFor(serverUrl: String): NodeiraMoveApi {
+        val base = serverUrl.trimEnd('/') + "/api/v1/"
+        return moveCache.getOrPut(base) {
+            Retrofit.Builder()
+                .baseUrl(base)
+                .client(client)
+                .addConverterFactory(moveJson.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(NodeiraMoveApi::class.java)
         }
     }
 }

@@ -191,6 +191,17 @@ class NotesViewModel(
         }
     }
 
+    fun moveCanvas(id: String, vaultId: String?, folderId: String?) {
+        viewModelScope.launch {
+            try {
+                repository.moveCanvas(id, vaultId, folderId)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to move canvas") }
+            }
+        }
+    }
+
     fun createFolder(name: String, vaultId: String?) {
         val targetVault = resolveVaultId(vaultId)
         if (targetVault == null) {
@@ -249,6 +260,41 @@ class NotesViewModel(
                 refresh()
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "Failed to move note") }
+            }
+        }
+    }
+
+    fun renameFolder(id: String, name: String) {
+        val trimmed = name.trim().ifEmpty { "Untitled folder" }
+        viewModelScope.launch {
+            try {
+                repository.renameFolder(id, trimmed)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to rename folder") }
+            }
+        }
+    }
+
+    /** Deletes a folder — the server moves it and everything inside it to Trash. */
+    fun deleteFolder(id: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteFolder(id)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to delete folder") }
+            }
+        }
+    }
+
+    fun moveFolder(id: String, vaultId: String?, parentId: String?) {
+        viewModelScope.launch {
+            try {
+                repository.moveFolder(id, vaultId, parentId)
+                refresh()
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message ?: "Failed to move folder") }
             }
         }
     }
