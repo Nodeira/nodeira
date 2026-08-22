@@ -1,3 +1,11 @@
+## [1.22.2](https://github.com/Nodeira/nodeira/compare/v1.22.1...v1.22.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* **api:** type UpdateFolderDto.parentId as nullable ([d89c727](https://github.com/Nodeira/nodeira/commit/d89c7273b05b5d705b308fad8f7aad7c4cffdc18))
+* **mobile:** anchor row menus correctly, add folder rename/delete/move ([5605d9f](https://github.com/Nodeira/nodeira/commit/5605d9fb9125bc517af1216c8dfda686c7fee24b))
+
 ## [1.22.1](https://github.com/Nodeira/nodeira/compare/v1.22.0...v1.22.1) (2026-08-21)
 
 
