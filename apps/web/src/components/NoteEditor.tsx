@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useAtomValue } from "jotai";
 import {
   IconDots,
   IconFileTypePdf,
   IconLayout,
+  IconLink,
   IconTable,
   IconTableColumn,
   IconTableOff,
   IconTableRow,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Editor } from "@tiptap/react";
 import { useEditor } from "@tiptap/react";
+import { getMarkRange } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
@@ -27,6 +31,7 @@ import {
   Menu,
   Modal,
   Paper,
+  Popover,
   Select,
   Stack,
   Text,
@@ -171,6 +176,121 @@ function TagPicker({
         ))}
       </Stack>
     </Paper>
+  );
+}
+
+function LinkControl({ editor }: { editor: Editor | null }) {
+  const [opened, { open, close }] = useDisclosure(false);
+  const [text, setText] = useState("");
+  const [url, setUrl] = useState("");
+
+  const handleOpen = () => {
+    if (!editor) return;
+    const { state } = editor;
+    const { from, to, empty, $from } = state.selection;
+    const linkType = state.schema.marks.link;
+    const range = linkType ? getMarkRange($from, linkType) : undefined;
+    const href = (editor.getAttributes("link").href as string | undefined) ?? "";
+    const label = !empty
+      ? state.doc.textBetween(from, to, " ")
+      : range
+        ? state.doc.textBetween(range.from, range.to, " ")
+        : "";
+    setText(label);
+    setUrl(href);
+    open();
+  };
+
+  const handleClose = () => {
+    close();
+    setText("");
+    setUrl("");
+  };
+
+  const applyLink = () => {
+    if (!editor) return;
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      handleClose();
+      return;
+    }
+    const label = text.trim() || trimmedUrl;
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange("link")
+      .insertContent({
+        type: "text",
+        text: label,
+        marks: [{ type: "link", attrs: { href: trimmedUrl } }],
+      })
+      .run();
+    handleClose();
+  };
+
+  const removeLink = () => {
+    editor?.chain().focus().extendMarkRange("link").unsetLink().run();
+    handleClose();
+  };
+
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      applyLink();
+    }
+  };
+
+  return (
+    <Popover
+      trapFocus
+      shadow="md"
+      withinPortal
+      opened={opened}
+      onChange={(o) => !o && handleClose()}
+      zIndex={10000}
+    >
+      <Popover.Target>
+        <RichTextEditor.Control
+          onClick={opened ? handleClose : handleOpen}
+          active={editor?.isActive("link") ?? false}
+          title="Link"
+          aria-label="Link"
+        >
+          <IconLink size={14} />
+        </RichTextEditor.Control>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack gap={6} miw={260}>
+          <TextInput
+            placeholder="Text to display"
+            size="xs"
+            value={text}
+            onChange={(e) => setText(e.currentTarget.value)}
+            onKeyDown={handleKeyDown}
+            autoFocus
+          />
+          <TextInput
+            placeholder="https://…"
+            size="xs"
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.currentTarget.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <Group justify="flex-end" gap={6}>
+            {editor?.isActive("link") && (
+              <Button variant="subtle" color="red" size="xs" onClick={removeLink}>
+                Remove
+              </Button>
+            )}
+            <Button variant="default" size="xs" onClick={applyLink}>
+              Save
+            </Button>
+          </Group>
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
   );
 }
 
@@ -505,8 +625,7 @@ export function NoteEditor({ noteId, isNew, initialTitle }: NoteEditorProps) {
 
           {/* Links */}
           <RichTextEditor.ControlsGroup>
-            <RichTextEditor.Link />
-            <RichTextEditor.Unlink />
+            <LinkControl editor={editor} />
           </RichTextEditor.ControlsGroup>
 
           {/* Lists */}
