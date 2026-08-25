@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/Nodeira/nodeira/compare/v1.22.2...v1.23.0) (2026-08-25)
+
+
+### Features
+
+* **web:** let editor links show custom display text ([d70ab02](https://github.com/Nodeira/nodeira/commit/d70ab021f2317f123bf19907aa775efe45db0334))
+
 ## [1.22.2](https://github.com/Nodeira/nodeira/compare/v1.22.1...v1.22.2) (2026-08-22)
 
 
