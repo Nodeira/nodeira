@@ -81,8 +81,13 @@ const collected = [];
 // ── Installers produced by Forge makers ──────────────────────────────────────
 if (fs.existsSync(makeDir)) {
   for (const file of walk(makeDir)) {
-    const target = INSTALLER_NAMES[path.extname(file).toLowerCase()];
-    if (!target) continue; // .nupkg, RELEASES, .zip from a maker, etc.
+    const base = path.basename(file);
+    // Squirrel.Windows' update feed (update.electronjs.org) reads RELEASES and the
+    // full nupkg directly off the GitHub release, under their original names — unlike
+    // the installers below, these can't be renamed per-platform.
+    const isSquirrelUpdatePayload = base === "RELEASES" || path.extname(base) === ".nupkg";
+    const target = isSquirrelUpdatePayload ? base : INSTALLER_NAMES[path.extname(file).toLowerCase()];
+    if (!target) continue; // .zip from a maker, etc.
     const dest = path.join(outDir, target);
     if (fs.existsSync(dest)) {
       console.warn(`! ${target} already collected; ignoring duplicate ${file}`);
