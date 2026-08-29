@@ -1,3 +1,10 @@
+## [1.23.1](https://github.com/Nodeira/nodeira/compare/v1.23.0...v1.23.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* **desktop:** include Squirrel RELEASES/nupkg in Windows release artifacts ([e59ebdf](https://github.com/Nodeira/nodeira/commit/e59ebdfcdf5e5800d1caddcffd03034ce3680533))
+
 # [1.23.0](https://github.com/Nodeira/nodeira/compare/v1.22.2...v1.23.0) (2026-08-25)
 
 
