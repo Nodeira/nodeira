@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/Nodeira/nodeira/compare/v1.23.1...v1.24.0) (2026-09-04)
+
+
+### Features
+
+* **desktop:** use Nodeira app icon ([f9a0ebe](https://github.com/Nodeira/nodeira/commit/f9a0ebeee579dabfacb70c74ff065d8fd1c65bc2))
+
 ## [1.23.1](https://github.com/Nodeira/nodeira/compare/v1.23.0...v1.23.1) (2026-08-29)
 
 
