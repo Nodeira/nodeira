@@ -4,6 +4,8 @@ import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-nati
 import fs from "fs";
 import path from "path";
 
+const iconDir = path.join(__dirname, "assets");
+
 // pnpm hoists native deps to the monorepo root; electron-packager only sees
 // apps/desktop/node_modules, so we copy any missing native deps into the build.
 function findModule(modName: string): string | null {
@@ -30,8 +32,11 @@ const config: ForgeConfig = {
     asar: { unpack: "**/*.node" },
     name: "Nodeira",
     executableName: "nodeira",
+    // Electron Packager chooses .ico on Windows and .icns on macOS when the
+    // extension is omitted. Linux reads the PNG from BrowserWindow instead.
+    icon: path.join(iconDir, "icon"),
     // Include the built web app so the renderer can load it from file://
-    extraResource: ["../../apps/web/dist"],
+    extraResource: ["../../apps/web/dist", "assets"],
   },
   rebuildConfig: {
     // electron-rebuild looks here for native modules in a pnpm workspace
@@ -55,7 +60,10 @@ const config: ForgeConfig = {
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
-      config: { name: "nodeira" },
+      config: {
+        name: "nodeira",
+        setupIcon: path.join(iconDir, "icon.ico"),
+      },
     },
     {
       name: "@electron-forge/maker-deb",
@@ -65,12 +73,13 @@ const config: ForgeConfig = {
           bin: "nodeira",
           productName: "Nodeira",
           categories: ["Utility"],
+          icon: path.join(iconDir, "icon.png"),
         },
       },
     },
     {
       name: "@electron-forge/maker-dmg",
-      config: { format: "ULFO" },
+      config: { format: "ULFO", icon: path.join(iconDir, "icon.icns") },
     },
   ],
   plugins: [

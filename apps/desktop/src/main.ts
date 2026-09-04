@@ -49,6 +49,12 @@ const isDev = !app.isPackaged;
 let serverUrl = "";
 let wsUrl = "";
 
+function getAppIconPath(): string {
+  return isDev
+    ? path.join(__dirname, "../../assets/icon.png")
+    : path.join(process.resourcesPath, "assets", "icon.png");
+}
+
 // ── Window ────────────────────────────────────────────────────────────────────
 
 function createWindow(): void {
@@ -60,6 +66,7 @@ function createWindow(): void {
     minWidth: 640,
     minHeight: 480,
     title: "Nodeira",
+    icon: getAppIconPath(),
     autoHideMenuBar: true,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
@@ -123,7 +130,7 @@ function setupCSP(): void {
 // ── Tray ──────────────────────────────────────────────────────────────────────
 
 function createTray(): void {
-  const icon = nativeImage.createEmpty();
+  const icon = nativeImage.createFromPath(getAppIconPath());
   tray = new Tray(icon);
   tray.setToolTip("Nodeira");
 
